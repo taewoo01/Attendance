@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>회사 소개 — PLAY GROUND</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #081512;
+    --bg-panel: #0b1e19;
+    --bg-raised: #0e231d;
+    --teal: #48d9b0;
+    --teal-dim: rgba(72,217,176,0.16);
+    --amber: #e2a83f;
+    --amber-dim: rgba(226,168,63,0.16);
+    --silk: #e7efec;
+    --silk-dim: #86a199;
+    --silk-faint: #45594f;
+    --trace: rgba(231,239,236,0.028);
+    --border: rgba(231,239,236,0.10);
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg);
+    color: var(--silk);
+    font-family: 'IBM Plex Sans KR', -apple-system, sans-serif;
+    min-height:100vh;
+  }
+  a{ color:inherit; text-decoration:none; }
+  button{ font-family:inherit; }
+
+  /* ---------- STATUS BAR (shared) ---------- */
+  .statusbar{ border-bottom: 1px solid var(--border); background: rgba(8,21,18,0.7); }
+  .statusbar-in{
+    max-width: 1220px; margin:0 auto;
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 16px 28px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12px; color: var(--silk-dim);
+  }
+  .statusbar-logo{ display:flex; align-items:center; gap:9px; color: var(--silk); font-weight:600; letter-spacing:0.02em; }
+  .statusbar-logo .chip-dot{ width:7px; height:7px; background: var(--teal); }
+  .statusbar-logo .pg-logo{ width:22px; height:20px; flex-shrink:0; }
+  .statusbar-nav{ display:flex; gap:16px; }
+  .statusbar-nav a:hover{ color: var(--silk); }
+  .statusbar-nav a.active{ color: var(--teal); }
+  .statusbar-right{ display:flex; align-items:center; gap:12px; }
+  .icon-btn{ position:relative; width:34px; height:34px; border-radius:8px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .icon-btn svg{ width:16px; height:16px; stroke: var(--silk-dim); }
+  .icon-btn:hover{ border-color: var(--teal-dim); }
+  .icon-btn:hover svg{ stroke: var(--silk); }
+  .share-chip{
+    display:flex; align-items:center; gap:7px;
+    font-family:'IBM Plex Mono',monospace; font-size:11.5px; color: var(--teal);
+    background: var(--teal-dim); border:1px solid var(--teal-dim); border-radius:999px;
+    padding:7px 13px; cursor:pointer;
+  }
+  .share-chip svg{ width:12px; height:12px; stroke: var(--teal); }
+  @media (max-width:960px){ .statusbar-nav{ display:none; } }
+
+  /* ---------- HERO ---------- */
+  .about-hero{
+    max-width:1220px; margin:0 auto; padding: 70px 28px 50px;
+    text-align:center;
+  }
+  .about-kicker{
+    font-family:'IBM Plex Mono',monospace; font-size:12.5px; color: var(--teal);
+    display:inline-flex; align-items:center; gap:8px; margin:0 0 20px;
+  }
+  .about-kicker .chip-dot{ width:6px; height:6px; background: var(--teal); border-radius:50%; }
+  .about-h1{ font-size:42px; font-weight:700; margin:0 0 18px; line-height:1.25; }
+  .about-h1 span{ color: var(--teal); }
+  .about-lead{ font-size:15.5px; color: var(--silk-dim); max-width:56ch; margin:0 auto; line-height:1.7; }
+
+  /* ---------- VISION/MISSION ---------- */
+  .vm-grid{
+    max-width:1220px; margin:0 auto; padding: 10px 28px 60px;
+    display:grid; grid-template-columns:1fr 1fr; gap:20px;
+  }
+  @media (max-width:800px){ .vm-grid{ grid-template-columns:1fr; } }
+  .vm-card{
+    background: var(--bg-panel); border:1px solid var(--border); border-radius:16px;
+    padding: 30px 28px;
+  }
+  .vm-icon{
+    width:44px; height:44px; border-radius:12px; margin-bottom:18px;
+    background: var(--teal-dim); border:1px solid var(--teal-dim);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .vm-icon svg{ width:20px; height:20px; stroke: var(--teal); }
+  .vm-card h3{ font-size:17px; margin:0 0 10px; }
+  .vm-card p{ font-size:13.5px; color: var(--silk-dim); line-height:1.75; margin:0; }
+
+  /* ---------- BUSINESS ITEMS ---------- */
+  .section-wrap{ max-width:1220px; margin:0 auto; padding: 20px 28px 60px; }
+  .section-label{
+    font-family:'IBM Plex Mono',monospace; font-size:12px; color: var(--silk-faint);
+    letter-spacing:0.08em; margin: 0 0 8px;
+  }
+  .section-title{ font-size:22px; font-weight:600; margin:0 0 30px; }
+
+  .biz-grid{ display:grid; grid-template-columns: repeat(3, 1fr); gap:18px; }
+  @media (max-width:860px){ .biz-grid{ grid-template-columns:1fr; } }
+  .biz-card{
+    background: var(--bg-panel); border:1px solid var(--border); border-radius:14px;
+    padding: 24px 22px;
+  }
+  .biz-tag{
+    font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:700; letter-spacing:0.05em;
+    color: var(--amber); background: var(--amber-dim); border-radius:5px;
+    padding:3px 8px; display:inline-block; margin-bottom:14px;
+  }
+  .biz-card h4{ font-size:15px; margin:0 0 8px; }
+  .biz-card p{ font-size:12.5px; color: var(--silk-dim); line-height:1.65; margin:0; }
+
+  /* ---------- HISTORY TIMELINE ---------- */
+  .timeline{ position:relative; padding-left:26px; }
+  .timeline::before{ content:''; position:absolute; left:5px; top:6px; bottom:6px; width:1px; background: var(--border); }
+  .tl-item{ position:relative; padding-bottom:28px; }
+  .tl-item:last-child{ padding-bottom:0; }
+  .tl-dot{ position:absolute; left:-26px; top:3px; width:11px; height:11px; border-radius:50%; background: var(--bg); border:2px solid var(--teal); }
+  .tl-item.past .tl-dot{ border-color: var(--silk-faint); background: var(--bg-raised); }
+  .tl-date{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; color: var(--teal); margin-bottom:5px; }
+  .tl-item.past .tl-date{ color: var(--silk-faint); }
+  .tl-title{ font-size:14.5px; font-weight:600; margin:0 0 4px; }
+  .tl-desc{ font-size:12.5px; color: var(--silk-dim); line-height:1.6; margin:0; max-width:64ch; }
+
+  /* ---------- STATS STRIP ---------- */
+  .stats-strip{
+    max-width:1220px; margin:0 auto; padding: 10px 28px 70px;
+    display:grid; grid-template-columns: repeat(4,1fr); gap:18px;
+  }
+  @media (max-width:760px){ .stats-strip{ grid-template-columns: repeat(2,1fr); } }
+  .stat-card{
+    background: var(--bg-panel); border:1px solid var(--border); border-radius:12px;
+    padding: 20px 20px 18px; text-align:center;
+  }
+  .stat-num{ font-family:'IBM Plex Mono',monospace; font-size:28px; font-weight:700; color: var(--teal); }
+  .stat-label{ font-size:11.5px; color: var(--silk-faint); margin-top:6px; }
+
+  footer{
+    max-width:1220px; margin:0 auto; padding: 28px 28px 56px;
+    display:flex; justify-content:space-between;
+    border-top:1px solid var(--border);
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11px; color: var(--silk-faint);
+  }
+</style>
+</head>
+<body>
+
+  <div class="statusbar">
+    <div class="statusbar-in">
+      <div class="statusbar-logo"><svg class="pg-logo" viewBox="0 0 48 44" role="img" aria-label="Playground"><defs><linearGradient id="pg-logo-grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#a3e635"/><stop offset="55%" stop-color="#22c55e"/><stop offset="100%" stop-color="#0e7a3c"/></linearGradient></defs><g stroke="url(#pg-logo-grad)" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M24 8 L8.5 34 M24 8 L39.5 34 M24 8 L24 25 M24 25 L8.5 34 M24 25 L39.5 34" stroke-width="3.2"/><g fill="url(#pg-logo-grad)" stroke-width="3"><path d="M24 2.5 L28.8 5.25 L28.8 10.75 L24 13.5 L19.2 10.75 L19.2 5.25 Z"/><path d="M8.5 28.5 L13.3 31.25 L13.3 36.75 L8.5 39.5 L3.7 36.75 L3.7 31.25 Z"/><path d="M39.5 28.5 L44.3 31.25 L44.3 36.75 L39.5 39.5 L34.7 36.75 L34.7 31.25 Z"/></g></g></svg> PLAY_GROUND</div>
+      <div class="statusbar-nav">
+        <a href="index.html">홈</a><a href="schedule.html">일정</a><a href="results.html">실적</a><a href="daily.html">데일리</a><a href="ideas.html">아이디어</a><a href="meetings.html">회의록</a><a href="files.html">자료실</a><a class="active" href="#">회사소개</a><a href="team.html">팀소개</a>
+      </div>
+      <div class="statusbar-right">
+        <div class="share-chip"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.6l6.8-3.8M8.6 13.4l6.8 3.8"/></svg>외부 공유 링크</div>
+        <div class="icon-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="about-hero">
+    <p class="about-kicker"><span class="chip-dot"></span>COMPANY INTRODUCTION</p>
+    <h1 class="about-h1">현장의 <span>배터리·전력 데이터</span>를<br>AI로 연결하는 팀, PLAY GROUND</h1>
+    <p class="about-lead">전자공학부 학부생들이 모여 배터리 관리 시스템(BMS)과 전력전자, AI를 접목해 실제 문제를 푸는 창업팀입니다. 연구실에서 시작한 기술을 현장에 닿는 제품으로 만듭니다.</p>
+  </div>
+
+  <div class="vm-grid">
+    <div class="vm-card">
+      <div class="vm-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></svg></div>
+      <h3>Vision</h3>
+      <p>배터리와 전력 인프라의 상태를 누구나 신뢰할 수 있는 데이터로 만들어, 에너지를 더 안전하고 오래 쓰는 세상을 만듭니다.</p>
+    </div>
+    <div class="vm-card">
+      <div class="vm-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg></div>
+      <h3>Mission</h3>
+      <p>SOC·SOH 추정 AI 모델과 실시간 제어 알고리즘을 연구실 수준에서 현장 적용 가능한 수준까지 끌어올려, 학생 연구를 제품으로 연결합니다.</p>
+    </div>
+  </div>
+
+  <div class="section-wrap">
+    <p class="section-label">WHAT WE DO</p>
+    <h2 class="section-title">사업 아이템</h2>
+    <div class="biz-grid">
+      <div class="biz-card">
+        <span class="biz-tag">BMS · AI</span>
+        <h4>SOH/SOC 추정 엔진</h4>
+        <p>DC 리플과 온도 조건을 반영한 하이브리드(신경망+칼만필터) 모델로 배터리 상태를 더 정확하게 추정합니다.</p>
+      </div>
+      <div class="biz-card">
+        <span class="biz-tag">EMS · RL</span>
+        <h4>ESS 전압 제어 최적화</h4>
+        <p>PPO 기반 강화학습으로 차세대 배전망 ESS의 Volt-VAR/Volt-Watt 제어를 최적화하는 기술을 연구합니다.</p>
+      </div>
+      <div class="biz-card">
+        <span class="biz-tag">Healthcare · AI</span>
+        <h4>GoldenLink — 응급환자 매칭</h4>
+        <p>응급환자와 수용 가능한 병원을 AI로 실시간 매칭하는 시스템으로, AI Rookie 경진대회 본선에 진출했습니다.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-wrap">
+    <p class="section-label">HISTORY</p>
+    <h2 class="section-title">연혁</h2>
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-date">2026.08</div>
+        <div class="tl-title">AI Rookie 경진대회 본선 진출</div>
+        <p class="tl-desc">GoldenLink(응급환자 병원 매칭 시스템)로 예선을 통과하고 본선 진출을 확정했습니다.</p>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-date">2026.07</div>
+        <div class="tl-title">KEPCO 외부 R&amp;D 과제 착수</div>
+        <p class="tl-desc">한전 R&amp;D 과제 "AI 기반 차세대 배전망 ESS의 전압제어 최적화 기술 개발"에 선정되어 연구를 시작했습니다.</p>
+      </div>
+      <div class="tl-item past">
+        <div class="tl-dot"></div>
+        <div class="tl-date">2026.03</div>
+        <div class="tl-title">AI 솔루션 팀 Playground 결성</div>
+        <p class="tl-desc">EDCL 연구실 소속 학부생들이 모여 학생-창업 파이프라인을 목표로 팀을 꾸렸습니다.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-strip">
+    <div class="stat-card"><div class="stat-num">8</div><div class="stat-label">팀원</div></div>
+    <div class="stat-card"><div class="stat-num">3</div><div class="stat-label">진행 중 프로젝트</div></div>
+    <div class="stat-card"><div class="stat-num">1</div><div class="stat-label">외부 R&amp;D 과제</div></div>
+    <div class="stat-card"><div class="stat-num">2026</div><div class="stat-label">설립년도</div></div>
+  </div>
+
+  <footer>
+    <span>PLAY_GROUND / rev.0.2</span>
+    <span>© 2026 PLAY GROUND</span>
+  </footer>
+
+</body>
+</html>

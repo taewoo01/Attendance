@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>팀원 소개 — PLAY GROUND</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #081512;
+    --bg-panel: #0b1e19;
+    --bg-raised: #0e231d;
+    --teal: #48d9b0;
+    --teal-dim: rgba(72,217,176,0.16);
+    --amber: #e2a83f;
+    --amber-dim: rgba(226,168,63,0.16);
+    --silk: #e7efec;
+    --silk-dim: #86a199;
+    --silk-faint: #45594f;
+    --trace: rgba(231,239,236,0.028);
+    --border: rgba(231,239,236,0.10);
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg);
+    color: var(--silk);
+    font-family: 'IBM Plex Sans KR', -apple-system, sans-serif;
+    min-height:100vh;
+  }
+  a{ color:inherit; text-decoration:none; }
+  button{ font-family:inherit; }
+
+  /* ---------- STATUS BAR (shared) ---------- */
+  .statusbar{ border-bottom: 1px solid var(--border); background: rgba(8,21,18,0.7); }
+  .statusbar-in{
+    max-width: 1220px; margin:0 auto;
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 16px 28px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12px; color: var(--silk-dim);
+  }
+  .statusbar-logo{ display:flex; align-items:center; gap:9px; color: var(--silk); font-weight:600; letter-spacing:0.02em; }
+  .statusbar-logo .chip-dot{ width:7px; height:7px; background: var(--teal); }
+  .statusbar-logo .pg-logo{ width:22px; height:20px; flex-shrink:0; }
+  .statusbar-nav{ display:flex; gap:16px; }
+  .statusbar-nav a:hover{ color: var(--silk); }
+  .statusbar-nav a.active{ color: var(--teal); }
+  .statusbar-right{ display:flex; align-items:center; gap:16px; }
+  .icon-btn{ position:relative; width:34px; height:34px; border-radius:8px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .icon-btn svg{ width:16px; height:16px; stroke: var(--silk-dim); }
+  .icon-btn:hover{ border-color: var(--teal-dim); }
+  .icon-btn:hover svg{ stroke: var(--silk); }
+  .badge-count{
+    position:absolute; top:-5px; right:-5px;
+    background:#e2543f; color:#fff; font-size:9.5px; font-weight:700;
+    width:15px; height:15px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    border: 1.5px solid var(--bg);
+  }
+  .user-chip{ display:flex; align-items:center; gap:8px; color: var(--silk); font-weight:500; cursor:pointer; }
+  .user-chip .avatar{
+    width:26px; height:26px; border-radius:50%;
+    background: linear-gradient(155deg, var(--teal), #157a5f);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:11px; color:#04231b;
+  }
+  .user-chip svg{ stroke: var(--silk-faint); margin-left:-2px; }
+  @media (max-width:960px){ .statusbar-nav{ display:none; } }
+
+  /* ---------- PAGE HEADER ---------- */
+  .page-head{
+    max-width:1220px; margin:0 auto; padding: 30px 28px 0;
+    display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:10px;
+  }
+  .page-kicker{ font-family:'IBM Plex Mono',monospace; font-size:12px; color: var(--silk-faint); }
+  .page-kicker .cur{ color: var(--teal); }
+  .page-title{ font-size:26px; font-weight:600; margin:6px 0 0; }
+  .page-sub{ font-size:13px; color: var(--silk-dim); margin:4px 0 0; }
+  .btn{
+    font-size:13px; font-weight:600; padding: 10px 16px;
+    border: 1px solid var(--border); cursor:pointer; border-radius:8px;
+    display:inline-flex; align-items:center; justify-content:center; gap:7px;
+  }
+  .btn-primary{ background: var(--teal); color:#04231b; border-color: var(--teal); }
+
+  /* ---------- TEAM FILTER ---------- */
+  .filter-row{
+    max-width:1220px; margin:0 auto; padding: 20px 28px 0;
+    display:flex; gap:8px; flex-wrap:wrap;
+  }
+  .filter-chip{
+    font-family:'IBM Plex Mono',monospace; font-size:11.5px; color: var(--silk-dim);
+    background: var(--bg-panel); border:1px solid var(--border); border-radius:999px;
+    padding:8px 14px; cursor:pointer;
+  }
+  .filter-chip.active{ color: var(--teal); border-color: var(--teal-dim); background: var(--teal-dim); }
+
+  /* ---------- GRID ---------- */
+  .team-grid{
+    max-width:1220px; margin:0 auto; padding: 20px 28px 100px;
+    display:grid; grid-template-columns: repeat(4, 1fr); gap:18px;
+  }
+  @media (max-width:960px){ .team-grid{ grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width:560px){ .team-grid{ grid-template-columns: 1fr; } }
+
+  .id-card{
+    background: var(--bg-panel); border:1px solid var(--border); border-radius:16px;
+    padding: 22px 20px 20px; position:relative; overflow:hidden;
+    transition: border-color .15s ease, transform .15s ease;
+  }
+  .id-card:hover{ border-color: var(--teal-dim); transform: translateY(-2px); }
+  .id-card::before{
+    content:''; position:absolute; top:0; left:0; right:0; height:56px;
+    background: linear-gradient(180deg, rgba(72,217,176,0.1), transparent);
+  }
+  .id-punch{ position:absolute; top:14px; left:50%; transform:translateX(-50%); width:38px; height:6px; border-radius:4px; background: var(--bg-raised); border:1px solid var(--border); }
+
+  .id-avatar{
+    width:64px; height:64px; border-radius:50%; margin: 14px auto 12px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:22px; color:#04231b;
+    background: linear-gradient(155deg, var(--teal), #157a5f);
+    box-shadow: 0 8px 20px rgba(72,217,176,0.25);
+    position:relative; z-index:1;
+  }
+  .id-name{ text-align:center; font-size:15.5px; font-weight:700; color: var(--silk); }
+  .id-role{ text-align:center; font-family:'IBM Plex Mono',monospace; font-size:11px; color: var(--teal); margin-top:3px; letter-spacing:0.02em; }
+  .id-team{ text-align:center; font-size:11.5px; color: var(--silk-faint); margin-top:2px; }
+
+  .id-divider{ height:1px; background: var(--border); margin: 15px 0; border-style:dashed; border-width:1px 0 0; background:none; border-color: var(--border); }
+
+  .id-contact{ display:flex; flex-direction:column; gap:8px; }
+  .id-contact-row{ display:flex; align-items:center; gap:8px; font-size:11.5px; color: var(--silk-dim); }
+  .id-contact-row svg{ width:12px; height:12px; stroke: var(--silk-faint); flex-shrink:0; }
+
+  .id-stack{ display:flex; flex-wrap:wrap; gap:5px; margin-top:14px; }
+  .id-stack span{
+    font-family:'IBM Plex Mono',monospace; font-size:9.5px; font-weight:600;
+    padding:3px 8px; border-radius:999px;
+    background: var(--bg-raised); border:1px solid var(--border); color: var(--silk-dim);
+  }
+
+  footer{
+    max-width:1220px; margin:0 auto; padding: 28px 28px 56px;
+    display:flex; justify-content:space-between;
+    border-top:1px solid var(--border);
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11px; color: var(--silk-faint);
+  }
+</style>
+</head>
+<body>
+
+  <div class="statusbar">
+    <div class="statusbar-in">
+      <div class="statusbar-logo"><svg class="pg-logo" viewBox="0 0 48 44" role="img" aria-label="Playground"><defs><linearGradient id="pg-logo-grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#a3e635"/><stop offset="55%" stop-color="#22c55e"/><stop offset="100%" stop-color="#0e7a3c"/></linearGradient></defs><g stroke="url(#pg-logo-grad)" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M24 8 L8.5 34 M24 8 L39.5 34 M24 8 L24 25 M24 25 L8.5 34 M24 25 L39.5 34" stroke-width="3.2"/><g fill="url(#pg-logo-grad)" stroke-width="3"><path d="M24 2.5 L28.8 5.25 L28.8 10.75 L24 13.5 L19.2 10.75 L19.2 5.25 Z"/><path d="M8.5 28.5 L13.3 31.25 L13.3 36.75 L8.5 39.5 L3.7 36.75 L3.7 31.25 Z"/><path d="M39.5 28.5 L44.3 31.25 L44.3 36.75 L39.5 39.5 L34.7 36.75 L34.7 31.25 Z"/></g></g></svg> PLAY_GROUND</div>
+      <div class="statusbar-nav">
+        <a href="index.html">홈</a><a href="schedule.html">일정</a><a href="results.html">실적</a><a href="daily.html">데일리</a><a href="ideas.html">아이디어</a><a href="meetings.html">회의록</a><a href="files.html">자료실</a><a href="about.html">회사소개</a><a class="active" href="#">팀소개</a>
+      </div>
+      <div class="statusbar-right">
+        <div class="icon-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>
+          <span class="badge-count">3</span>
+        </div>
+        <div class="icon-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+        </div>
+        <div class="user-chip">
+          <span class="avatar">연</span>김연구
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-head">
+    <div>
+      <p class="page-kicker">PLAY GROUND / <span class="cur">팀 소개</span></p>
+      <h1 class="page-title">팀원 소개</h1>
+      <p class="page-sub">Team VAMOS · AI Solution Team Playground</p>
+    </div>
+    <button class="btn btn-primary">+ 프로필 편집</button>
+  </div>
+
+  <div class="filter-row">
+    <button class="filter-chip active">전체 8</button>
+    <button class="filter-chip">BMS</button>
+    <button class="filter-chip">Firmware</button>
+    <button class="filter-chip">Data</button>
+    <button class="filter-chip">PM</button>
+  </div>
+
+  <div class="team-grid">
+    <div class="id-card">
+      <div class="id-punch"></div>
+      <div class="id-avatar">연</div>
+      <div class="id-name">김연구</div>
+      <div class="id-role">BMS · 연구</div>
+      <div class="id-team">AI솔루션 팀 · 전자공학부 3학년</div>
+      <div class="id-divider"></div>
+      <div class="id-contact">
+        <div class="id-contact-row"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 6 10-6"/></svg>yeongu.kim@gnu.ac.kr</div>
+        <div class="id-contact-row"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6 19.8 19.8 0 01-3.1-8.7A2 2 0 014.1 2h3a2 2 0 012 1.7c.1 1 .3 2 .7 2.9a2 2 0 01-.4 2.1L8 10a16 16 0 006 6l1.3-1.4a2 2 0 012.1-.4c.9.4 1.9.6 2.9.7a2 2 0 011.7 2z"/></svg>010-12**-3456</div>
+      </div>
+      <div class="id-stack"><span>Python</span><span>Kalman Filter</span><span>PyTorch</span></div>
+    </div>
+
+    <div class="id-card">
+      <div class="id-punch"></div>
+      <div class="id-avatar">하</div>
+      <div class="id-name">이하늘</div>
+      <div class="id-role">BMS · 연구</div>
+      <div class="id-team">AI솔루션 팀 · 전자공학부 3학년</div>
+      <div class="id-divider"></div>
+      <div class="id-contact">
+        <div class="id-contact-row"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 6 10-6"/></svg>haneul.lee@gnu.ac.kr</div>
+        <div class="id-contact-row"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6 19.8 19.8 0 01-3.1-8.7A2 2 0 014.1 2h3a2 2 0 012 1.7c.1 1 .3 2 .7 2.9a2 2 0 01-.4 2.1L8 10a16 16 0 006 6l1.3-1.4a2 2 0 012.1-.4c.9.4 1.9.6 2.9.7a2 2 0 011.7 2z"/></svg>010-23**-4567</div>
+      </div>
+      <div class="id-stack"><span>신경망</span><span>SOC 추정</span><span>MATLAB</span></div>
+    </div>
+
+    <div class="id-card">
+      <div class="id-punch"></div>
+      <div class="id-avatar">준</div>
+      <div class="id-name">박준서</div>
+      <div class="id-role">Firmware · 연구</div>
+      <div class="id-team">EDCL 팀 · 전자공학부 3학년</div>
+      <div class="id-divider"></div>
+      <div class="id-contact">
+        <div class="id-contact-row"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 6 10-6"/></svg>junseo.park@gnu.ac.kr</div>
+        <div class="id-contact-row"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6 19.8 19.8 0 01-3.1-8.7A2 2 0 014.1 2h3a2 2 0 012 1.7c.1 1 .3 2 .7 2.9a2 2 0 01-.4 2.1L8 10a16 16 0 006 6l1.3-1.4a2 2 0 012.1-.4c.9.4 1.9.6 2.9.7a2 2 0 011.7 2z"/></svg>010-34**-5678</div>
+      </div>
+      <div class="id-stack"><span>아날로그 회로</span><span>PCB</span></div>
+    </div>
+
+    <div class="id-card">
+      <div class="id-punch"></div>
+      <div class="id-avatar">도</div>
+      <div class="id-name">최도윤</div>
+      <div class="id-role">Firmware · 연구</div>
+      <div class="id-team">EDCL 팀 · 전자공학부 3학년</div>
+      <div class="id-divider"></div>
+      <div class="id-contact">
+        <div class="id-contact-row"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 6 10-6"/></svg>doyoon.choi@gnu.ac.kr</div>
+        <div class="id-contact-row"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6 19.8 19.8 0 01-3.1-8.7A2 2 0 014.1 2h3a2 2 0 012 1.7c.1 1 .3 2 .7 2.9a2 2 0 01-.4 2.1L8 10a16 16 0 006 6l1.3-1.4a2 2 0 012.1-.4c.9.4 1.9.6 2.9.7a2 2 0 011.7 2z"/></svg>010-45**-6789</div>
+      </div>
+      <div class="id-stack"><span>ANSYS</span><span>열-전기 시뮬레이션</span></div>
+    </div>
+
+    <div class="id-card">
+      <div class="id-punch"></div>
+      <div class="id-avatar">민</div>
+      <div class="id-name">정민재</div>
+      <div class="id-role">Data · 연구</div>
+      <div class="id-team">AI솔루션 팀 · 전자공학부 3학년</div>
+      <div class="id-divider"></div>
+      <div class="id-contact">
+        <div class="id-contact-row"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 6 10-6"/></svg>minjae.jeong@gnu.ac.kr</div>
+        <div class="id-contact-row"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6 19.8 19.8 0 01-3.1-8.7A2 2 0 014.1 2h3a2 2 0 012 1.7c.1 1 .3 2 .7 2.9a2 2 0 01-.4 2.1L8 10a16 16 0 006 6l1.3-1.4a2 2 0 012.1-.4c.9.4 1.9.6 2.9.7a2 2 0 011.7 2z"/></svg>010-56**-7890</div>
+      </div>
+      <div class="id-stack"><span>강화학습</span><span>시뮬레이션</span></div>
+    </div>
+
+    <div class="id-card">
+      <div class="id-punch"></div>
+      <div class="id-avatar">서</div>
+      <div class="id-name">한서준</div>
+      <div class="id-role">Data · 연구</div>
+      <div class="id-team">EDCL 팀 · 전자공학부 3학년</div>
+      <div class="id-divider"></div>
+      <div class="id-contact">
+        <div class="id-contact-row"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 6 10-6"/></svg>seojun.han@gnu.ac.kr</div>
+        <div class="id-contact-row"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6 19.8 19.8 0 01-3.1-8.7A2 2 0 014.1 2h3a2 2 0 012 1.7c.1 1 .3 2 .7 2.9a2 2 0 01-.4 2.1L8 10a16 16 0 006 6l1.3-1.4a2 2 0 012.1-.4c.9.4 1.9.6 2.9.7a2 2 0 011.7 2z"/></svg>010-67**-8901</div>
+      </div>
+      <div class="id-stack"><span>데이터 라벨링</span><span>SQL</span></div>
+    </div>
+
+    <div class="id-card">
+      <div class="id-punch"></div>
+      <div class="id-avatar">지</div>
+      <div class="id-name">오지훈</div>
+      <div class="id-role">PM</div>
+      <div class="id-team">AI솔루션 팀 · 전자공학부 4학년</div>
+      <div class="id-divider"></div>
+      <div class="id-contact">
+        <div class="id-contact-row"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 6 10-6"/></svg>jihoon.oh@gnu.ac.kr</div>
+        <div class="id-contact-row"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6 19.8 19.8 0 01-3.1-8.7A2 2 0 014.1 2h3a2 2 0 012 1.7c.1 1 .3 2 .7 2.9a2 2 0 01-.4 2.1L8 10a16 16 0 006 6l1.3-1.4a2 2 0 012.1-.4c.9.4 1.9.6 2.9.7a2 2 0 011.7 2z"/></svg>010-78**-9012</div>
+      </div>
+      <div class="id-stack"><span>기획</span><span>사업개발</span></div>
+    </div>
+
+    <div class="id-card">
+      <div class="id-punch"></div>
+      <div class="id-avatar">태</div>
+      <div class="id-name">강태윤</div>
+      <div class="id-role">PM</div>
+      <div class="id-team">AI솔루션 팀 · 전자공학부 4학년</div>
+      <div class="id-divider"></div>
+      <div class="id-contact">
+        <div class="id-contact-row"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 6 10-6"/></svg>taeyoon.kang@gnu.ac.kr</div>
+        <div class="id-contact-row"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6 19.8 19.8 0 01-3.1-8.7A2 2 0 014.1 2h3a2 2 0 012 1.7c.1 1 .3 2 .7 2.9a2 2 0 01-.4 2.1L8 10a16 16 0 006 6l1.3-1.4a2 2 0 012.1-.4c.9.4 1.9.6 2.9.7a2 2 0 011.7 2z"/></svg>010-89**-0123</div>
+      </div>
+      <div class="id-stack"><span>IR</span><span>투자유치</span></div>
+    </div>
+  </div>
+
+  <footer>
+    <span>PLAY_GROUND / rev.0.2</span>
+    <span>© 2026 PLAY GROUND</span>
+  </footer>
+
+  <script>
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

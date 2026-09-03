@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>일정 — PLAY GROUND</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #081512;
+    --bg-panel: #0b1e19;
+    --bg-raised: #0e231d;
+    --teal: #48d9b0;
+    --teal-dim: rgba(72,217,176,0.16);
+    --amber: #e2a83f;
+    --amber-dim: rgba(226,168,63,0.16);
+    --silk: #e7efec;
+    --silk-dim: #86a199;
+    --silk-faint: #45594f;
+    --trace: rgba(231,239,236,0.028);
+    --border: rgba(231,239,236,0.10);
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg);
+    color: var(--silk);
+    font-family: 'IBM Plex Sans KR', -apple-system, sans-serif;
+    min-height:100vh;
+  }
+  a{ color:inherit; text-decoration:none; }
+  button{ font-family:inherit; }
+
+  /* ---------- STATUS BAR ---------- */
+  .statusbar{ border-bottom: 1px solid var(--border); background: rgba(8,21,18,0.7); }
+  .statusbar-in{
+    max-width: 1220px; margin:0 auto;
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 16px 28px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12px; color: var(--silk-dim);
+  }
+  .statusbar-logo{ display:flex; align-items:center; gap:9px; color: var(--silk); font-weight:600; letter-spacing:0.02em; }
+  .statusbar-logo .chip-dot{ width:7px; height:7px; background: var(--teal); }
+  .statusbar-logo .pg-logo{ width:22px; height:20px; flex-shrink:0; }
+  .statusbar-nav{ display:flex; gap:16px; }
+  .statusbar-nav a:hover{ color: var(--silk); }
+  .statusbar-nav a.active{ color: var(--teal); }
+  .statusbar-right{ display:flex; align-items:center; gap:16px; }
+  .icon-btn{ position:relative; width:34px; height:34px; border-radius:8px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .icon-btn svg{ width:16px; height:16px; stroke: var(--silk-dim); }
+  .icon-btn:hover{ border-color: var(--teal-dim); }
+  .icon-btn:hover svg{ stroke: var(--silk); }
+  .badge-count{
+    position:absolute; top:-5px; right:-5px;
+    background:#e2543f; color:#fff; font-size:9.5px; font-weight:700;
+    width:15px; height:15px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    border: 1.5px solid var(--bg);
+  }
+  .user-chip{ display:flex; align-items:center; gap:8px; color: var(--silk); font-weight:500; cursor:pointer; }
+  .user-chip .avatar{
+    width:26px; height:26px; border-radius:50%;
+    background: linear-gradient(155deg, var(--teal), #157a5f);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:11px; color:#04231b;
+  }
+  .user-chip svg{ stroke: var(--silk-faint); margin-left:-2px; }
+  @media (max-width:960px){ .statusbar-nav{ display:none; } }
+
+  /* ---------- PAGE HEADER ---------- */
+  .page-head{
+    max-width:1220px; margin:0 auto; padding: 30px 28px 0;
+    display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:10px;
+  }
+  .page-kicker{ font-family:'IBM Plex Mono',monospace; font-size:12px; color: var(--silk-faint); }
+  .page-kicker .cur{ color: var(--teal); }
+  .page-title{ font-size:26px; font-weight:600; margin:6px 0 0; }
+  .btn{
+    font-size:13px; font-weight:600; padding: 9px 15px;
+    border: 1px solid var(--border); cursor:pointer; border-radius:8px;
+    display:inline-flex; align-items:center; justify-content:center; gap:7px;
+  }
+  .btn-primary{ background: var(--teal); color:#04231b; border-color: var(--teal); }
+
+  /* ---------- MAIN GRID ---------- */
+  .sched-main{
+    max-width:1220px; margin:0 auto; padding: 16px 28px 70px;
+    display:grid; grid-template-columns: 1fr 280px; gap:18px; align-items:start;
+  }
+  @media (max-width:960px){ .sched-main{ grid-template-columns:1fr; } }
+
+  /* toolbar: view toggle + range label */
+  .cal-toolbar{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:10px; font-family:'IBM Plex Mono',monospace; font-size:12px; color: var(--silk-dim);
+  }
+  .view-toggle{ display:flex; border:1px solid var(--border); border-radius:7px; overflow:hidden; }
+  .view-toggle button{
+    background:transparent; border:none; color: var(--silk-dim);
+    font-family:'IBM Plex Mono',monospace; font-size:11.5px; font-weight:600;
+    padding: 6px 14px; cursor:pointer;
+  }
+  .view-toggle button.active{ background: var(--teal); color:#04231b; }
+  .cal-nav{ display:flex; align-items:center; gap:10px; }
+  .cal-nav button{
+    width:24px; height:24px; border-radius:6px; border:1px solid var(--border);
+    background:transparent; color:var(--silk-dim); cursor:pointer;
+  }
+
+  /* ---------- WEEK VIEW ---------- */
+  .week-grid{
+    display:grid; grid-template-columns: repeat(7,1fr);
+    background: var(--bg-panel); border:1px solid var(--border); border-radius:12px;
+    overflow:hidden;
+  }
+  .day-col{ border-right:1px solid var(--border); padding:9px 7px 10px; min-height:200px; }
+  .day-col:last-child{ border-right:none; }
+  .day-col.today{ background: rgba(72,217,176,0.045); box-shadow: inset 0 2px 0 var(--teal); }
+  .day-head{ text-align:center; margin-bottom:7px; }
+  .day-dow{ font-family:'IBM Plex Mono',monospace; font-size:9.5px; color: var(--silk-faint); letter-spacing:0.05em; }
+  .day-date{ font-size:14px; font-weight:600; margin-top:1px; }
+  .day-col.today .day-date{ color: var(--teal); }
+
+  .day-events{ display:flex; flex-direction:column; gap:4px; }
+  .ev{
+    font-size:10px; line-height:1.35; padding: 4px 6px;
+    border-radius:5px; background: var(--bg-raised);
+    border-left:2px solid var(--silk-faint);
+  }
+  .ev.personal{ border-left-color: var(--teal); }
+  .ev.fixed{ border-left-color: var(--amber); }
+  .ev-time{ display:block; font-family:'IBM Plex Mono',monospace; color: var(--silk-faint); font-size:9px; }
+  .ev-more{ font-family:'IBM Plex Mono',monospace; font-size:9.5px; color: var(--silk-dim); padding: 2px 6px; cursor:pointer; }
+  .ev-more:hover{ color: var(--teal); }
+
+  /* ---------- MONTH VIEW ---------- */
+  #monthView{ display:none; }
+  .month-grid{
+    display:grid; grid-template-columns: repeat(7,1fr);
+    background: var(--bg-panel); border:1px solid var(--border); border-radius:12px;
+    overflow:hidden;
+  }
+  .month-dow{
+    font-family:'IBM Plex Mono',monospace; font-size:10px; color: var(--silk-faint);
+    text-align:center; padding:8px 0; border-bottom:1px solid var(--border);
+  }
+  .m-cell{
+    border-right:1px solid var(--border); border-bottom:1px solid var(--border);
+    min-height:96px; padding:6px 7px; position:relative;
+  }
+  .month-grid > .m-cell:nth-child(7n){ border-right:none; }
+  .m-cell.muted{ color: var(--silk-faint); }
+  .m-cell.muted .m-date{ color: var(--silk-faint); }
+  .m-cell.today{ background: rgba(72,217,176,0.06); box-shadow: inset 0 2px 0 var(--teal); }
+  .m-date{ font-size:12px; font-weight:600; }
+  .m-cell.today .m-date{ color: var(--teal); }
+  .m-count{ font-family:'IBM Plex Mono',monospace; font-size:9.5px; color: var(--silk-dim); margin-top:4px; }
+  .m-dots{ display:flex; gap:3px; margin-top:4px; }
+  .m-dots i{ width:5px; height:5px; border-radius:50%; display:inline-block; }
+  .m-dots i.personal{ background: var(--teal); }
+  .m-dots i.fixed{ background: var(--amber); }
+
+  /* month view — mini event chips (mirrors week view .ev) */
+  .m-events{ display:flex; flex-direction:column; gap:3px; margin-top:5px; }
+  .m-ev{
+    font-size:9px; line-height:1.3; padding: 2px 5px;
+    border-radius:4px; background: var(--bg-raised);
+    border-left:2px solid var(--silk-faint);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .m-cell.muted .m-ev{ background: rgba(231,239,236,0.03); }
+  .m-ev.personal{ border-left-color: var(--teal); }
+  .m-ev.fixed{ border-left-color: var(--amber); }
+  .m-ev-more{ font-family:'IBM Plex Mono',monospace; font-size:8.5px; color: var(--silk-dim); padding: 1px 5px; }
+
+  /* ---------- SIDEBAR ---------- */
+  .side-card{
+    background: var(--bg-panel); border:1px solid var(--border); border-radius:12px;
+    padding: 15px 16px 14px; margin-bottom:14px;
+  }
+  .side-head{ font-size:13px; font-weight:600; margin:0 0 10px; }
+  .agenda-item{ display:flex; gap:9px; padding:6px 0; border-bottom:1px solid var(--border); }
+  .agenda-item:last-child{ border-bottom:none; padding-bottom:0; }
+  .agenda-time{ font-family:'IBM Plex Mono',monospace; font-size:11px; color: var(--teal); width:40px; flex-shrink:0; }
+  .agenda-title{ font-size:12px; color: var(--silk); }
+  .agenda-sub{ font-size:10.5px; color: var(--silk-faint); margin-top:1px; }
+
+  .fixed-item{ display:flex; align-items:baseline; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border); font-size:12px; }
+  .fixed-item:last-child{ border-bottom:none; padding-bottom:0; }
+  .fixed-day{ font-family:'IBM Plex Mono',monospace; color: var(--amber); font-size:10.5px; width:20px; flex-shrink:0; }
+  .fixed-title{ flex:1; margin:0 8px; }
+  .fixed-time{ font-family:'IBM Plex Mono',monospace; color: var(--silk-faint); font-size:10px; }
+
+  @media (max-width:640px){
+    .week-grid{ grid-template-columns: repeat(7, minmax(108px,1fr)); overflow-x:auto; display:flex; }
+    .day-col{ flex:0 0 108px; }
+    .month-grid{ grid-template-columns: repeat(7, minmax(46px,1fr)); overflow-x:auto; display:grid; }
+  }
+
+  footer{
+    max-width:1220px; margin:0 auto; padding: 28px 28px 50px;
+    display:flex; justify-content:space-between;
+    border-top:1px solid var(--border);
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11px; color: var(--silk-faint);
+  }
+</style>
+</head>
+<body>
+
+  <div class="statusbar">
+    <div class="statusbar-in">
+      <div class="statusbar-logo"><svg class="pg-logo" viewBox="0 0 48 44" role="img" aria-label="Playground"><defs><linearGradient id="pg-logo-grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#a3e635"/><stop offset="55%" stop-color="#22c55e"/><stop offset="100%" stop-color="#0e7a3c"/></linearGradient></defs><g stroke="url(#pg-logo-grad)" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M24 8 L8.5 34 M24 8 L39.5 34 M24 8 L24 25 M24 25 L8.5 34 M24 25 L39.5 34" stroke-width="3.2"/><g fill="url(#pg-logo-grad)" stroke-width="3"><path d="M24 2.5 L28.8 5.25 L28.8 10.75 L24 13.5 L19.2 10.75 L19.2 5.25 Z"/><path d="M8.5 28.5 L13.3 31.25 L13.3 36.75 L8.5 39.5 L3.7 36.75 L3.7 31.25 Z"/><path d="M39.5 28.5 L44.3 31.25 L44.3 36.75 L39.5 39.5 L34.7 36.75 L34.7 31.25 Z"/></g></g></svg> PLAY_GROUND</div>
+      <div class="statusbar-nav">
+        <a href="index.html">홈</a><a class="active" href="#">일정</a><a href="results.html">실적</a><a href="daily.html">데일리</a><a href="ideas.html">아이디어</a><a href="meetings.html">회의록</a><a href="files.html">자료실</a><a href="about.html">회사소개</a><a href="team.html">팀소개</a>
+      </div>
+      <div class="statusbar-right">
+        <div class="icon-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>
+          <span class="badge-count">3</span>
+        </div>
+        <div class="icon-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+        </div>
+        <div class="user-chip">
+          <span class="avatar">연</span>김연구
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-head">
+    <div>
+      <p class="page-kicker">PLAY GROUND / <span class="cur">일정</span></p>
+      <h1 class="page-title">일정</h1>
+    </div>
+    <button class="btn btn-primary">+ 개인 일정 등록</button>
+  </div>
+
+  <div class="sched-main">
+    <div>
+      <div class="cal-toolbar">
+        <div class="view-toggle">
+          <button id="btnWeek" class="active">주</button><button id="btnMonth">월</button>
+        </div>
+        <div class="cal-nav">
+          <button>‹</button>
+          <span id="rangeLabel">8월 31일 – 9월 6일</span>
+          <button>›</button>
+        </div>
+      </div>
+
+      <div class="cal-toolbar" id="ownerToolbar">
+        <div class="view-toggle">
+          <button id="btnMe" class="active">내 일정</button><button id="btnTeam">팀 전체</button>
+        </div>
+        <span style="color:var(--silk-faint);">보기 기준</span>
+      </div>
+
+      <!-- ===== WEEK VIEW ===== -->
+      <div id="weekView">
+        <div class="week-grid">
+
+          <div class="day-col today">
+            <div class="day-head"><div class="day-dow">MON</div><div class="day-date">31</div></div>
+            <div class="day-events">
+              <div class="ev fixed" data-owner="team"><span class="ev-time">10:00</span>박준서 · 전공수업</div>
+              <div class="ev personal" data-owner="team"><span class="ev-time">14:00</span>정민재 · 병원 예약</div>
+              <div class="ev fixed" data-owner="team"><span class="ev-time">20:00</span>최도윤 · 알바</div>
+              <div class="ev personal" data-owner="team"><span class="ev-time">16:00</span>이하늘 · 스터디</div>
+            </div>
+          </div>
+
+          <div class="day-col">
+            <div class="day-head"><div class="day-dow">TUE</div><div class="day-date">1</div></div>
+            <div class="day-events">
+              <div class="ev fixed" data-owner="team"><span class="ev-time">18:00</span>한서준 · 알바</div>
+              <div class="ev personal" data-owner="team"><span class="ev-time">13:00</span>오지훈 · 학회 미팅</div>
+            </div>
+          </div>
+
+          <div class="day-col">
+            <div class="day-head"><div class="day-dow">WED</div><div class="day-date">2</div></div>
+            <div class="day-events">
+              <div class="ev fixed" data-owner="me"><span class="ev-time">09:00</span>김연구 · 전공수업</div>
+              <div class="ev fixed" data-owner="team"><span class="ev-time">19:00</span>정민재 · 알바</div>
+            </div>
+          </div>
+
+          <div class="day-col">
+            <div class="day-head"><div class="day-dow">THU</div><div class="day-date">3</div></div>
+            <div class="day-events">
+              <div class="ev personal" data-owner="team"><span class="ev-time">15:00</span>강태윤 · 투자자 미팅</div>
+            </div>
+          </div>
+
+          <div class="day-col">
+            <div class="day-head"><div class="day-dow">FRI</div><div class="day-date">4</div></div>
+            <div class="day-events">
+              <div class="ev fixed" data-owner="team"><span class="ev-time">10:00</span>오지훈 · 세미나</div>
+              <div class="ev personal" data-owner="me"><span class="ev-time">19:00</span>김연구 · 팀 회식</div>
+            </div>
+          </div>
+
+          <div class="day-col">
+            <div class="day-head"><div class="day-dow">SAT</div><div class="day-date">5</div></div>
+            <div class="day-events"></div>
+          </div>
+
+          <div class="day-col">
+            <div class="day-head"><div class="day-dow">SUN</div><div class="day-date">6</div></div>
+            <div class="day-events">
+              <div class="ev personal" data-owner="team"><span class="ev-time">14:00</span>정민재 · 개인 공부</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ===== MONTH VIEW ===== -->
+      <div id="monthView">
+        <div class="month-grid">
+          <div class="month-dow">월</div><div class="month-dow">화</div><div class="month-dow">수</div>
+          <div class="month-dow">목</div><div class="month-dow">금</div><div class="month-dow">토</div><div class="month-dow">일</div>
+
+          <div class="m-cell muted"><div class="m-date">27</div></div>
+          <div class="m-cell muted"><div class="m-date">28</div></div>
+          <div class="m-cell muted"><div class="m-date">29</div></div>
+          <div class="m-cell muted"><div class="m-date">30</div></div>
+          <div class="m-cell muted"><div class="m-date">31</div></div>
+          <div class="m-cell"><div class="m-date">1</div></div>
+          <div class="m-cell"><div class="m-date">2</div></div>
+
+          <div class="m-cell"><div class="m-date">3</div><div class="m-count">4명</div><div class="m-dots"><i class="fixed"></i></div></div>
+          <div class="m-cell"><div class="m-date">4</div></div>
+          <div class="m-cell"><div class="m-date">5</div><div class="m-count">3명</div></div>
+          <div class="m-cell"><div class="m-date">6</div></div>
+          <div class="m-cell"><div class="m-date">7</div><div class="m-count">5명</div><div class="m-dots"><i class="personal"></i></div></div>
+          <div class="m-cell"><div class="m-date">8</div></div>
+          <div class="m-cell"><div class="m-date">9</div></div>
+
+          <div class="m-cell"><div class="m-date">10</div></div>
+          <div class="m-cell"><div class="m-date">11</div></div>
+          <div class="m-cell"><div class="m-date">12</div><div class="m-count">2명</div></div>
+          <div class="m-cell"><div class="m-date">13</div></div>
+          <div class="m-cell"><div class="m-date">14</div><div class="m-count">4명</div><div class="m-dots"><i class="fixed"></i></div></div>
+          <div class="m-cell"><div class="m-date">15</div></div>
+          <div class="m-cell"><div class="m-date">16</div></div>
+
+          <div class="m-cell"><div class="m-date">17</div></div>
+          <div class="m-cell"><div class="m-date">18</div></div>
+          <div class="m-cell"><div class="m-date">19</div><div class="m-count">3명</div></div>
+          <div class="m-cell"><div class="m-date">20</div><div class="m-dots"><i class="personal"></i></div></div>
+          <div class="m-cell"><div class="m-date">21</div><div class="m-count">4명</div><div class="m-dots"><i class="fixed"></i></div></div>
+          <div class="m-cell"><div class="m-date">22</div></div>
+          <div class="m-cell"><div class="m-date">23</div></div>
+
+          <div class="m-cell"><div class="m-date">24</div></div>
+          <div class="m-cell"><div class="m-date">25</div></div>
+          <div class="m-cell"><div class="m-date">26</div><div class="m-count">3명</div></div>
+          <div class="m-cell"><div class="m-date">27</div></div>
+          <div class="m-cell"><div class="m-date">28</div><div class="m-count">5명</div><div class="m-dots"><i class="personal"></i><i class="fixed"></i></div></div>
+          <div class="m-cell"><div class="m-date">29</div></div>
+          <div class="m-cell"><div class="m-date">30</div></div>
+
+          <div class="m-cell today">
+            <div class="m-date">31</div>
+            <div class="m-events">
+              <div class="m-ev fixed">10:00 박준서·전공수업</div>
+              <div class="m-ev personal">14:00 정민재·병원예약</div>
+              <div class="m-ev-more">+2개 더보기</div>
+            </div>
+          </div>
+          <div class="m-cell muted">
+            <div class="m-date">1</div>
+            <div class="m-events">
+              <div class="m-ev fixed">18:00 한서준·알바</div>
+              <div class="m-ev personal">13:00 오지훈·학회미팅</div>
+            </div>
+          </div>
+          <div class="m-cell muted">
+            <div class="m-date">2</div>
+            <div class="m-events">
+              <div class="m-ev fixed">09:00 김연구·전공수업</div>
+              <div class="m-ev fixed">19:00 정민재·알바</div>
+            </div>
+          </div>
+          <div class="m-cell muted">
+            <div class="m-date">3</div>
+            <div class="m-events">
+              <div class="m-ev personal">15:00 강태윤·투자자미팅</div>
+            </div>
+          </div>
+          <div class="m-cell muted">
+            <div class="m-date">4</div>
+            <div class="m-events">
+              <div class="m-ev fixed">10:00 오지훈·세미나</div>
+              <div class="m-ev personal">19:00 김연구·팀회식</div>
+            </div>
+          </div>
+          <div class="m-cell muted"><div class="m-date">5</div></div>
+          <div class="m-cell muted">
+            <div class="m-date">6</div>
+            <div class="m-events">
+              <div class="m-ev personal">14:00 정민재·개인공부</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <aside>
+      <div class="side-card">
+        <p class="side-head">오늘 · 8월 31일 (월)</p>
+        <div class="agenda-item">
+          <span class="agenda-time">09:02</span>
+          <div><div class="agenda-title">김연구 체크인</div><div class="agenda-sub">DAY</div></div>
+        </div>
+        <div class="agenda-item">
+          <span class="agenda-time">10:00</span>
+          <div><div class="agenda-title">박준서 · 전공수업</div><div class="agenda-sub">고정 일정 · ~12:00</div></div>
+        </div>
+        <div class="agenda-item">
+          <span class="agenda-time">14:00</span>
+          <div><div class="agenda-title">정민재 · 병원 예약</div><div class="agenda-sub">개인 일정</div></div>
+        </div>
+      </div>
+
+      <div class="side-card">
+        <p class="side-head">내 고정 시간표</p>
+        <div class="fixed-item"><span class="fixed-day">수</span><span class="fixed-title">전공수업</span><span class="fixed-time">09–11시</span></div>
+        <div class="fixed-item"><span class="fixed-day">금</span><span class="fixed-title">세미나수업</span><span class="fixed-time">14–16시</span></div>
+      </div>
+    </aside>
+  </div>
+
+  <footer>
+    <span>PLAY_GROUND / rev.0.2</span>
+    <span>© 2026 PLAY GROUND</span>
+  </footer>
+
+  <script>
+    const btnWeek = document.getElementById('btnWeek');
+    const btnMonth = document.getElementById('btnMonth');
+    const weekView = document.getElementById('weekView');
+    const monthView = document.getElementById('monthView');
+    const rangeLabel = document.getElementById('rangeLabel');
+
+    btnWeek.addEventListener('click', () => {
+      btnWeek.classList.add('active'); btnMonth.classList.remove('active');
+      weekView.style.display = 'block'; monthView.style.display = 'none';
+      rangeLabel.textContent = '8월 31일 – 9월 6일';
+    });
+    btnMonth.addEventListener('click', () => {
+      btnMonth.classList.add('active'); btnWeek.classList.remove('active');
+      monthView.style.display = 'block'; weekView.style.display = 'none';
+      rangeLabel.textContent = '2026년 8월';
+    });
+
+    // owner filter (내 일정 / 팀 전체) — decluttering when many people add events
+    const btnMe = document.getElementById('btnMe');
+    const btnTeam = document.getElementById('btnTeam');
+    const TEAM_CAP = 2;
+
+    function applyOwnerFilter(mode){
+      document.querySelectorAll('.day-events').forEach(container => {
+        const existingMore = container.querySelector('.ev-more');
+        if (existingMore) existingMore.remove();
+
+        const evs = Array.from(container.querySelectorAll('.ev'));
+        if (mode === 'me') {
+          evs.forEach(ev => { ev.style.display = ev.dataset.owner === 'me' ? '' : 'none'; });
+        } else {
+          let hidden = 0;
+          evs.forEach((ev, i) => {
+            const show = i < TEAM_CAP;
+            ev.style.display = show ? '' : 'none';
+            if (!show) hidden++;
+          });
+          if (hidden > 0) {
+            const more = document.createElement('div');
+            more.className = 'ev-more';
+            more.textContent = `+${hidden}개 더보기`;
+            container.appendChild(more);
+          }
+        }
+      });
+    }
+
+    btnMe.addEventListener('click', () => {
+      btnMe.classList.add('active'); btnTeam.classList.remove('active');
+      applyOwnerFilter('me');
+    });
+    btnTeam.addEventListener('click', () => {
+      btnTeam.classList.add('active'); btnMe.classList.remove('active');
+      applyOwnerFilter('team');
+    });
+
+    applyOwnerFilter('me');
+  </script>
+
+</body>
+</html>

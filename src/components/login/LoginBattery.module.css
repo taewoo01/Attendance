@@ -1,0 +1,286 @@
+/*
+ * playground-design/login.html 전용 3D 배터리(.b3d-*).
+ * Home(index.html)의 Battery3D와 클래스 네이밍은 비슷하지만 치수(150x250 body,
+ * cells gap 8px/radius 12px), .b3d-wrap의 scale(1.15) 래퍼, HUD 위치/구조,
+ * 로그인 성공/실패에 종속된 상태(cellsFilled/soc/pill/shake)가 달라 재사용하지 않고
+ * 원본 CSS 값을 그대로 옮긴다.
+ */
+
+.b3dWrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  perspective: 1200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: scale(1.15);
+}
+.b3dInner {
+  position: relative;
+  width: 280px;
+  height: 400px;
+  transform-style: preserve-3d;
+  animation: b3dFloat 6s ease-in-out infinite;
+}
+@keyframes b3dFloat {
+  0%,
+  100% {
+    transform: translateY(0) rotateX(4deg) rotateY(-8deg);
+  }
+  50% {
+    transform: translateY(-14px) rotateX(2deg) rotateY(-10deg);
+  }
+}
+
+.b3dGlow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(72, 217, 176, 0.22), transparent 70%);
+  transform: translate(-50%, -50%) translateZ(-80px);
+  filter: blur(4px);
+}
+
+.b3dCircuit {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) translateZ(-50px);
+}
+.b3dTraceBase {
+  stroke: rgba(94, 234, 212, 0.15);
+  stroke-width: 1.6;
+}
+.b3dTraceFlow {
+  stroke: rgba(94, 234, 212, 0.85);
+  stroke-width: 1.6;
+  stroke-dasharray: 12 88;
+  stroke-linecap: round;
+  animation: b3dTraceFlow 3.4s linear infinite;
+}
+@keyframes b3dTraceFlow {
+  to {
+    stroke-dashoffset: -200;
+  }
+}
+.b3dBlockRect {
+  fill: rgba(10, 22, 18, 0.7);
+  stroke: rgba(94, 234, 212, 0.35);
+  stroke-width: 1.2;
+}
+.b3dBlockText {
+  fill: rgba(180, 220, 210, 0.65);
+  font-family: "IBM Plex Mono", monospace;
+  letter-spacing: 1px;
+}
+.b3dPin {
+  stroke: rgba(94, 234, 212, 0.3);
+  stroke-width: 1.6;
+}
+.b3dNode {
+  fill: #06110d;
+  stroke: rgba(94, 234, 212, 0.5);
+  stroke-width: 1.2;
+}
+
+.b3dBody {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 150px;
+  height: 250px;
+  transform: translate(-50%, -50%) translateZ(0);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(180deg, #182b26, #0c1815);
+  box-shadow:
+    0 30px 60px -15px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+.b3dCap {
+  position: absolute;
+  left: 50%;
+  top: -14px;
+  width: 56px;
+  height: 16px;
+  transform: translateX(-50%);
+  border-radius: 8px 8px 0 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: none;
+  background: #1c332c;
+}
+.b3dCells {
+  position: absolute;
+  inset: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transform: translateZ(20px);
+}
+.b3dCell {
+  flex: 1;
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+  transition:
+    background 0.45s ease,
+    box-shadow 0.45s ease;
+}
+.fill {
+  background: linear-gradient(100deg, #2fc39f, #c3f7e7, #2fc39f);
+  background-size: 200% 100%;
+  box-shadow: 0 0 16px rgba(72, 217, 176, 0.4);
+  animation: b3dShimmer 3s linear infinite;
+}
+@keyframes b3dShimmer {
+  0% {
+    background-position: 0% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+.glass {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+}
+.b3dCellPulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  background: linear-gradient(100deg, rgba(94, 234, 212, 0.5), rgba(72, 217, 176, 0.5));
+  animation: b3dPulse 2.4s ease-in-out infinite;
+}
+@keyframes b3dPulse {
+  0%,
+  100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+.b3dGloss {
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.12));
+  pointer-events: none;
+  transform: translateZ(28px);
+}
+
+.b3dCharging {
+  position: absolute;
+  left: 50%;
+  top: -4px;
+  transform: translate(-50%, -50%) translateZ(70px);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--teal);
+  background: rgba(10, 22, 18, 0.75);
+  border: 1px solid var(--teal-dim);
+  border-radius: 999px;
+  padding: 6px 13px 6px 10px;
+  backdrop-filter: blur(6px);
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+.error {
+  color: #e2543f;
+  border-color: rgba(226, 84, 63, 0.5);
+}
+.error .ping {
+  background: #e2543f;
+}
+
+.shake {
+  animation: b3dShake 0.4s ease;
+}
+@keyframes b3dShake {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) translateZ(0) rotate(0deg);
+  }
+  20% {
+    transform: translate(-50%, -50%) translateZ(0) rotate(-3deg);
+  }
+  40% {
+    transform: translate(-50%, -50%) translateZ(0) rotate(3deg);
+  }
+  60% {
+    transform: translate(-50%, -50%) translateZ(0) rotate(-2deg);
+  }
+  80% {
+    transform: translate(-50%, -50%) translateZ(0) rotate(2deg);
+  }
+}
+
+.b3dHud {
+  position: absolute;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(10, 22, 18, 0.72);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  font-family: "IBM Plex Mono", monospace;
+}
+.b3dHud p {
+  margin: 0;
+}
+.l {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--silk-dim);
+}
+.v {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--silk);
+  margin-top: 2px;
+}
+.soc {
+  left: -10px;
+  top: 40px;
+  transform: translateZ(80px);
+}
+.volt {
+  right: -30px;
+  top: 120px;
+  transform: translateZ(55px);
+}
+.temp {
+  left: -40px;
+  bottom: 70px;
+  transform: translateZ(65px);
+}
+.soh {
+  right: -10px;
+  bottom: 20px;
+  transform: translateZ(90px);
+}
+.ping {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--teal);
+  animation: blink 1.6s ease-in-out infinite;
+}
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}

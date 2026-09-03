@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PLAY GROUND — 팀 협업 콘솔</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #081512;
+    --bg-panel: #0b1e19;
+    --bg-raised: #0e231d;
+    --copper: #c98c4f;
+    --copper-dim: rgba(201,140,79,0.18);
+    --copper-line: rgba(201,140,79,0.4);
+    --teal: #48d9b0;
+    --teal-dim: rgba(72,217,176,0.16);
+    --amber: #e2a83f;
+    --amber-dim: rgba(226,168,63,0.16);
+    --silk: #e7efec;
+    --silk-dim: #86a199;
+    --silk-faint: #45594f;
+    --trace: rgba(231,239,236,0.028);
+    --via: rgba(231,239,236,0.09);
+    --border: rgba(231,239,236,0.10);
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg);
+    color: var(--silk);
+    font-family: 'IBM Plex Sans KR', -apple-system, sans-serif;
+  }
+  .mono{ font-family:'IBM Plex Mono', monospace; }
+  a{ color:inherit; text-decoration:none; }
+  button{ font-family:inherit; }
+
+  /* ---------- STATUS BAR ---------- */
+  .statusbar{
+    border-bottom: 1px solid var(--border);
+    background: rgba(8,21,18,0.7);
+  }
+  .statusbar-in{
+    max-width: 1220px; margin:0 auto;
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 16px 28px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--silk-dim);
+  }
+  .statusbar-logo{ display:flex; align-items:center; gap:9px; color: var(--silk); font-weight:600; letter-spacing:0.02em; }
+  .statusbar-logo .chip-dot{ width:7px; height:7px; background: var(--teal); }
+  .statusbar-logo .pg-logo{ width:22px; height:20px; flex-shrink:0; }
+  .statusbar-nav{ display:flex; gap:16px; }
+  .statusbar-nav a:hover{ color: var(--silk); }
+  .statusbar-nav a.active{ color: var(--teal); }
+  .statusbar-right{ display:flex; align-items:center; gap:16px; }
+  .icon-btn{ position:relative; width:34px; height:34px; border-radius:8px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .icon-btn svg{ width:16px; height:16px; stroke: var(--silk-dim); }
+  .icon-btn:hover{ border-color: var(--teal-dim); }
+  .icon-btn:hover svg{ stroke: var(--silk); }
+  .badge-count{
+    position:absolute; top:-5px; right:-5px;
+    background:#e2543f; color:#fff; font-size:9.5px; font-weight:700;
+    width:15px; height:15px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    border: 1.5px solid var(--bg);
+  }
+  .user-chip{ display:flex; align-items:center; gap:8px; color: var(--silk); font-weight:500; cursor:pointer; }
+  .user-chip .avatar{
+    width:26px; height:26px; border-radius:50%;
+    background: linear-gradient(155deg, var(--teal), #157a5f);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:11px; color:#04231b;
+  }
+  .user-chip svg{ stroke: var(--silk-faint); margin-left:-2px; }
+  @media (max-width:960px){ .statusbar-nav{ display:none; } }
+
+  /* ---------- HERO ---------- */
+  .hero{
+    max-width: 1220px; margin:0 auto;
+    padding: 52px 28px 64px;
+    display:grid; grid-template-columns: 0.85fr 1fr;
+    gap: 50px; align-items:center;
+  }
+  .greeting{ font-size:22px; font-weight:600; color: var(--silk); margin:0; }
+  .greeting .wave{ display:inline-block; }
+  .greeting-sub{ font-size:14px; color: var(--silk-dim); margin:0; }
+  .kicker{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 13px; color: var(--copper);
+    margin: 0 0 20px;
+  }
+  .wordmark{
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:700;
+    font-size: 64px;
+    line-height: 0.92;
+    letter-spacing: -0.01em;
+    margin: 0;
+    color: var(--silk);
+  }
+  .wordmark .l2{ color: var(--teal); }
+  .title-rule{
+    width: 64px; height:3px; background: var(--teal);
+    margin: 26px 0 32px;
+  }
+  .lead{ font-size:16.5px; color: var(--silk); max-width:40ch; margin:0 0 10px; line-height:1.6; }
+  .sub{ font-size:14px; color: var(--silk-dim); max-width:42ch; margin:0 0 30px; line-height:1.6; }
+  .hero-actions{ display:flex; gap:14px; }
+  .btn{
+    font-size:13.5px; font-weight:600; padding: 13px 20px;
+    border: 1px solid var(--border); cursor:pointer;
+    display:inline-flex; align-items:center; gap:8px;
+  }
+  /* ---------- QR CHECK-IN MODAL ---------- */
+  .modal-overlay{
+    position:fixed; inset:0; z-index:50;
+    background: rgba(4,10,9,0.72); backdrop-filter: blur(4px);
+    display:flex; align-items:center; justify-content:center;
+    opacity:0; pointer-events:none; transition: opacity .18s ease;
+  }
+  .modal-overlay.open{ opacity:1; pointer-events:auto; }
+  .modal-card{
+    width:320px; background: var(--bg-panel); border:1px solid var(--border);
+    border-radius:14px; padding:22px 22px 24px;
+    transform: translateY(8px); transition: transform .18s ease;
+    box-shadow: 0 30px 60px -15px rgba(0,0,0,0.6);
+  }
+  .modal-overlay.open .modal-card{ transform: translateY(0); }
+  .modal-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  .card-label{ font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.14em; color: var(--silk-faint); margin:0; }
+  .modal-x{ background:none; border:none; color: var(--silk-faint); font-size:14px; cursor:pointer; padding:2px 4px; }
+  .modal-x:hover{ color: var(--silk); }
+  .qr-frame{
+    width:184px; height:184px; margin:0 auto 16px;
+    background: var(--bg-raised); border:1px solid var(--border); border-radius:10px;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 0 0 1px rgba(72,217,176,0.06);
+  }
+  .qr-frame svg{ width:168px; height:168px; }
+  .qr-frame rect.mod{ fill: var(--teal); }
+  .modal-card.wide{ width:440px; max-height:80vh; overflow-y:auto; }
+  .modal-sub{ font-size:12.5px; color: var(--silk-dim); text-align:center; margin: 0 0 16px; line-height:1.5; }
+  .btn-done{ background: transparent; color: var(--teal); border-color: var(--teal); }
+
+  .status-list{ display:flex; flex-direction:column; }
+  .att-row{
+    display:grid; grid-template-columns: 36px 1fr 66px 78px;
+    align-items:center; gap:12px;
+    padding: 11px 2px; border-bottom:1px solid var(--border);
+  }
+  .att-row:last-child{ border-bottom:none; }
+  .att-avatar{
+    width:30px; height:30px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:11px;
+    background: rgba(72,217,176,0.14); color: var(--teal);
+  }
+  .att-row.absent .att-avatar{ background: rgba(231,239,236,0.06); color: var(--silk-faint); }
+  .att-name{ font-size:13px; font-weight:500; }
+  .att-role{ font-size:10.5px; color: var(--silk-faint); margin-top:1px; }
+  .att-time{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; color: var(--silk-dim); }
+  .att-status{ display:flex; align-items:center; gap:6px; justify-content:flex-end; font-family:'IBM Plex Mono',monospace; font-size:10.5px; }
+  .att-status .dot{ width:5px; height:5px; border-radius:50%; }
+  .att-status.on{ color: var(--teal); }
+  .att-status.on .dot{ background: var(--teal); }
+  .att-status.off{ color: var(--silk-faint); }
+  .att-status.off .dot{ background: var(--silk-faint); }
+  @media (max-width:520px){
+    .modal-card.wide{ width:92vw; }
+    .att-row{ grid-template-columns: 30px 1fr 60px; }
+    .att-status{ display:none; }
+  }
+  .btn-primary{ background: var(--teal); color:#04231b; border-color: var(--teal); }
+  .btn-ghost{ background: transparent; color: var(--silk); border-color: var(--border); }
+
+  /* ---------- HERO GRAPHIC FRAME ---------- */
+  .scope-frame{
+    position:relative;
+    height: 480px;
+  }
+  .ping{ width:6px; height:6px; border-radius:50%; background: var(--teal); animation: blink 1.6s ease-in-out infinite; }
+  @keyframes blink{ 0%,100%{opacity:1;} 50%{opacity:0.35;} }
+
+  @media (max-width:900px){
+    .hero{ grid-template-columns:1fr; padding-top:40px; }
+    .wordmark{ font-size:46px; }
+    .scope-frame{ height:380px; order:-1; }
+  }
+
+  /* ---------- 3D FLOATING BATTERY ---------- */
+  .b3d-wrap{ position:relative; width:100%; height:100%; perspective:1200px; display:flex; align-items:center; justify-content:center; }
+  .b3d-inner{ position:relative; width:280px; height:400px; transform-style:preserve-3d; animation: b3d-float 6s ease-in-out infinite; }
+  @keyframes b3d-float{
+    0%,100%{ transform: translateY(0) rotateX(4deg) rotateY(-8deg); }
+    50%{ transform: translateY(-14px) rotateX(2deg) rotateY(-10deg); }
+  }
+  .b3d-glow{
+    position:absolute; left:50%; top:50%; width:280px; height:280px; border-radius:50%;
+    background: radial-gradient(circle, rgba(72,217,176,0.26) 0%, rgba(72,217,176,0.14) 35%, rgba(72,217,176,0.05) 60%, transparent 78%);
+    transform: translate(-50%,-50%) translateZ(-80px);
+  }
+  .b3d-glow2{
+    position:absolute; left:50%; top:46%; width:340px; height:340px; border-radius:50%;
+    background: radial-gradient(circle, rgba(226,168,63,0.11) 0%, rgba(226,168,63,0.05) 40%, transparent 68%);
+    transform: translate(-50%,-50%) translateZ(-110px);
+    animation: b3d-glow2-pulse 5s ease-in-out infinite;
+  }
+  @keyframes b3d-glow2-pulse{ 0%,100%{ opacity:.6; } 50%{ opacity:1; } }
+  .b3d-floor{
+    position:absolute; left:50%; bottom:14px; width:170px; height:26px;
+    transform: translate(-50%,0) translateZ(-40px);
+    background: radial-gradient(ellipse at center, rgba(72,217,176,0.45) 0%, rgba(72,217,176,0.18) 45%, transparent 75%);
+    animation: b3d-floor-pulse 6s ease-in-out infinite;
+  }
+  @keyframes b3d-floor-pulse{ 0%,100%{ opacity:.5; transform: translate(-50%,0) translateZ(-40px) scaleX(1); } 50%{ opacity:.85; transform: translate(-50%,0) translateZ(-40px) scaleX(0.82); } }
+  .b3d-circuit{ position:absolute; left:50%; top:50%; transform: translate(-50%,-50%) translateZ(-50px); }
+  .b3d-trace-base{ stroke: rgba(94,234,212,0.15); stroke-width:1.6; }
+  .b3d-trace-flow{ stroke: rgba(94,234,212,0.85); stroke-width:1.6; stroke-dasharray:12 88; stroke-linecap:round; animation: b3d-trace-flow 3.4s linear infinite; }
+  @keyframes b3d-trace-flow{ to{ stroke-dashoffset:-200; } }
+  .b3d-block-rect{ fill: rgba(10,22,18,0.7); stroke: rgba(94,234,212,0.35); stroke-width:1.2; }
+  .b3d-block-text{ fill: rgba(180,220,210,0.65); font-family:'IBM Plex Mono',monospace; letter-spacing:1px; }
+  .b3d-pin{ stroke: rgba(94,234,212,0.3); stroke-width:1.6; }
+  .b3d-node{ fill: #06110d; stroke: rgba(94,234,212,0.5); stroke-width:1.2; }
+
+  .b3d-body{
+    position:absolute; left:50%; top:50%; width:150px; height:250px;
+    transform: translate(-50%,-50%) translateZ(0);
+    border-radius:24px; border:1px solid rgba(255,255,255,0.1);
+    background: linear-gradient(180deg,#182b26,#0c1815);
+    box-shadow: 0 30px 60px -15px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0 1px rgba(0,0,0,0.4);
+    overflow:hidden;
+  }
+  .b3d-body::before{
+    content:''; position:absolute; inset:0; border-radius:24px;
+    border:1px solid rgba(94,234,212,0.16); pointer-events:none; z-index:3;
+  }
+  .b3d-shine{
+    position:absolute; top:-10%; left:-70%; width:38%; height:130%;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,0.18), transparent);
+    transform: skewX(-16deg);
+    animation: b3d-shine-sweep 5.5s ease-in-out infinite;
+    z-index:4; pointer-events:none;
+  }
+  @keyframes b3d-shine-sweep{ 0%{ left:-70%; } 40%,100%{ left:130%; } }
+  .b3d-cap{
+    position:absolute; left:50%; top:-14px; width:56px; height:16px;
+    transform:translateX(-50%);
+    border-radius:8px 8px 0 0; border:1px solid rgba(255,255,255,0.1); border-bottom:none;
+    background: linear-gradient(180deg,#22403a,#1c332c);
+  }
+  .b3d-cap::after{
+    content:'+'; position:absolute; left:50%; top:2px; transform:translateX(-50%);
+    font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:700; color: rgba(148,234,213,0.65);
+  }
+  .b3d-cells{ position:absolute; inset:14px; display:flex; flex-direction:column; gap:7px; transform: translateZ(20px); z-index:2; }
+  .b3d-cell{ flex:1; border-radius:11px; position:relative; overflow:hidden; box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -2px 4px rgba(0,0,0,0.2); }
+  .b3d-cell.fill{
+    background: linear-gradient(100deg,#2fc39f,#c3f7e7,#2fc39f);
+    background-size:200% 100%;
+    box-shadow: 0 0 16px rgba(72,217,176,0.4), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -2px 4px rgba(0,0,0,0.18);
+    animation: b3d-shimmer 3s linear infinite;
+  }
+  @keyframes b3d-shimmer{ 0%{ background-position:0% 0; } 100%{ background-position:200% 0; } }
+  .b3d-cell.fill::after{
+    content:''; position:absolute; inset:0;
+    background-image: repeating-linear-gradient(90deg, rgba(6,17,13,0.22) 0 1.5px, transparent 1.5px 9px);
+    opacity:.4; mix-blend-mode:multiply;
+  }
+  .b3d-cell.glass{
+    border:1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .b3d-cell-pulse{ position:absolute; inset:0; border-radius:11px; background: linear-gradient(100deg, rgba(94,234,212,0.5), rgba(72,217,176,0.5)); animation: b3d-pulse 2.4s ease-in-out infinite; }
+  @keyframes b3d-pulse{ 0%,100%{ opacity:.2; } 50%{ opacity:.55; } }
+  .b3d-cell-ring{ width:22px; height:22px; position:relative; z-index:1; }
+  .b3d-cell-ring circle.track{ fill:none; stroke: rgba(255,255,255,0.18); stroke-width:3; }
+  .b3d-cell-ring circle.prog{
+    fill:none; stroke:#eafff8; stroke-width:3; stroke-linecap:round;
+    stroke-dasharray:56 100; transform-origin:11px 11px;
+    animation: b3d-ring-spin 2.1s linear infinite;
+  }
+  @keyframes b3d-ring-spin{ to{ transform: rotate(360deg); } }
+  .b3d-gloss{ position:absolute; inset:0; border-radius:24px; background: linear-gradient(135deg, transparent, rgba(255,255,255,0.06), rgba(255,255,255,0.12)); pointer-events:none; transform: translateZ(28px); }
+
+  .b3d-charging{
+    position:absolute; left:50%; top:-4px; transform:translate(-50%,-50%) translateZ(70px);
+    display:flex; align-items:center; gap:7px;
+    font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.08em; color: var(--teal);
+    background: rgba(10,22,18,0.8); border:1px solid var(--teal-dim); border-radius:999px;
+    padding:6px 13px 6px 10px; backdrop-filter: blur(8px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4), 0 0 18px rgba(72,217,176,0.15);
+  }
+  .b3d-charging svg{ width:11px; height:11px; stroke: var(--teal); fill: var(--teal); }
+
+  .b3d-hud{
+    position:absolute; display:flex; align-items:center; gap:9px;
+    padding:9px 13px 9px 9px; border-radius:12px;
+    background: rgba(6,16,13,0.8); border:1px solid rgba(94,234,212,0.22);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 12px 26px rgba(0,0,0,0.4), 0 0 20px rgba(0,220,190,0.08), inset 0 1px 0 rgba(255,255,255,0.05);
+    font-family:'IBM Plex Mono',monospace;
+  }
+  .b3d-hud-icon{
+    width:24px; height:24px; border-radius:7px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    background: rgba(72,217,176,0.14); border:1px solid rgba(94,234,212,0.25);
+  }
+  .b3d-hud-icon svg{ width:12px; height:12px; stroke: var(--teal); fill:none; }
+  .b3d-hud.soh .b3d-hud-icon{ background: var(--amber-dim); border-color: rgba(226,168,63,0.35); }
+  .b3d-hud.soh .b3d-hud-icon svg{ stroke: var(--amber); }
+  .b3d-hud p{ margin:0; }
+  .b3d-hud .l{ font-size:9px; letter-spacing:1.3px; color:#52daca; text-transform:uppercase; }
+  .b3d-hud.soh .l{ color: var(--amber); }
+  .b3d-hud .v{ font-size:15px; font-weight:700; color: var(--silk); margin-top:2px; letter-spacing:-0.01em; }
+  .b3d-hud.soc{ left:-14px; top:40px; transform:translateZ(80px); }
+  .b3d-hud.volt{ right:-34px; top:120px; transform:translateZ(55px); }
+  .b3d-hud.temp{ left:-44px; bottom:70px; transform:translateZ(65px); }
+  .b3d-hud.soh{ right:-14px; bottom:20px; transform:translateZ(90px); }
+
+  @media (max-width:900px){
+    .b3d-inner{ width:220px; height:320px; }
+    .b3d-hud{ padding:7px 10px 7px 7px; }
+    .b3d-hud .v{ font-size:13px; }
+    .b3d-hud-icon{ width:20px; height:20px; }
+  }
+
+  /* ---------- CONSOLE LOG ---------- */
+  .console-wrap{ max-width:1220px; margin:0 auto 40px; padding: 0 28px; }
+  .console-window{ border:1px solid var(--border); background: var(--bg-panel); }
+  .console-titlebar{
+    display:flex; align-items:center; gap:8px;
+    padding: 10px 14px; border-bottom:1px solid var(--border);
+  }
+  .console-titlebar .dot{ width:9px; height:9px; border-radius:50%; background: var(--silk-faint); }
+  .console-titlebar .dot.t{ background: var(--teal); }
+  .console-title{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; color: var(--silk-dim); margin-left:6px; }
+  .console-body{ padding: 18px 22px 20px; font-family:'IBM Plex Mono', monospace; font-size: 13.5px; }
+  .console-body p{ margin: 0 0 10px; color: var(--silk-dim); }
+  .console-body p:last-child{ margin-bottom:0; }
+  .prompt{ color: var(--silk-faint); margin-right:10px; }
+  .ok{ color: var(--teal); }
+  .warn{ color: var(--amber); }
+
+  /* ---------- BOM / FEATURE LIST ---------- */
+  .bom{ max-width:1220px; margin:0 auto; padding: 8px 28px 100px; }
+  .bom-head{
+    display:flex; align-items:baseline; justify-content:space-between;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 16px; margin-bottom: 6px;
+  }
+  .bom-head h2{ font-size:15px; margin:0; font-weight:600; }
+  .bom-head span{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; color: var(--silk-faint); }
+
+  .bom-section-title{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12px; color: var(--silk-dim);
+    margin: 34px 0 6px;
+    letter-spacing:0.02em;
+  }
+  .bom-section-title:first-of-type{ margin-top: 22px; }
+  .bom-row{
+    display:grid;
+    grid-template-columns: 52px 34px 1fr 130px;
+    align-items:center;
+    gap: 18px;
+    padding: 16px 6px;
+    border-bottom: 1px solid var(--border);
+    transition: background .15s ease;
+  }
+  .bom-row:hover{ background: rgba(72,217,176,0.035); }
+  .bom-desig{ font-family:'IBM Plex Mono',monospace; font-size:12.5px; color: var(--silk-faint); }
+  .bom-icon svg{ width:17px; height:17px; stroke: var(--silk-dim); }
+  .bom-row:hover .bom-icon svg{ stroke: var(--teal); }
+  .bom-text h4{ font-size:14.5px; font-weight:600; margin:0 0 3px; }
+  .bom-text p{ font-size:12.8px; color: var(--silk-dim); margin:0; }
+  .bom-status{ display:flex; align-items:center; gap:7px; justify-content:flex-end; font-family:'IBM Plex Mono',monospace; font-size:11px; }
+  .bom-status.on{ color: var(--teal); }
+  .bom-status.pending{ color: var(--amber); }
+  .bom-status .dot{ width:6px; height:6px; border-radius:50%; }
+  .bom-status.on .dot{ background: var(--teal); }
+  .bom-status.pending .dot{ background: var(--amber); }
+
+  @media (max-width:640px){
+    .bom-row{ grid-template-columns: 30px 26px 1fr; }
+    .bom-status{ display:none; }
+  }
+
+  footer{
+    max-width:1220px; margin:0 auto; padding: 32px 28px 56px;
+    display:flex; justify-content:space-between;
+    border-top:1px solid var(--border);
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11px; color: var(--silk-faint);
+  }
+</style>
+</head>
+<body>
+
+  <div class="statusbar">
+    <div class="statusbar-in">
+      <div class="statusbar-logo"><svg class="pg-logo" viewBox="0 0 48 44" role="img" aria-label="Playground"><defs><linearGradient id="pg-logo-grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#a3e635"/><stop offset="55%" stop-color="#22c55e"/><stop offset="100%" stop-color="#0e7a3c"/></linearGradient></defs><g stroke="url(#pg-logo-grad)" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M24 8 L8.5 34 M24 8 L39.5 34 M24 8 L24 25 M24 25 L8.5 34 M24 25 L39.5 34" stroke-width="3.2"/><g fill="url(#pg-logo-grad)" stroke-width="3"><path d="M24 2.5 L28.8 5.25 L28.8 10.75 L24 13.5 L19.2 10.75 L19.2 5.25 Z"/><path d="M8.5 28.5 L13.3 31.25 L13.3 36.75 L8.5 39.5 L3.7 36.75 L3.7 31.25 Z"/><path d="M39.5 28.5 L44.3 31.25 L44.3 36.75 L39.5 39.5 L34.7 36.75 L34.7 31.25 Z"/></g></g></svg> PLAY_GROUND</div>
+      <div class="statusbar-nav">
+        <a class="active" href="index.html">홈</a><a href="schedule.html">일정</a><a href="results.html">실적</a><a href="daily.html">데일리</a><a href="ideas.html">아이디어</a><a href="meetings.html">회의록</a><a href="files.html">자료실</a><a href="about.html">회사소개</a><a href="team.html">팀소개</a>
+      </div>
+      <div class="statusbar-right">
+        <div class="icon-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>
+          <span class="badge-count">3</span>
+        </div>
+        <div class="icon-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+        </div>
+        <div class="user-chip">
+          <span class="avatar">연</span>김연구
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <header class="hero">
+    <div>
+      <p class="greeting">안녕하세요, 김연구님 <span class="wave">👋</span></p>
+      <h1 class="wordmark" style="margin-top:18px;">PLAY<br><span class="l2">GROUND</span></h1>
+      <div class="title-rule"></div>
+      <div class="hero-actions">
+        <button class="btn btn-primary" id="checkinBtn" data-state="pending">▸ 오늘 출석 체크</button>
+        <a class="btn btn-ghost" href="schedule.html">전체 일정 보기</a>
+      </div>
+    </div>
+
+    <!-- QR check-in modal -->
+    <div class="modal-overlay" id="qrModal">
+      <div class="modal-card">
+        <div class="modal-head">
+          <p class="card-label">QR CHECK-IN</p>
+          <button class="modal-x" id="qrModalClose" aria-label="닫기">✕</button>
+        </div>
+        <div class="qr-frame">
+          <svg viewBox="0 0 168 168">
+            <g class="mod">
+              <rect x="0" y="0" width="8" height="8"/>
+            <rect x="8" y="0" width="8" height="8"/>
+            <rect x="16" y="0" width="8" height="8"/>
+            <rect x="24" y="0" width="8" height="8"/>
+            <rect x="32" y="0" width="8" height="8"/>
+            <rect x="40" y="0" width="8" height="8"/>
+            <rect x="48" y="0" width="8" height="8"/>
+            <rect x="56" y="0" width="8" height="8"/>
+            <rect x="64" y="0" width="8" height="8"/>
+            <rect x="80" y="0" width="8" height="8"/>
+            <rect x="96" y="0" width="8" height="8"/>
+            <rect x="104" y="0" width="8" height="8"/>
+            <rect x="112" y="0" width="8" height="8"/>
+            <rect x="120" y="0" width="8" height="8"/>
+            <rect x="128" y="0" width="8" height="8"/>
+            <rect x="136" y="0" width="8" height="8"/>
+            <rect x="144" y="0" width="8" height="8"/>
+            <rect x="152" y="0" width="8" height="8"/>
+            <rect x="160" y="0" width="8" height="8"/>
+            <rect x="0" y="8" width="8" height="8"/>
+            <rect x="48" y="8" width="8" height="8"/>
+            <rect x="64" y="8" width="8" height="8"/>
+            <rect x="80" y="8" width="8" height="8"/>
+            <rect x="88" y="8" width="8" height="8"/>
+            <rect x="112" y="8" width="8" height="8"/>
+            <rect x="160" y="8" width="8" height="8"/>
+            <rect x="0" y="16" width="8" height="8"/>
+            <rect x="16" y="16" width="8" height="8"/>
+            <rect x="24" y="16" width="8" height="8"/>
+            <rect x="32" y="16" width="8" height="8"/>
+            <rect x="48" y="16" width="8" height="8"/>
+            <rect x="56" y="16" width="8" height="8"/>
+            <rect x="64" y="16" width="8" height="8"/>
+            <rect x="96" y="16" width="8" height="8"/>
+            <rect x="112" y="16" width="8" height="8"/>
+            <rect x="128" y="16" width="8" height="8"/>
+            <rect x="136" y="16" width="8" height="8"/>
+            <rect x="144" y="16" width="8" height="8"/>
+            <rect x="160" y="16" width="8" height="8"/>
+            <rect x="0" y="24" width="8" height="8"/>
+            <rect x="16" y="24" width="8" height="8"/>
+            <rect x="24" y="24" width="8" height="8"/>
+            <rect x="32" y="24" width="8" height="8"/>
+            <rect x="48" y="24" width="8" height="8"/>
+            <rect x="56" y="24" width="8" height="8"/>
+            <rect x="72" y="24" width="8" height="8"/>
+            <rect x="80" y="24" width="8" height="8"/>
+            <rect x="88" y="24" width="8" height="8"/>
+            <rect x="96" y="24" width="8" height="8"/>
+            <rect x="112" y="24" width="8" height="8"/>
+            <rect x="128" y="24" width="8" height="8"/>
+            <rect x="136" y="24" width="8" height="8"/>
+            <rect x="144" y="24" width="8" height="8"/>
+            <rect x="160" y="24" width="8" height="8"/>
+            <rect x="0" y="32" width="8" height="8"/>
+            <rect x="16" y="32" width="8" height="8"/>
+            <rect x="24" y="32" width="8" height="8"/>
+            <rect x="32" y="32" width="8" height="8"/>
+            <rect x="48" y="32" width="8" height="8"/>
+            <rect x="56" y="32" width="8" height="8"/>
+            <rect x="80" y="32" width="8" height="8"/>
+            <rect x="96" y="32" width="8" height="8"/>
+            <rect x="104" y="32" width="8" height="8"/>
+            <rect x="112" y="32" width="8" height="8"/>
+            <rect x="128" y="32" width="8" height="8"/>
+            <rect x="136" y="32" width="8" height="8"/>
+            <rect x="144" y="32" width="8" height="8"/>
+            <rect x="160" y="32" width="8" height="8"/>
+            <rect x="0" y="40" width="8" height="8"/>
+            <rect x="48" y="40" width="8" height="8"/>
+            <rect x="56" y="40" width="8" height="8"/>
+            <rect x="80" y="40" width="8" height="8"/>
+            <rect x="104" y="40" width="8" height="8"/>
+            <rect x="112" y="40" width="8" height="8"/>
+            <rect x="160" y="40" width="8" height="8"/>
+            <rect x="0" y="48" width="8" height="8"/>
+            <rect x="8" y="48" width="8" height="8"/>
+            <rect x="16" y="48" width="8" height="8"/>
+            <rect x="24" y="48" width="8" height="8"/>
+            <rect x="32" y="48" width="8" height="8"/>
+            <rect x="40" y="48" width="8" height="8"/>
+            <rect x="48" y="48" width="8" height="8"/>
+            <rect x="72" y="48" width="8" height="8"/>
+            <rect x="112" y="48" width="8" height="8"/>
+            <rect x="120" y="48" width="8" height="8"/>
+            <rect x="128" y="48" width="8" height="8"/>
+            <rect x="136" y="48" width="8" height="8"/>
+            <rect x="144" y="48" width="8" height="8"/>
+            <rect x="152" y="48" width="8" height="8"/>
+            <rect x="160" y="48" width="8" height="8"/>
+            <rect x="0" y="56" width="8" height="8"/>
+            <rect x="16" y="56" width="8" height="8"/>
+            <rect x="24" y="56" width="8" height="8"/>
+            <rect x="40" y="56" width="8" height="8"/>
+            <rect x="56" y="56" width="8" height="8"/>
+            <rect x="96" y="56" width="8" height="8"/>
+            <rect x="0" y="64" width="8" height="8"/>
+            <rect x="40" y="64" width="8" height="8"/>
+            <rect x="48" y="64" width="8" height="8"/>
+            <rect x="64" y="64" width="8" height="8"/>
+            <rect x="80" y="64" width="8" height="8"/>
+            <rect x="88" y="64" width="8" height="8"/>
+            <rect x="96" y="64" width="8" height="8"/>
+            <rect x="112" y="64" width="8" height="8"/>
+            <rect x="120" y="64" width="8" height="8"/>
+            <rect x="128" y="64" width="8" height="8"/>
+            <rect x="144" y="64" width="8" height="8"/>
+            <rect x="24" y="72" width="8" height="8"/>
+            <rect x="32" y="72" width="8" height="8"/>
+            <rect x="40" y="72" width="8" height="8"/>
+            <rect x="64" y="72" width="8" height="8"/>
+            <rect x="72" y="72" width="8" height="8"/>
+            <rect x="80" y="72" width="8" height="8"/>
+            <rect x="88" y="72" width="8" height="8"/>
+            <rect x="112" y="72" width="8" height="8"/>
+            <rect x="120" y="72" width="8" height="8"/>
+            <rect x="128" y="72" width="8" height="8"/>
+            <rect x="136" y="72" width="8" height="8"/>
+            <rect x="24" y="80" width="8" height="8"/>
+            <rect x="64" y="80" width="8" height="8"/>
+            <rect x="72" y="80" width="8" height="8"/>
+            <rect x="80" y="80" width="8" height="8"/>
+            <rect x="96" y="80" width="8" height="8"/>
+            <rect x="104" y="80" width="8" height="8"/>
+            <rect x="112" y="80" width="8" height="8"/>
+            <rect x="120" y="80" width="8" height="8"/>
+            <rect x="128" y="80" width="8" height="8"/>
+            <rect x="136" y="80" width="8" height="8"/>
+            <rect x="144" y="80" width="8" height="8"/>
+            <rect x="152" y="80" width="8" height="8"/>
+            <rect x="160" y="80" width="8" height="8"/>
+            <rect x="0" y="88" width="8" height="8"/>
+            <rect x="8" y="88" width="8" height="8"/>
+            <rect x="32" y="88" width="8" height="8"/>
+            <rect x="40" y="88" width="8" height="8"/>
+            <rect x="48" y="88" width="8" height="8"/>
+            <rect x="56" y="88" width="8" height="8"/>
+            <rect x="64" y="88" width="8" height="8"/>
+            <rect x="104" y="88" width="8" height="8"/>
+            <rect x="112" y="88" width="8" height="8"/>
+            <rect x="120" y="88" width="8" height="8"/>
+            <rect x="128" y="88" width="8" height="8"/>
+            <rect x="144" y="88" width="8" height="8"/>
+            <rect x="152" y="88" width="8" height="8"/>
+            <rect x="8" y="96" width="8" height="8"/>
+            <rect x="24" y="96" width="8" height="8"/>
+            <rect x="64" y="96" width="8" height="8"/>
+            <rect x="72" y="96" width="8" height="8"/>
+            <rect x="80" y="96" width="8" height="8"/>
+            <rect x="112" y="96" width="8" height="8"/>
+            <rect x="120" y="96" width="8" height="8"/>
+            <rect x="8" y="104" width="8" height="8"/>
+            <rect x="24" y="104" width="8" height="8"/>
+            <rect x="32" y="104" width="8" height="8"/>
+            <rect x="40" y="104" width="8" height="8"/>
+            <rect x="48" y="104" width="8" height="8"/>
+            <rect x="56" y="104" width="8" height="8"/>
+            <rect x="112" y="104" width="8" height="8"/>
+            <rect x="120" y="104" width="8" height="8"/>
+            <rect x="128" y="104" width="8" height="8"/>
+            <rect x="136" y="104" width="8" height="8"/>
+            <rect x="144" y="104" width="8" height="8"/>
+            <rect x="0" y="112" width="8" height="8"/>
+            <rect x="8" y="112" width="8" height="8"/>
+            <rect x="16" y="112" width="8" height="8"/>
+            <rect x="24" y="112" width="8" height="8"/>
+            <rect x="32" y="112" width="8" height="8"/>
+            <rect x="40" y="112" width="8" height="8"/>
+            <rect x="48" y="112" width="8" height="8"/>
+            <rect x="88" y="112" width="8" height="8"/>
+            <rect x="136" y="112" width="8" height="8"/>
+            <rect x="152" y="112" width="8" height="8"/>
+            <rect x="0" y="120" width="8" height="8"/>
+            <rect x="48" y="120" width="8" height="8"/>
+            <rect x="64" y="120" width="8" height="8"/>
+            <rect x="72" y="120" width="8" height="8"/>
+            <rect x="96" y="120" width="8" height="8"/>
+            <rect x="104" y="120" width="8" height="8"/>
+            <rect x="112" y="120" width="8" height="8"/>
+            <rect x="136" y="120" width="8" height="8"/>
+            <rect x="0" y="128" width="8" height="8"/>
+            <rect x="16" y="128" width="8" height="8"/>
+            <rect x="24" y="128" width="8" height="8"/>
+            <rect x="32" y="128" width="8" height="8"/>
+            <rect x="48" y="128" width="8" height="8"/>
+            <rect x="56" y="128" width="8" height="8"/>
+            <rect x="72" y="128" width="8" height="8"/>
+            <rect x="80" y="128" width="8" height="8"/>
+            <rect x="144" y="128" width="8" height="8"/>
+            <rect x="152" y="128" width="8" height="8"/>
+            <rect x="160" y="128" width="8" height="8"/>
+            <rect x="0" y="136" width="8" height="8"/>
+            <rect x="16" y="136" width="8" height="8"/>
+            <rect x="24" y="136" width="8" height="8"/>
+            <rect x="32" y="136" width="8" height="8"/>
+            <rect x="48" y="136" width="8" height="8"/>
+            <rect x="56" y="136" width="8" height="8"/>
+            <rect x="72" y="136" width="8" height="8"/>
+            <rect x="80" y="136" width="8" height="8"/>
+            <rect x="88" y="136" width="8" height="8"/>
+            <rect x="104" y="136" width="8" height="8"/>
+            <rect x="0" y="144" width="8" height="8"/>
+            <rect x="16" y="144" width="8" height="8"/>
+            <rect x="24" y="144" width="8" height="8"/>
+            <rect x="32" y="144" width="8" height="8"/>
+            <rect x="48" y="144" width="8" height="8"/>
+            <rect x="64" y="144" width="8" height="8"/>
+            <rect x="80" y="144" width="8" height="8"/>
+            <rect x="88" y="144" width="8" height="8"/>
+            <rect x="104" y="144" width="8" height="8"/>
+            <rect x="136" y="144" width="8" height="8"/>
+            <rect x="0" y="152" width="8" height="8"/>
+            <rect x="48" y="152" width="8" height="8"/>
+            <rect x="56" y="152" width="8" height="8"/>
+            <rect x="72" y="152" width="8" height="8"/>
+            <rect x="80" y="152" width="8" height="8"/>
+            <rect x="0" y="160" width="8" height="8"/>
+            <rect x="8" y="160" width="8" height="8"/>
+            <rect x="16" y="160" width="8" height="8"/>
+            <rect x="24" y="160" width="8" height="8"/>
+            <rect x="32" y="160" width="8" height="8"/>
+            <rect x="40" y="160" width="8" height="8"/>
+            <rect x="48" y="160" width="8" height="8"/>
+            <rect x="112" y="160" width="8" height="8"/>
+            <rect x="144" y="160" width="8" height="8"/>
+            <rect x="152" y="160" width="8" height="8"/>
+            </g>
+          </svg>
+        </div>
+        <p class="modal-sub">연구실 입구 QR을 스캔하거나 아래 버튼으로 체크인하세요</p>
+        <button class="btn btn-primary" id="qrModalConfirm" style="width:100%;">▸ 체크인 완료</button>
+      </div>
+    </div>
+
+    <!-- Attendance status modal -->
+    <div class="modal-overlay" id="statusModal">
+      <div class="modal-card wide">
+        <div class="modal-head">
+          <p class="card-label">TODAY'S ATTENDANCE</p>
+          <button class="modal-x" id="statusModalClose" aria-label="닫기">✕</button>
+        </div>
+        <div class="status-list">
+          <div class="att-row">
+            <div class="att-avatar">연</div>
+            <div><div class="att-name">김연구</div><div class="att-role">AI솔루션 팀 · BMS</div></div>
+            <div class="att-time">09:02</div>
+            <div class="att-status on"><span class="dot"></span>체크인</div>
+          </div>
+          <div class="att-row">
+            <div class="att-avatar">하</div>
+            <div><div class="att-name">이하늘</div><div class="att-role">AI솔루션 팀 · BMS</div></div>
+            <div class="att-time">08:47</div>
+            <div class="att-status on"><span class="dot"></span>체크인</div>
+          </div>
+          <div class="att-row">
+            <div class="att-avatar">준</div>
+            <div><div class="att-name">박준서</div><div class="att-role">AI솔루션 팀 · Firmware</div></div>
+            <div class="att-time">09:15</div>
+            <div class="att-status on"><span class="dot"></span>체크인</div>
+          </div>
+          <div class="att-row">
+            <div class="att-avatar">도</div>
+            <div><div class="att-name">최도윤</div><div class="att-role">AI솔루션 팀 · Firmware</div></div>
+            <div class="att-time">09:31</div>
+            <div class="att-status on"><span class="dot"></span>체크인</div>
+          </div>
+          <div class="att-row">
+            <div class="att-avatar">민</div>
+            <div><div class="att-name">정민재</div><div class="att-role">AI솔루션 팀 · Data</div></div>
+            <div class="att-time">10:04</div>
+            <div class="att-status on"><span class="dot"></span>체크인</div>
+          </div>
+          <div class="att-row absent">
+            <div class="att-avatar">서</div>
+            <div><div class="att-name">한서준</div><div class="att-role">AI솔루션 팀 · Data</div></div>
+            <div class="att-time">—</div>
+            <div class="att-status off"><span class="dot"></span>미출근</div>
+          </div>
+          <div class="att-row absent">
+            <div class="att-avatar">지</div>
+            <div><div class="att-name">오지훈</div><div class="att-role">AI솔루션 팀 · PM</div></div>
+            <div class="att-time">—</div>
+            <div class="att-status off"><span class="dot"></span>미출근</div>
+          </div>
+          <div class="att-row absent">
+            <div class="att-avatar">태</div>
+            <div><div class="att-name">강태윤</div><div class="att-role">AI솔루션 팀 · PM</div></div>
+            <div class="att-time">—</div>
+            <div class="att-status off"><span class="dot"></span>미출근</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="scope-frame">
+      <div class="b3d-wrap">
+        <div class="b3d-inner">
+          <div class="b3d-glow"></div>
+          <div class="b3d-glow2"></div>
+          <div class="b3d-floor"></div>
+
+          <svg class="b3d-circuit" viewBox="0 0 360 480" width="360" height="480" fill="none">
+            <path class="b3d-trace-base" d="M40 120 H100 L120 100"/>
+            <path class="b3d-trace-flow" pathLength="100" d="M40 120 H100 L120 100"/>
+            <path class="b3d-trace-base" d="M30 220 H100"/>
+            <path class="b3d-trace-flow" pathLength="100" d="M30 220 H100" style="animation-delay:-0.6s"/>
+            <path class="b3d-trace-base" d="M40 340 H110 L130 360"/>
+            <path class="b3d-trace-flow" pathLength="100" d="M40 340 H110 L130 360" style="animation-delay:-1.2s"/>
+            <path class="b3d-trace-base" d="M320 130 H260 L240 110"/>
+            <path class="b3d-trace-flow" pathLength="100" d="M320 130 H260 L240 110" style="animation-delay:-1.8s"/>
+            <path class="b3d-trace-base" d="M330 220 H260"/>
+            <path class="b3d-trace-flow" pathLength="100" d="M330 220 H260" style="animation-delay:-2.4s"/>
+            <path class="b3d-trace-base" d="M320 330 H250 L230 350"/>
+            <path class="b3d-trace-flow" pathLength="100" d="M320 330 H250 L230 350" style="animation-delay:-3s"/>
+
+            <rect class="b3d-block-rect" x="20" y="100" width="55" height="26" rx="5"/>
+            <text class="b3d-block-text" x="30" y="117" font-size="8">DC-DC</text>
+
+            <rect class="b3d-block-rect" x="18" y="345" width="50" height="26" rx="5"/>
+            <text class="b3d-block-text" x="30" y="362" font-size="8">PMIC</text>
+
+            <rect class="b3d-block-rect" x="285" y="90" width="48" height="48" rx="6"/>
+            <text class="b3d-block-text" x="296" y="118" font-size="9">MCU</text>
+            <g class="b3d-pin">
+              <line x1="285" y1="98" x2="272" y2="98"/>
+              <line x1="285" y1="114" x2="272" y2="114"/>
+              <line x1="285" y1="130" x2="272" y2="130"/>
+            </g>
+
+            <rect class="b3d-block-rect" x="283" y="335" width="52" height="24" rx="5"/>
+            <text class="b3d-block-text" x="292" y="351" font-size="8">SENSE</text>
+
+            <circle class="b3d-node" cx="40" cy="120" r="3"/>
+            <circle class="b3d-node" cx="30" cy="220" r="3"/>
+            <circle class="b3d-node" cx="320" cy="130" r="3"/>
+          </svg>
+
+          <div class="b3d-charging">
+            <svg viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg>
+            CHARGING
+          </div>
+
+          <div class="b3d-body">
+            <div class="b3d-shine"></div>
+            <div class="b3d-cap"></div>
+            <div class="b3d-cells">
+              <div class="b3d-cell glass">
+                <div class="b3d-cell-pulse"></div>
+                <svg class="b3d-cell-ring" viewBox="0 0 22 22">
+                  <circle class="track" cx="11" cy="11" r="9"/>
+                  <circle class="prog" cx="11" cy="11" r="9"/>
+                </svg>
+              </div>
+              <div class="b3d-cell fill"></div>
+              <div class="b3d-cell fill"></div>
+              <div class="b3d-cell fill"></div>
+              <div class="b3d-cell fill"></div>
+            </div>
+            <div class="b3d-gloss"></div>
+          </div>
+
+          <div class="b3d-hud soc">
+            <div class="b3d-hud-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="2" y="7" width="18" height="10" rx="2"/><path d="M22 10v4"/><rect x="5" y="9.5" width="10" height="5" fill="currentColor" stroke="none"/></svg></div>
+            <div><p class="l">SOC</p><p class="v">82%</p></div>
+          </div>
+          <div class="b3d-hud volt">
+            <div class="b3d-hud-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg></div>
+            <div><p class="l">VOLT</p><p class="v">3.98 V</p></div>
+          </div>
+          <div class="b3d-hud temp">
+            <div class="b3d-hud-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M10 14.5V4a2 2 0 114 0v10.5a4 4 0 11-4 0z"/><circle cx="12" cy="16" r="1.4" fill="currentColor" stroke="none"/></svg></div>
+            <div><p class="l">TEMP</p><p class="v">27.4&#176;C</p></div>
+          </div>
+          <div class="b3d-hud soh">
+            <div class="b3d-hud-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 2 4 6v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6z"/><path d="M9 12l2 2 4-4.5"/></svg></div>
+            <div><p class="l">SOH</p><p class="v">97%</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+  <section class="console-wrap">
+    <div class="console-window">
+      <div class="console-titlebar">
+        <span class="dot"></span><span class="dot"></span><span class="dot t"></span>
+        <span class="console-title">team_status.log</span>
+      </div>
+      <div class="console-body">
+        <p><span class="prompt">$</span>attendance --today &nbsp;→ <span class="ok">5 / 8명 체크인</span></p>
+        <p><span class="prompt">$</span>results --this-week &nbsp;→ <span class="ok">4건 등록</span></p>
+        <p><span class="prompt">$</span>ideas --unread &nbsp;→ <span class="warn">3개 신규</span></p>
+        <p><span class="prompt">$</span>meeting --next &nbsp;→ <span class="ok">화요일 15:00, 302호</span></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="bom">
+    <div class="bom-head">
+      <h2>기능 목록</h2>
+      <span>SECTION A–C · 11 MODULES</span>
+    </div>
+
+    <div class="bom-section-title">A — 근태 & 일정</div>
+    <div class="bom-row">
+      <div class="bom-desig">A1</div>
+      <div class="bom-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h7v7h-7z"/></svg></div>
+      <div class="bom-text"><h4>출석 인증</h4><p>QR 코드를 스캔해 오늘의 체크인·체크아웃을 기록해요.</p></div>
+      <div class="bom-status on"><span class="dot"></span>운영중</div>
+    </div>
+    <div class="bom-row">
+      <div class="bom-desig">A2</div>
+      <div class="bom-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
+      <div class="bom-text"><h4>상주 시간 등록</h4><p>DAY, NIGHT, FULL TIME과 시작~종료 시각을 함께 등록해요.</p></div>
+      <div class="bom-status on"><span class="dot"></span>운영중</div>
+    </div>
+    <div class="bom-row">
+      <div class="bom-desig">A3</div>
+      <div class="bom-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="3" y="4" width="18" height="17" rx="1"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></div>
+      <div class="bom-text"><h4>개인 일정</h4><p>팀원 전체에게 공개되는 캘린더에 개인 일정을 등록해요.</p></div>
+      <div class="bom-status on"><span class="dot"></span>운영중</div>
+    </div>
+    <div class="bom-row">
+      <div class="bom-desig">A4</div>
+      <div class="bom-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 4h16v16H4z"/><path d="M4 9h16M9 4v16"/></svg></div>
+      <div class="bom-text"><h4>고정 시간표</h4><p>수업, 아르바이트 등 매주 반복되는 일정을 등록해요.</p></div>
+      <div class="bom-status on"><span class="dot"></span>운영중</div>
+    </div>
+
+    <div class="bom-section-title">B — 협업 자산</div>
+    <div class="bom-row">
+      <div class="bom-desig">B1</div>
+      <div class="bom-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M3 17l5-6 4 4 5-8 4 5"/></svg></div>
+      <div class="bom-text"><h4>실적 관리</h4><p>제목·날짜·담당자별로 실적을 기록하고 기간별로 조회해요.</p></div>
+      <div class="bom-status on"><span class="dot"></span>운영중</div>
+    </div>
+    <div class="bom-row">
+      <div class="bom-desig">B2</div>
+      <div class="bom-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M9 18h6M10 21h4M12 3a6 6 0 00-4 10.5c.6.6 1 1.4 1 2.5h6c0-1.1.4-1.9 1-2.5A6 6 0 0012 3z"/></svg></div>
+      <div class="bom-text"><h4>아이디어 모음집</h4><p>형식 없이 자유롭게 적고, 댓글과 리액션으로 피드백해요.</p></div>
+      <div class="bom-status on"><span class="dot"></span>운영중</div>
+    </div>
+    <div class="bom-row">
+      <div class="bom-desig">B3</div>
+      <div class="bom-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 4h11l5 5v11H4z"/><path d="M15 4v5h5"/></svg></div>
+      <div class="bom-text"><h4>자료실</h4><p>프로젝트별 폴더로 정리된 팀 공유 파일 저장소예요.</p></div>
+      <div class="bom-status on"><span class="dot"></span>운영중</div>
+    </div>
+    <div class="bom-row">
+      <div class="bom-desig">B4</div>
+      <div class="bom-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 19V5a2 2 0 012-2h9l5 5v11a2 2 0 01-2 2H6a2 2 0 01-2-2z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg></div>
+      <div class="bom-text"><h4>회의록</h4><p>안건과 결정사항, 담당자·기한이 담긴 액션 아이템을 기록해요.</p></div>
+      <div class="bom-status on"><span class="dot"></span>운영중</div>
+    </div>
+
+    <div class="bom-section-title">C — 팀 & 소개</div>
+    <div class="bom-row">
+      <div class="bom-desig">C1</div>
+      <div class="bom-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M3 21V10l9-7 9 7v11"/><path d="M9 21v-6h6v6"/></svg></div>
+      <div class="bom-text"><h4>회사 소개</h4><p>비전과 연혁을 담아 외부에도 URL로 공유할 수 있어요.</p></div>
+      <div class="bom-status on"><span class="dot"></span>운영중</div>
+    </div>
+    <div class="bom-row">
+      <div class="bom-desig">C2</div>
+      <div class="bom-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="18" cy="9" r="2.6"/><path d="M16.2 14.2c2.4.3 4 2 4 5.8"/></svg></div>
+      <div class="bom-text"><h4>팀원 소개</h4><p>이름, 역할, 연락처가 담긴 명함형 프로필을 확인해요.</p></div>
+      <div class="bom-status on"><span class="dot"></span>운영중</div>
+    </div>
+    <div class="bom-row">
+      <div class="bom-desig">C3</div>
+      <div class="bom-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 4h16v4H4zM4 12h16v4H4zM4 20h10"/></svg></div>
+      <div class="bom-text"><h4>데일리 업무 정리</h4><p>서술과 체크리스트를 섞어 하루 업무를 간단히 남겨요.</p></div>
+      <div class="bom-status on"><span class="dot"></span>운영중</div>
+    </div>
+  </section>
+
+  <footer>
+    <span>PLAY_GROUND / rev.0.2</span>
+    <span>© 2026 PLAY GROUND</span>
+  </footer>
+
+  <script>
+    const checkinBtn = document.getElementById('checkinBtn');
+    const qrModal = document.getElementById('qrModal');
+    const qrModalClose = document.getElementById('qrModalClose');
+    const qrModalConfirm = document.getElementById('qrModalConfirm');
+    const statusModal = document.getElementById('statusModal');
+    const statusModalClose = document.getElementById('statusModalClose');
+
+    checkinBtn.addEventListener('click', () => {
+      if (checkinBtn.dataset.state === 'done') {
+        statusModal.classList.add('open');
+        return;
+      }
+      qrModal.classList.add('open');
+    });
+
+    qrModalClose.addEventListener('click', () => qrModal.classList.remove('open'));
+    qrModal.addEventListener('click', (e) => {
+      if (e.target === qrModal) qrModal.classList.remove('open');
+    });
+
+    statusModalClose.addEventListener('click', () => statusModal.classList.remove('open'));
+    statusModal.addEventListener('click', (e) => {
+      if (e.target === statusModal) statusModal.classList.remove('open');
+    });
+
+    qrModalConfirm.addEventListener('click', () => {
+      qrModal.classList.remove('open');
+      checkinBtn.dataset.state = 'done';
+      checkinBtn.textContent = '✓ 오늘 출석 현황 보기';
+      checkinBtn.classList.remove('btn-primary');
+      checkinBtn.classList.add('btn-done');
+    });
+  </script>
+</body>
+</html>

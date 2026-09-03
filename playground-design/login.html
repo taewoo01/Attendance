@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>로그인 — PLAY GROUND</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #081512;
+    --bg-panel: #0b1e19;
+    --bg-raised: #0e231d;
+    --teal: #48d9b0;
+    --teal-dim: rgba(72,217,176,0.16);
+    --amber: #e2a83f;
+    --silk: #e7efec;
+    --silk-dim: #86a199;
+    --silk-faint: #45594f;
+    --trace: rgba(231,239,236,0.032);
+    --border: rgba(231,239,236,0.10);
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; height:100%; }
+  body{
+    background: var(--bg);
+    color: var(--silk);
+    font-family: 'IBM Plex Sans KR', -apple-system, sans-serif;
+    min-height:100vh;
+    display:grid; grid-template-columns: 1fr 560px;
+  }
+  a{ color:inherit; text-decoration:none; }
+  button{ font-family:inherit; }
+
+  /* ---------- LEFT: BRAND PANEL ---------- */
+  .brand-panel{
+    position:relative; overflow:hidden;
+    background: var(--bg-panel);
+    border-right:1px solid var(--border);
+    display:flex; flex-direction:column; justify-content:space-between;
+    padding: 44px 48px;
+    background-image:
+      linear-gradient(var(--trace) 1px, transparent 1px),
+      linear-gradient(90deg, var(--trace) 1px, transparent 1px);
+    background-size: 46px 46px, 46px 46px;
+  }
+  .brand-top .logo{
+    display:flex; align-items:center; gap:9px;
+    font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:16px;
+  }
+  .brand-top .logo .dot{ width:8px; height:8px; background: var(--teal); }
+  .brand-top .logo .l2{ color: var(--teal); }
+  .brand-top .kicker{ font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.14em; color: var(--silk-faint); margin: 10px 0 0; }
+
+  .brand-hero{ flex:1; display:flex; align-items:center; justify-content:center; min-height:320px; }
+
+  .brand-bottom h2{ font-size:20px; font-weight:600; margin:0 0 18px; max-width:34ch; line-height:1.4; }
+  .feature-list{ display:flex; flex-direction:column; gap:12px; }
+  .feature-item{ display:flex; align-items:center; gap:10px; font-size:13px; color: var(--silk-dim); }
+  .feature-item .fi-dot{ width:6px; height:6px; border-radius:50%; background: var(--teal); flex-shrink:0; }
+
+  @media (max-width: 900px){
+    body{ grid-template-columns: 1fr; }
+    .brand-panel{ display:none; }
+  }
+
+  /* ---------- 3D FLOATING BATTERY (scaled for panel) ---------- */
+  .b3d-wrap{ position:relative; width:100%; height:100%; perspective:1200px; display:flex; align-items:center; justify-content:center; transform: scale(1.15); }
+  .b3d-inner{ position:relative; width:280px; height:400px; transform-style:preserve-3d; animation: b3d-float 6s ease-in-out infinite; }
+  @keyframes b3d-float{
+    0%,100%{ transform: translateY(0) rotateX(4deg) rotateY(-8deg); }
+    50%{ transform: translateY(-14px) rotateX(2deg) rotateY(-10deg); }
+  }
+  .b3d-glow{
+    position:absolute; left:50%; top:50%; width:280px; height:280px; border-radius:50%;
+    background: radial-gradient(circle, rgba(72,217,176,0.22), transparent 70%);
+    transform: translate(-50%,-50%) translateZ(-80px); filter: blur(4px);
+  }
+  .b3d-circuit{ position:absolute; left:50%; top:50%; transform: translate(-50%,-50%) translateZ(-50px); }
+  .b3d-trace-base{ stroke: rgba(94,234,212,0.15); stroke-width:1.6; }
+  .b3d-trace-flow{ stroke: rgba(94,234,212,0.85); stroke-width:1.6; stroke-dasharray:12 88; stroke-linecap:round; animation: b3d-trace-flow 3.4s linear infinite; }
+  @keyframes b3d-trace-flow{ to{ stroke-dashoffset:-200; } }
+  .b3d-block-rect{ fill: rgba(10,22,18,0.7); stroke: rgba(94,234,212,0.35); stroke-width:1.2; }
+  .b3d-block-text{ fill: rgba(180,220,210,0.65); font-family:'IBM Plex Mono',monospace; letter-spacing:1px; }
+  .b3d-pin{ stroke: rgba(94,234,212,0.3); stroke-width:1.6; }
+  .b3d-node{ fill: #06110d; stroke: rgba(94,234,212,0.5); stroke-width:1.2; }
+
+  .b3d-body{
+    position:absolute; left:50%; top:50%; width:150px; height:250px;
+    transform: translate(-50%,-50%) translateZ(0);
+    border-radius:24px; border:1px solid rgba(255,255,255,0.1);
+    background: linear-gradient(180deg,#182b26,#0c1815);
+    box-shadow: 0 30px 60px -15px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+  .b3d-cap{
+    position:absolute; left:50%; top:-14px; width:56px; height:16px;
+    transform:translateX(-50%);
+    border-radius:8px 8px 0 0; border:1px solid rgba(255,255,255,0.1); border-bottom:none;
+    background:#1c332c;
+  }
+  .b3d-cells{ position:absolute; inset:14px; display:flex; flex-direction:column; gap:8px; transform: translateZ(20px); }
+  .b3d-cell{ flex:1; border-radius:12px; position:relative; overflow:hidden; transition: background .45s ease, box-shadow .45s ease; }
+  .b3d-cell.fill{
+    background: linear-gradient(100deg,#2fc39f,#c3f7e7,#2fc39f);
+    background-size:200% 100%;
+    box-shadow: 0 0 16px rgba(72,217,176,0.4);
+    animation: b3d-shimmer 3s linear infinite;
+  }
+  @keyframes b3d-shimmer{ 0%{ background-position:0% 0; } 100%{ background-position:200% 0; } }
+  .b3d-cell.glass{ border:1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); }
+  .b3d-cell-pulse{ position:absolute; inset:0; border-radius:12px; background: linear-gradient(100deg, rgba(94,234,212,0.5), rgba(72,217,176,0.5)); animation: b3d-pulse 2.4s ease-in-out infinite; }
+  @keyframes b3d-pulse{ 0%,100%{ opacity:.2; } 50%{ opacity:.55; } }
+  .b3d-gloss{ position:absolute; inset:0; border-radius:24px; background: linear-gradient(135deg, transparent, rgba(255,255,255,0.06), rgba(255,255,255,0.12)); pointer-events:none; transform: translateZ(28px); }
+
+  .b3d-charging{
+    position:absolute; left:50%; top:-4px; transform:translate(-50%,-50%) translateZ(70px);
+    display:flex; align-items:center; gap:7px;
+    font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.08em; color: var(--teal);
+    background: rgba(10,22,18,0.75); border:1px solid var(--teal-dim); border-radius:999px;
+    padding:6px 13px 6px 10px; backdrop-filter: blur(6px);
+    transition: color .2s ease, border-color .2s ease;
+  }
+  .b3d-charging.error{ color: #e2543f; border-color: rgba(226,84,63,0.5); }
+  .b3d-charging.error .ping{ background: #e2543f; }
+
+  .b3d-body.shake{ animation: b3d-shake .4s ease; }
+  @keyframes b3d-shake{
+    0%,100%{ transform: translate(-50%,-50%) translateZ(0) rotate(0deg); }
+    20%{ transform: translate(-50%,-50%) translateZ(0) rotate(-3deg); }
+    40%{ transform: translate(-50%,-50%) translateZ(0) rotate(3deg); }
+    60%{ transform: translate(-50%,-50%) translateZ(0) rotate(-2deg); }
+    80%{ transform: translate(-50%,-50%) translateZ(0) rotate(2deg); }
+  }
+  .b3d-hud{
+    position:absolute; padding:8px 12px; border-radius:10px;
+    background: rgba(10,22,18,0.72); border:1px solid var(--border);
+    backdrop-filter: blur(6px); box-shadow: 0 10px 24px rgba(0,0,0,0.35);
+    font-family:'IBM Plex Mono',monospace;
+  }
+  .b3d-hud p{ margin:0; }
+  .b3d-hud .l{ font-size:10px; letter-spacing:1px; color: var(--silk-dim); }
+  .b3d-hud .v{ font-size:15px; font-weight:600; color: var(--silk); margin-top:2px; }
+  .b3d-hud.soc{ left:-10px; top:40px; transform:translateZ(80px); }
+  .b3d-hud.volt{ right:-30px; top:120px; transform:translateZ(55px); }
+  .b3d-hud.temp{ left:-40px; bottom:70px; transform:translateZ(65px); }
+  .b3d-hud.soh{ right:-10px; bottom:20px; transform:translateZ(90px); }
+  .ping{ width:6px; height:6px; border-radius:50%; background: var(--teal); animation: blink 1.6s ease-in-out infinite; }
+  @keyframes blink{ 0%,100%{opacity:1;} 50%{opacity:0.35;} }
+
+  /* ---------- RIGHT: LOGIN FORM ---------- */
+  .form-panel{ display:flex; align-items:center; justify-content:center; padding: 24px; }
+  .wrap{ width:100%; max-width:400px; }
+
+  .mobile-logo{ display:none; align-items:center; justify-content:center; gap:9px; font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:16px; margin-bottom:30px; }
+  .mobile-logo .dot{ width:8px; height:8px; background: var(--teal); }
+  .mobile-logo .l2{ color: var(--teal); }
+  @media (max-width:900px){ .mobile-logo{ display:flex; } }
+
+  .card-kicker{ font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.1em; color: var(--silk-faint); margin: 0 0 6px; }
+  .card-title{ font-size:23px; font-weight:600; margin: 0 0 8px; }
+  .demo-hint{ font-family:'IBM Plex Mono',monospace; font-size:11px; color: var(--silk-faint); margin: 0 0 22px; }
+  .login-error{
+    font-size:12.5px; color: #e2543f; margin: -8px 0 16px;
+    display:none;
+  }
+
+  .field{ margin-bottom:16px; }
+  .field label{ display:block; font-size:12.5px; color: var(--silk-dim); margin-bottom:6px; }
+  .field-input{ position:relative; }
+  .field input{
+    width:100%; background: var(--bg-raised); border:1px solid var(--border); border-radius:8px;
+    padding: 13px 14px; font-size:14.5px; color: var(--silk); font-family:inherit;
+    outline:none; transition: border-color .15s ease;
+  }
+  .field input:focus{ border-color: var(--teal-dim); }
+  .field input::placeholder{ color: var(--silk-faint); }
+  .toggle-pw{
+    position:absolute; right:10px; top:50%; transform:translateY(-50%);
+    background:none; border:none; cursor:pointer; padding:4px; color: var(--silk-faint);
+  }
+  .toggle-pw:hover{ color: var(--silk-dim); }
+  .toggle-pw svg{ width:16px; height:16px; }
+
+  .row-between{ display:flex; align-items:center; justify-content:space-between; margin: 2px 0 22px; font-size:12.5px; }
+  .remember{ display:flex; align-items:center; gap:7px; color: var(--silk-dim); }
+  .remember input{ accent-color: var(--teal); width:13px; height:13px; }
+  .forgot{ color: var(--silk-dim); }
+  .forgot:hover{ color: var(--teal); }
+
+  .btn{
+    width:100%; font-size:14.5px; font-weight:600; padding: 13px 16px;
+    border: 1px solid var(--border); cursor:pointer; border-radius:8px;
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .btn-primary{ background: var(--teal); color:#04231b; border-color: var(--teal); }
+  .btn-primary:disabled{ opacity:.6; cursor:default; }
+  .btn-ghost{ background: transparent; color: var(--silk); border-color: var(--border); margin-top:10px; }
+
+  .divider{ display:flex; align-items:center; gap:10px; margin: 22px 0 16px; font-size:11px; color: var(--silk-faint); }
+  .divider::before, .divider::after{ content:''; flex:1; height:1px; background: var(--border); }
+
+  .card-footer{ text-align:center; font-size:12.5px; color: var(--silk-faint); margin-top:22px; }
+  .card-footer a{ color: var(--teal); }
+
+  .spinner{
+    width:14px; height:14px; border-radius:50%;
+    border:2px solid rgba(4,35,27,0.3); border-top-color:#04231b;
+    animation: spin .6s linear infinite; display:none;
+  }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+  .btn-primary.loading .spinner{ display:inline-block; }
+  .btn-primary.loading .btn-label{ opacity:.7; }
+</style>
+</head>
+<body>
+
+  <div class="brand-panel">
+    <div class="brand-top">
+      <div class="logo"><span class="dot"></span>PLAY <span class="l2">GROUND</span></div>
+      <p class="kicker">BATTERY MANAGEMENT SYSTEM</p>
+    </div>
+
+    <div class="brand-hero">
+      <div class="b3d-wrap">
+        <div class="b3d-inner">
+          <div class="b3d-glow"></div>
+          <svg class="b3d-circuit" viewBox="0 0 360 480" width="360" height="480" fill="none">
+            <path class="b3d-trace-base" d="M40 120 H100 L120 100"/>
+            <path class="b3d-trace-flow" pathLength="100" d="M40 120 H100 L120 100"/>
+            <path class="b3d-trace-base" d="M30 220 H100"/>
+            <path class="b3d-trace-flow" pathLength="100" d="M30 220 H100" style="animation-delay:-0.6s"/>
+            <path class="b3d-trace-base" d="M40 340 H110 L130 360"/>
+            <path class="b3d-trace-flow" pathLength="100" d="M40 340 H110 L130 360" style="animation-delay:-1.2s"/>
+            <path class="b3d-trace-base" d="M320 130 H260 L240 110"/>
+            <path class="b3d-trace-flow" pathLength="100" d="M320 130 H260 L240 110" style="animation-delay:-1.8s"/>
+            <path class="b3d-trace-base" d="M330 220 H260"/>
+            <path class="b3d-trace-flow" pathLength="100" d="M330 220 H260" style="animation-delay:-2.4s"/>
+            <path class="b3d-trace-base" d="M320 330 H250 L230 350"/>
+            <path class="b3d-trace-flow" pathLength="100" d="M320 330 H250 L230 350" style="animation-delay:-3s"/>
+            <rect class="b3d-block-rect" x="20" y="100" width="55" height="26" rx="5"/>
+            <text class="b3d-block-text" x="30" y="117" font-size="8">DC-DC</text>
+            <rect class="b3d-block-rect" x="18" y="345" width="50" height="26" rx="5"/>
+            <text class="b3d-block-text" x="30" y="362" font-size="8">PMIC</text>
+            <rect class="b3d-block-rect" x="285" y="90" width="48" height="48" rx="6"/>
+            <text class="b3d-block-text" x="296" y="118" font-size="9">MCU</text>
+            <g class="b3d-pin">
+              <line x1="285" y1="98" x2="272" y2="98"/>
+              <line x1="285" y1="114" x2="272" y2="114"/>
+              <line x1="285" y1="130" x2="272" y2="130"/>
+            </g>
+            <rect class="b3d-block-rect" x="283" y="335" width="52" height="24" rx="5"/>
+            <text class="b3d-block-text" x="292" y="351" font-size="8">SENSE</text>
+            <circle class="b3d-node" cx="40" cy="120" r="3"/>
+            <circle class="b3d-node" cx="30" cy="220" r="3"/>
+            <circle class="b3d-node" cx="320" cy="130" r="3"/>
+          </svg>
+          <div class="b3d-charging"><span class="ping"></span>CHARGING</div>
+          <div class="b3d-body">
+            <div class="b3d-cap"></div>
+            <div class="b3d-cells">
+              <div class="b3d-cell glass"><div class="b3d-cell-pulse"></div></div>
+              <div class="b3d-cell glass"><div class="b3d-cell-pulse"></div></div>
+              <div class="b3d-cell glass"><div class="b3d-cell-pulse"></div></div>
+              <div class="b3d-cell glass"><div class="b3d-cell-pulse"></div></div>
+              <div class="b3d-cell glass"><div class="b3d-cell-pulse"></div></div>
+            </div>
+            <div class="b3d-gloss"></div>
+          </div>
+          <div class="b3d-hud soc"><p class="l">SOC</p><p class="v">0%</p></div>
+          <div class="b3d-hud volt"><p class="l">VOLT</p><p class="v">3.98 V</p></div>
+          <div class="b3d-hud temp"><p class="l">TEMP</p><p class="v">27.4&#176;C</p></div>
+          <div class="b3d-hud soh"><p class="l">SOH</p><p class="v">97%</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="brand-bottom">
+      <h2>배터리 관리 시스템(BMS)을 개발하는 EDCL AI솔루션 팀의 협업 공간입니다.</h2>
+      <div class="feature-list">
+        <div class="feature-item"><span class="fi-dot"></span>QR 체크인으로 출석을 관리해요</div>
+        <div class="feature-item"><span class="fi-dot"></span>상주 시간과 일정을 한 화면에서 확인해요</div>
+        <div class="feature-item"><span class="fi-dot"></span>실적과 아이디어를 팀과 함께 기록해요</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-panel">
+    <div class="wrap">
+      <div class="mobile-logo"><span class="dot"></span>PLAY <span class="l2">GROUND</span></div>
+
+      <p class="card-kicker">EDCL AI솔루션 팀 전용</p>
+      <h1 class="card-title">로그인</h1>
+      <p class="demo-hint">데모 계정: demo@edcl.team / 1234</p>
+
+      <form id="loginForm">
+        <div class="field">
+          <label for="email">이메일</label>
+          <div class="field-input">
+            <input type="email" id="email" placeholder="you@edcl.team">
+          </div>
+        </div>
+        <div class="field">
+          <label for="password">비밀번호</label>
+          <div class="field-input">
+            <input type="password" id="password" placeholder="••••••••">
+            <button type="button" class="toggle-pw" id="togglePw" aria-label="비밀번호 표시">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <p id="loginError" class="login-error">이메일 또는 비밀번호가 올바르지 않습니다.</p>
+
+        <div class="row-between">
+          <label class="remember"><input type="checkbox" checked>로그인 상태 유지</label>
+          <a class="forgot" href="#">비밀번호 찾기</a>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="loginBtn">
+          <span class="btn-label">로그인</span>
+        </button>
+      </form>
+
+      <button class="btn btn-primary" id="goHomeBtn" style="display:none; margin-top:10px;">홈으로 이동 →</button>
+
+      <div class="divider">또는</div>
+      <button class="btn btn-ghost" id="magicLinkBtn">이메일로 로그인 링크 받기</button>
+
+      <p class="card-footer">계정이 없으신가요? <a href="#">팀장에게 초대 요청</a></p>
+    </div>
+  </div>
+
+  <script>
+    const togglePw = document.getElementById('togglePw');
+    const password = document.getElementById('password');
+    togglePw.addEventListener('click', () => {
+      password.type = password.type === 'password' ? 'text' : 'password';
+    });
+
+    const loginForm = document.getElementById('loginForm');
+    const loginBtn = document.getElementById('loginBtn');
+    const loginError = document.getElementById('loginError');
+
+    const DEMO_EMAIL = 'demo@edcl.team';
+    const DEMO_PASSWORD = '1234';
+    const STEP_MS = 160; // 셀 하나 채우는/비우는 속도
+
+    function getCellsBottomUp() {
+      return Array.from(document.querySelectorAll('.b3d-cell')).reverse();
+    }
+
+    function setCellFilled(cell, filled) {
+      if (filled) {
+        cell.classList.remove('glass');
+        cell.classList.add('fill');
+        const pulse = cell.querySelector('.b3d-cell-pulse');
+        if (pulse) pulse.remove();
+      } else {
+        cell.classList.remove('fill');
+        cell.classList.add('glass');
+        if (!cell.querySelector('.b3d-cell-pulse')) {
+          const p = document.createElement('div');
+          p.className = 'b3d-cell-pulse';
+          cell.appendChild(p);
+        }
+      }
+    }
+
+    function animateSoc(fromPct, toPct, durationMs, onDone) {
+      const socValue = document.querySelector('.b3d-hud.soc .v');
+      const start = performance.now();
+      function tick(now) {
+        const t = Math.min(1, (now - start) / Math.max(durationMs, 1));
+        const val = Math.round(fromPct + (toPct - fromPct) * t);
+        if (socValue) socValue.textContent = val + '%';
+        if (t < 1) requestAnimationFrame(tick);
+        else if (onDone) onDone();
+      }
+      requestAnimationFrame(tick);
+    }
+
+    function chargeSuccess() {
+      const cells = getCellsBottomUp();
+      const pillLabel = document.querySelector('.b3d-charging');
+
+      cells.forEach((cell, i) => setTimeout(() => setCellFilled(cell, true), i * STEP_MS));
+      animateSoc(0, 82, cells.length * STEP_MS, () => {
+        if (pillLabel) pillLabel.innerHTML = '<span class="ping"></span>CHARGED';
+        loginBtn.querySelector('.btn-label').textContent = '✓ 로그인 완료';
+        document.getElementById('goHomeBtn').style.display = 'inline-flex';
+      });
+    }
+
+    function chargeFail() {
+      const cells = getCellsBottomUp();
+      const pillLabel = document.querySelector('.b3d-charging');
+      const body = document.querySelector('.b3d-body');
+      const partial = 3; // 5칸 중 3칸까지만 차오르다 실패
+      const partialSoc = Math.round(82 * partial / cells.length);
+
+      for (let i = 0; i < partial; i++) {
+        setTimeout(() => setCellFilled(cells[i], true), i * STEP_MS);
+      }
+      animateSoc(0, partialSoc, partial * STEP_MS, () => {
+        if (pillLabel) { pillLabel.classList.add('error'); pillLabel.innerHTML = '<span class="ping"></span>ERROR'; }
+        if (body) body.classList.add('shake');
+
+        setTimeout(() => {
+          if (body) body.classList.remove('shake');
+          const filled = cells.slice(0, partial).reverse();
+          filled.forEach((cell, i) => setTimeout(() => setCellFilled(cell, false), i * STEP_MS));
+          animateSoc(partialSoc, 0, filled.length * STEP_MS, () => {
+            if (pillLabel) { pillLabel.classList.remove('error'); pillLabel.innerHTML = '<span class="ping"></span>CHARGING'; }
+            loginBtn.disabled = false;
+            loginBtn.querySelector('.btn-label').textContent = '로그인';
+            if (loginError) loginError.style.display = 'block';
+          });
+        }, 350);
+      });
+    }
+
+    loginForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const pw = document.getElementById('password').value;
+
+      if (loginError) loginError.style.display = 'none';
+      loginBtn.disabled = true;
+      loginBtn.querySelector('.btn-label').textContent = '충전 중...';
+
+      // TODO: Supabase Auth signInWithPassword() 로 교체
+      if (email === DEMO_EMAIL && pw === DEMO_PASSWORD) {
+        chargeSuccess();
+      } else {
+        chargeFail();
+      }
+    });
+
+    document.getElementById('goHomeBtn').addEventListener('click', () => {
+      window.location.href = 'index.html';
+    });
+
+    document.getElementById('magicLinkBtn').addEventListener('click', () => {
+      // TODO: Supabase Auth signInWithOtp() 연동
+      alert('이메일로 로그인 링크를 보냈습니다. (데모)');
+    });
+  </script>
+
+</body>
+</html>

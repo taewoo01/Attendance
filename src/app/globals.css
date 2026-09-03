@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+/*
+ * PLAY GROUND 디자인 토큰
+ * docs/DESIGN-SYSTEM.md 2.1절(공통 Colors)에 기록된 실제 값을 그대로 옮김.
+ * playground-design/ 10개 HTML의 :root 변수명과 동일하게 유지한다(추측/신규 값 없음).
+ * 다크 테마 고정 디자인이므로 prefers-color-scheme 분기를 두지 않는다(DESIGN-SYSTEM.md 1절).
+ */
+:root {
+  --bg: #081512;
+  --bg-panel: #0b1e19;
+  --bg-raised: #0e231d;
+  --teal: #48d9b0;
+  --teal-dim: rgba(72, 217, 176, 0.16);
+  --amber: #e2a83f;
+  --amber-dim: rgba(226, 168, 63, 0.16);
+  --silk: #e7efec;
+  --silk-dim: #86a199;
+  --silk-faint: #45594f;
+  --trace: rgba(231, 239, 236, 0.028);
+  --border: rgba(231, 239, 236, 0.1);
+}
+
+@theme inline {
+  /* 색상 토큰 → Tailwind 유틸리티(bg-bg, text-silk, border-border 등) */
+  --color-bg: var(--bg);
+  --color-bg-panel: var(--bg-panel);
+  --color-bg-raised: var(--bg-raised);
+  --color-teal: var(--teal);
+  --color-teal-dim: var(--teal-dim);
+  --color-amber: var(--amber);
+  --color-amber-dim: var(--amber-dim);
+  --color-silk: var(--silk);
+  --color-silk-dim: var(--silk-dim);
+  --color-silk-faint: var(--silk-faint);
+  --color-trace: var(--trace);
+  --color-border: var(--border);
+
+  /* Font 토큰 — layout.tsx에서 next/font로 로드한 IBM Plex 변수를 연결 */
+  --font-sans: var(--font-ibm-plex-sans-kr);
+  --font-mono: var(--font-ibm-plex-mono);
+}
+
+/*
+ * Radius 토큰 — docs/DESIGN-SYSTEM.md 5절 실제 값.
+ * Tailwind 기본 rounded-sm/md/lg/xl/2xl/3xl 스케일은 그대로 두고(재매핑 여부는
+ * docs/MIGRATION.md 14.6절에서 별도 결정 필요 항목으로 남아 있음), 문서에 기록된
+ * 실측값만 별도 이름의 유틸리티(rounded-badge 등)로 추가한다. 정적 리터럴 값이므로
+ * (JS로 주입되는 font 변수와 달리) inline이 아닌 일반 @theme로 선언해
+ * var(--radius-card)처럼 CSS 변수로도 재사용 가능하게 한다.
+ */
+@theme {
+  --radius-badge: 4px;
+  --radius-chip: 7px;
+  --radius-button: 8px;
+  --radius-input: 10px;
+  --radius-panel: 12px;
+  --radius-card: 14px;
+  --radius-card-lg: 16px;
+  --radius-pill: 999px;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--silk);
+  font-family: var(--font-sans), -apple-system, sans-serif;
+}

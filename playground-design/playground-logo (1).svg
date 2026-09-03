@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 44" role="img" aria-label="Playground">
+  <!-- Playground 팀 로고 마크 — 육각 노드 3개를 잇는 "A" 형태.
+       사이트 밖(발표자료·명함 등)에서도 쓰도록 브랜드 그린을 직접 넣었다.
+       배경 도형이 없어 어떤 바탕에도 그대로 올라간다. -->
+  <defs>
+    <linearGradient id="pg-logo-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#a3e635"/>
+      <stop offset="55%" stop-color="#22c55e"/>
+      <stop offset="100%" stop-color="#0e7a3c"/>
+    </linearGradient>
+  </defs>
+
+  <g stroke="url(#pg-logo-grad)" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- 노드를 잇는 뼈대 — 바깥 두 다리 + 가운데 기둥 + 접합부에서 갈라지는 두 가지 -->
+    <path d="M24 8 L8.5 34 M24 8 L39.5 34 M24 8 L24 25 M24 25 L8.5 34 M24 25 L39.5 34" stroke-width="3.2"/>
+
+    <!-- 육각 노드 3개 — 굵은 선 + round join으로 모서리를 둥글린다 -->
+    <g fill="url(#pg-logo-grad)" stroke-width="3">
+      <path d="M24 2.5 L28.8 5.25 L28.8 10.75 L24 13.5 L19.2 10.75 L19.2 5.25 Z"/>
+      <path d="M8.5 28.5 L13.3 31.25 L13.3 36.75 L8.5 39.5 L3.7 36.75 L3.7 31.25 Z"/>
+      <path d="M39.5 28.5 L44.3 31.25 L44.3 36.75 L39.5 39.5 L34.7 36.75 L34.7 31.25 Z"/>
+    </g>
+  </g>
+</svg>

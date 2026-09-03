@@ -1,0 +1,323 @@
+/*
+ * playground-design/login.html 전용 레이아웃/폼 스타일.
+ * 다른 9개 페이지의 body(min-h-full flex flex-col, StatusBar/Footer)와 완전히
+ * 독립적인 full-screen 2-column 화면이라 (main) route group 밖의 이 컴포넌트
+ * 트리에서만 CSS Module로 재현한다. breakpoint(900px)와 --trace 값(0.032)은
+ * 다른 페이지 공통 :root(0.028)와 다르므로 이 파일에서만 로컬로 override한다.
+ */
+
+.page {
+  --trace: rgba(231, 239, 236, 0.032);
+  display: grid;
+  grid-template-columns: 1fr 560px;
+  min-height: 100vh;
+}
+.page a {
+  color: inherit;
+  text-decoration: none;
+}
+.page button {
+  font-family: inherit;
+}
+@media (max-width: 900px) {
+  .page {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- LEFT: BRAND PANEL ---------- */
+.brandPanel {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 44px 48px;
+  background-image:
+    linear-gradient(var(--trace) 1px, transparent 1px),
+    linear-gradient(90deg, var(--trace) 1px, transparent 1px);
+  background-size:
+    46px 46px,
+    46px 46px;
+}
+@media (max-width: 900px) {
+  .brandPanel {
+    display: none;
+  }
+}
+
+.brandTop .logo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: "IBM Plex Mono", monospace;
+  font-weight: 700;
+  font-size: 16px;
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  background: var(--teal);
+}
+.l2 {
+  color: var(--teal);
+}
+.brandTop .kicker {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--silk-faint);
+  margin: 10px 0 0;
+}
+
+.brandHero {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+}
+
+.brandBottom h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 18px;
+  max-width: 34ch;
+  line-height: 1.4;
+}
+.featureList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.featureItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--silk-dim);
+}
+.fiDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--teal);
+  flex-shrink: 0;
+}
+
+/* ---------- RIGHT: LOGIN FORM ---------- */
+.formPanel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.wrap {
+  width: 100%;
+  max-width: 400px;
+}
+
+.mobileLogo {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  font-family: "IBM Plex Mono", monospace;
+  font-weight: 700;
+  font-size: 16px;
+  margin-bottom: 30px;
+}
+.mobileLogo .dot {
+  width: 8px;
+  height: 8px;
+  background: var(--teal);
+}
+.mobileLogo .l2 {
+  color: var(--teal);
+}
+@media (max-width: 900px) {
+  .mobileLogo {
+    display: flex;
+  }
+}
+
+.cardKicker {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--silk-faint);
+  margin: 0 0 6px;
+}
+.cardTitle {
+  font-size: 23px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+.demoHint {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  color: var(--silk-faint);
+  margin: 0 0 22px;
+}
+.loginError {
+  font-size: 12.5px;
+  color: #e2543f;
+  margin: -8px 0 16px;
+}
+
+.field {
+  margin-bottom: 16px;
+}
+.field label {
+  display: block;
+  font-size: 12.5px;
+  color: var(--silk-dim);
+  margin-bottom: 6px;
+}
+.fieldInput {
+  position: relative;
+}
+.field input {
+  width: 100%;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 13px 14px;
+  font-size: 14.5px;
+  color: var(--silk);
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.field input:focus {
+  border-color: var(--teal-dim);
+}
+.field input::placeholder {
+  color: var(--silk-faint);
+}
+.togglePw {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: var(--silk-faint);
+}
+.togglePw:hover {
+  color: var(--silk-dim);
+}
+.togglePw svg {
+  width: 16px;
+  height: 16px;
+}
+
+.rowBetween {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 2px 0 22px;
+  font-size: 12.5px;
+}
+.remember {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--silk-dim);
+}
+.remember input {
+  accent-color: var(--teal);
+  width: 13px;
+  height: 13px;
+}
+.forgot {
+  color: var(--silk-dim);
+}
+.forgot:hover {
+  color: var(--teal);
+}
+
+.btn {
+  width: 100%;
+  font-size: 14.5px;
+  font-weight: 600;
+  padding: 13px 16px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btnPrimary {
+  background: var(--teal);
+  color: #04231b;
+  border-color: var(--teal);
+}
+.btnPrimary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.btnGhost {
+  background: transparent;
+  color: var(--silk);
+  border-color: var(--border);
+  margin-top: 10px;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 22px 0 16px;
+  font-size: 11px;
+  color: var(--silk-faint);
+}
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.cardFooter {
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--silk-faint);
+  margin-top: 22px;
+}
+.cardFooter a {
+  color: var(--teal);
+}
+
+/*
+ * 원본에 존재하지만 실제로는 도달 불가능한 죽은 스타일(.spinner 엘리먼트를
+ * 만들지 않고, .loading 클래스도 토글하지 않는다). AGENTS.md/TASK-015 요구사항에
+ * 따라 임의로 삭제하지 않고 그대로 보존한다.
+ */
+.spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(4, 35, 27, 0.3);
+  border-top-color: #04231b;
+  animation: spin 0.6s linear infinite;
+  display: none;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.btnPrimary.loading .spinner {
+  display: inline-block;
+}
+.btnPrimary.loading .btnLabel {
+  opacity: 0.7;
+}

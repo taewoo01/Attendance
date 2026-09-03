@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>자료실 — PLAY GROUND</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #081512;
+    --bg-panel: #0b1e19;
+    --bg-raised: #0e231d;
+    --teal: #48d9b0;
+    --teal-dim: rgba(72,217,176,0.16);
+    --amber: #e2a83f;
+    --amber-dim: rgba(226,168,63,0.16);
+    --silk: #e7efec;
+    --silk-dim: #86a199;
+    --silk-faint: #45594f;
+    --trace: rgba(231,239,236,0.028);
+    --border: rgba(231,239,236,0.10);
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg);
+    color: var(--silk);
+    font-family: 'IBM Plex Sans KR', -apple-system, sans-serif;
+    min-height:100vh;
+  }
+  a{ color:inherit; text-decoration:none; }
+  button{ font-family:inherit; }
+
+  /* ---------- STATUS BAR (shared) ---------- */
+  .statusbar{ border-bottom: 1px solid var(--border); background: rgba(8,21,18,0.7); }
+  .statusbar-in{
+    max-width: 1220px; margin:0 auto;
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 16px 28px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12px; color: var(--silk-dim);
+  }
+  .statusbar-logo{ display:flex; align-items:center; gap:9px; color: var(--silk); font-weight:600; letter-spacing:0.02em; }
+  .statusbar-logo .chip-dot{ width:7px; height:7px; background: var(--teal); }
+  .statusbar-logo .pg-logo{ width:22px; height:20px; flex-shrink:0; }
+  .statusbar-nav{ display:flex; gap:16px; }
+  .statusbar-nav a:hover{ color: var(--silk); }
+  .statusbar-nav a.active{ color: var(--teal); }
+  .statusbar-right{ display:flex; align-items:center; gap:16px; }
+  .icon-btn{ position:relative; width:34px; height:34px; border-radius:8px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .icon-btn svg{ width:16px; height:16px; stroke: var(--silk-dim); }
+  .icon-btn:hover{ border-color: var(--teal-dim); }
+  .icon-btn:hover svg{ stroke: var(--silk); }
+  .badge-count{
+    position:absolute; top:-5px; right:-5px;
+    background:#e2543f; color:#fff; font-size:9.5px; font-weight:700;
+    width:15px; height:15px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    border: 1.5px solid var(--bg);
+  }
+  .user-chip{ display:flex; align-items:center; gap:8px; color: var(--silk); font-weight:500; cursor:pointer; }
+  .user-chip .avatar{
+    width:26px; height:26px; border-radius:50%;
+    background: linear-gradient(155deg, var(--teal), #157a5f);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:11px; color:#04231b;
+  }
+  .user-chip svg{ stroke: var(--silk-faint); margin-left:-2px; }
+  @media (max-width:960px){ .statusbar-nav{ display:none; } }
+
+  /* ---------- PAGE HEADER ---------- */
+  .page-head{
+    max-width:1220px; margin:0 auto; padding: 30px 28px 0;
+    display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:10px;
+  }
+  .page-kicker{ font-family:'IBM Plex Mono',monospace; font-size:12px; color: var(--silk-faint); }
+  .page-kicker .cur{ color: var(--teal); }
+  .page-title{ font-size:26px; font-weight:600; margin:6px 0 0; }
+  .btn{
+    font-size:13px; font-weight:600; padding: 10px 16px;
+    border: 1px solid var(--border); cursor:pointer; border-radius:8px;
+    display:inline-flex; align-items:center; justify-content:center; gap:7px;
+  }
+  .btn-primary{ background: var(--teal); color:#04231b; border-color: var(--teal); }
+  .btn-ghost{ background: transparent; color: var(--silk); border-color: var(--border); }
+
+  /* ---------- BREADCRUMB ---------- */
+  .crumb-row{
+    max-width:1220px; margin:0 auto; padding: 18px 28px 0;
+    display:flex; align-items:center; gap:8px;
+    font-family:'IBM Plex Mono',monospace; font-size:12.5px; color: var(--silk-faint);
+  }
+  .crumb-row a:hover{ color: var(--silk); }
+  .crumb-row .cur{ color: var(--teal); }
+  .crumb-sep{ color: var(--silk-faint); }
+
+  /* ---------- MAIN GRID ---------- */
+  .main{
+    max-width:1220px; margin:0 auto; padding: 18px 28px 90px;
+    display:grid; grid-template-columns: 1fr 280px; gap:22px; align-items:start;
+  }
+  @media (max-width:960px){ .main{ grid-template-columns:1fr; } }
+
+  /* ---------- FOLDER GRID ---------- */
+  .section-label{
+    font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:0.1em; color: var(--silk-faint);
+    margin: 0 0 12px;
+  }
+  .folder-grid{ display:grid; grid-template-columns: repeat(3, 1fr); gap:14px; margin-bottom:28px; }
+  @media (max-width:700px){ .folder-grid{ grid-template-columns: repeat(2, 1fr); } }
+  .folder-card{
+    background: var(--bg-panel); border:1px solid var(--border); border-radius:12px;
+    padding: 16px 16px 14px; cursor:pointer; transition: border-color .15s ease;
+  }
+  .folder-card:hover{ border-color: var(--teal-dim); }
+  .folder-icon{
+    width:34px; height:34px; border-radius:9px; margin-bottom:12px;
+    background: var(--teal-dim); display:flex; align-items:center; justify-content:center;
+  }
+  .folder-icon svg{ width:17px; height:17px; stroke: var(--teal); }
+  .folder-name{ font-size:13.5px; font-weight:600; color: var(--silk); margin-bottom:3px; }
+  .folder-meta{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; color: var(--silk-faint); }
+
+  /* ---------- FILE LIST ---------- */
+  .list-card{
+    background: var(--bg-panel); border:1px solid var(--border); border-radius:14px;
+    overflow:hidden;
+  }
+  .list-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 18px 22px; border-bottom:1px solid var(--border);
+  }
+  .list-head h3{ font-size:14.5px; margin:0; font-weight:600; }
+  .list-head span{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; color: var(--silk-faint); }
+
+  .file-row{
+    display:grid; grid-template-columns: 36px 1fr 90px 130px 80px;
+    align-items:center; gap:14px;
+    padding: 13px 22px; border-bottom:1px solid var(--border);
+  }
+  .file-row:last-child{ border-bottom:none; }
+  .file-row:hover{ background: rgba(231,239,236,0.02); }
+  .file-icon{
+    width:32px; height:32px; border-radius:8px;
+    display:flex; align-items:center; justify-content:center;
+    background: var(--bg-raised); border:1px solid var(--border);
+  }
+  .file-icon svg{ width:15px; height:15px; stroke: var(--silk-dim); }
+  .file-icon.pdf svg{ stroke: #e2543f; }
+  .file-icon.doc svg{ stroke: #4a9eff; }
+  .file-icon.sheet svg{ stroke: var(--teal); }
+  .file-icon.img svg{ stroke: var(--amber); }
+  .file-name{ font-size:13px; color: var(--silk); font-weight:500; }
+  .file-uploader{ font-size:11.5px; color: var(--silk-faint); margin-top:1px; }
+  .file-size{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; color: var(--silk-dim); }
+  .file-date{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; color: var(--silk-faint); }
+  .file-dl{
+    width:30px; height:30px; border-radius:7px; border:1px solid var(--border);
+    background:transparent; color: var(--silk-dim); cursor:pointer;
+    display:flex; align-items:center; justify-content:center; margin-left:auto;
+  }
+  .file-dl:hover{ border-color: var(--teal-dim); color: var(--teal); }
+  .file-dl svg{ width:14px; height:14px; }
+
+  @media (max-width:640px){
+    .file-row{ grid-template-columns: 30px 1fr 60px; }
+    .file-size, .file-date{ display:none; }
+  }
+
+  /* ---------- SIDEBAR ---------- */
+  .side-card{
+    background: var(--bg-panel); border:1px solid var(--border); border-radius:12px;
+    padding: 18px 18px 16px; margin-bottom:16px;
+  }
+  .side-head{ font-size:13.5px; font-weight:600; margin:0 0 14px; }
+
+  .storage-track{ height:7px; border-radius:4px; background: var(--bg-raised); overflow:hidden; margin-bottom:8px; }
+  .storage-fill{ height:100%; background: linear-gradient(90deg, var(--teal), #2fa088); border-radius:4px; }
+  .storage-label{ font-family:'IBM Plex Mono',monospace; font-size:11px; color: var(--silk-faint); }
+  .storage-note{ font-size:11px; color: var(--silk-faint); margin-top:10px; line-height:1.6; }
+
+  .recent-item{ display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); }
+  .recent-item:last-child{ border-bottom:none; padding-bottom:0; }
+  .recent-icon{
+    width:26px; height:26px; border-radius:7px; flex-shrink:0;
+    background: var(--bg-raised); border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .recent-icon svg{ width:12px; height:12px; stroke: var(--silk-dim); }
+  .recent-body .n{ font-size:12px; color: var(--silk); }
+  .recent-body .m{ font-family:'IBM Plex Mono',monospace; font-size:10px; color: var(--silk-faint); margin-top:1px; }
+
+  footer{
+    max-width:1220px; margin:0 auto; padding: 28px 28px 56px;
+    display:flex; justify-content:space-between;
+    border-top:1px solid var(--border);
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11px; color: var(--silk-faint);
+  }
+</style>
+</head>
+<body>
+
+  <div class="statusbar">
+    <div class="statusbar-in">
+      <div class="statusbar-logo"><svg class="pg-logo" viewBox="0 0 48 44" role="img" aria-label="Playground"><defs><linearGradient id="pg-logo-grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#a3e635"/><stop offset="55%" stop-color="#22c55e"/><stop offset="100%" stop-color="#0e7a3c"/></linearGradient></defs><g stroke="url(#pg-logo-grad)" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M24 8 L8.5 34 M24 8 L39.5 34 M24 8 L24 25 M24 25 L8.5 34 M24 25 L39.5 34" stroke-width="3.2"/><g fill="url(#pg-logo-grad)" stroke-width="3"><path d="M24 2.5 L28.8 5.25 L28.8 10.75 L24 13.5 L19.2 10.75 L19.2 5.25 Z"/><path d="M8.5 28.5 L13.3 31.25 L13.3 36.75 L8.5 39.5 L3.7 36.75 L3.7 31.25 Z"/><path d="M39.5 28.5 L44.3 31.25 L44.3 36.75 L39.5 39.5 L34.7 36.75 L34.7 31.25 Z"/></g></g></svg> PLAY_GROUND</div>
+      <div class="statusbar-nav">
+        <a href="index.html">홈</a><a href="schedule.html">일정</a><a href="results.html">실적</a><a href="daily.html">데일리</a><a href="ideas.html">아이디어</a><a href="meetings.html">회의록</a><a class="active" href="#">자료실</a><a href="about.html">회사소개</a><a href="team.html">팀소개</a>
+      </div>
+      <div class="statusbar-right">
+        <div class="icon-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>
+          <span class="badge-count">3</span>
+        </div>
+        <div class="icon-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+        </div>
+        <div class="user-chip">
+          <span class="avatar">연</span>김연구
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-head">
+    <div>
+      <p class="page-kicker">PLAY GROUND / <span class="cur">자료실</span></p>
+      <h1 class="page-title">자료실</h1>
+    </div>
+    <button class="btn btn-primary">⇧ 파일 업로드</button>
+  </div>
+
+  <div class="crumb-row">
+    <a class="cur">전체 폴더</a>
+  </div>
+
+  <div class="main">
+    <div>
+      <p class="section-label">프로젝트 폴더</p>
+      <div class="folder-grid">
+        <div class="folder-card">
+          <div class="folder-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div>
+          <div class="folder-name">GoldenLink</div>
+          <div class="folder-meta">파일 14개 · 82MB</div>
+        </div>
+        <div class="folder-card">
+          <div class="folder-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div>
+          <div class="folder-name">KEPCO 과제</div>
+          <div class="folder-meta">파일 9개 · 41MB</div>
+        </div>
+        <div class="folder-card">
+          <div class="folder-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div>
+          <div class="folder-name">SOC 논문</div>
+          <div class="folder-meta">파일 6개 · 18MB</div>
+        </div>
+        <div class="folder-card">
+          <div class="folder-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div>
+          <div class="folder-name">IDEC 2026</div>
+          <div class="folder-meta">파일 5개 · 27MB</div>
+        </div>
+        <div class="folder-card">
+          <div class="folder-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div>
+          <div class="folder-name">협업 플랫폼</div>
+          <div class="folder-meta">파일 3개 · 6MB</div>
+        </div>
+        <div class="folder-card">
+          <div class="folder-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg></div>
+          <div class="folder-name">새 폴더</div>
+          <div class="folder-meta">폴더 만들기</div>
+        </div>
+      </div>
+
+      <p class="section-label">최근 업로드된 파일</p>
+      <div class="list-card">
+        <div class="list-head">
+          <h3>전체 파일</h3>
+          <span>37개</span>
+        </div>
+
+        <div class="file-row">
+          <div class="file-icon sheet"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 4h11l5 5v11H4z"/><path d="M15 4v5h5M8 13h8M8 17h5"/></svg></div>
+          <div><div class="file-name">SOH_실험결과_v3.xlsx</div><div class="file-uploader">김연구 업로드</div></div>
+          <div class="file-size">2.4MB</div>
+          <div class="file-date">8/29</div>
+          <button class="file-dl"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg></button>
+        </div>
+
+        <div class="file-row">
+          <div class="file-icon pdf"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 4h11l5 5v11H4z"/><path d="M15 4v5h5"/></svg></div>
+          <div><div class="file-name">KEPCO_중간보고서_초안.pdf</div><div class="file-uploader">강태윤 업로드</div></div>
+          <div class="file-size">5.1MB</div>
+          <div class="file-date">8/28</div>
+          <button class="file-dl"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg></button>
+        </div>
+
+        <div class="file-row">
+          <div class="file-icon img"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>
+          <div><div class="file-name">색상식별기_회로도_v2.png</div><div class="file-uploader">박준서 업로드</div></div>
+          <div class="file-size">890KB</div>
+          <div class="file-date">8/27</div>
+          <button class="file-dl"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg></button>
+        </div>
+
+        <div class="file-row">
+          <div class="file-icon doc"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 4h11l5 5v11H4z"/><path d="M15 4v5h5M8 13h8M8 17h5"/></svg></div>
+          <div><div class="file-name">SOC_논문_초안_v2.docx</div><div class="file-uploader">이하늘 업로드</div></div>
+          <div class="file-size">1.2MB</div>
+          <div class="file-date">8/27</div>
+          <button class="file-dl"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg></button>
+        </div>
+
+        <div class="file-row">
+          <div class="file-icon doc"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 4h11l5 5v11H4z"/><path d="M15 4v5h5M8 13h8M8 17h5"/></svg></div>
+          <div><div class="file-name">창업팀_협업플랫폼_요구사항정의서_v0.2.docx</div><div class="file-uploader">정민재 업로드</div></div>
+          <div class="file-size">340KB</div>
+          <div class="file-date">8/25</div>
+          <button class="file-dl"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg></button>
+        </div>
+
+        <div class="file-row">
+          <div class="file-icon pdf"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 4h11l5 5v11H4z"/><path d="M15 4v5h5"/></svg></div>
+          <div><div class="file-name">GoldenLink_예선발표자료.pdf</div><div class="file-uploader">오지훈 업로드</div></div>
+          <div class="file-size">8.7MB</div>
+          <div class="file-date">8/24</div>
+          <button class="file-dl"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg></button>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="side-card">
+        <h4 class="side-head">저장 용량</h4>
+        <div class="storage-track"><div class="storage-fill" style="width:34%"></div></div>
+        <div class="storage-label">1.7GB 사용 중</div>
+        <div class="storage-note">파일 용량 제한과 보관 기간 정책은 아직 팀 논의 중이에요.</div>
+      </div>
+
+      <div class="side-card">
+        <h4 class="side-head">최근 활동</h4>
+        <div class="recent-item">
+          <div class="recent-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 4h11l5 5v11H4z"/><path d="M15 4v5h5M8 13h8M8 17h5"/></svg></div>
+          <div class="recent-body"><div class="n">SOH_실험결과_v3.xlsx</div><div class="m">김연구 · 방금 전</div></div>
+        </div>
+        <div class="recent-item">
+          <div class="recent-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 4h11l5 5v11H4z"/><path d="M15 4v5h5"/></svg></div>
+          <div class="recent-body"><div class="n">KEPCO_중간보고서_초안.pdf</div><div class="m">강태윤 · 어제</div></div>
+        </div>
+        <div class="recent-item">
+          <div class="recent-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>
+          <div class="recent-body"><div class="n">색상식별기_회로도_v2.png</div><div class="m">박준서 · 8/27</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span>PLAY_GROUND / rev.0.2</span>
+    <span>© 2026 PLAY GROUND</span>
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>데일리 업무 정리 — PLAY GROUND</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #081512;
+    --bg-panel: #0b1e19;
+    --bg-raised: #0e231d;
+    --teal: #48d9b0;
+    --teal-dim: rgba(72,217,176,0.16);
+    --amber: #e2a83f;
+    --amber-dim: rgba(226,168,63,0.16);
+    --silk: #e7efec;
+    --silk-dim: #86a199;
+    --silk-faint: #45594f;
+    --trace: rgba(231,239,236,0.028);
+    --border: rgba(231,239,236,0.10);
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg);
+    color: var(--silk);
+    font-family: 'IBM Plex Sans KR', -apple-system, sans-serif;
+    min-height:100vh;
+  }
+  a{ color:inherit; text-decoration:none; }
+  button{ font-family:inherit; }
+
+  /* ---------- STATUS BAR (shared) ---------- */
+  .statusbar{ border-bottom: 1px solid var(--border); background: rgba(8,21,18,0.7); }
+  .statusbar-in{
+    max-width: 1220px; margin:0 auto;
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 16px 28px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12px; color: var(--silk-dim);
+  }
+  .statusbar-logo{ display:flex; align-items:center; gap:9px; color: var(--silk); font-weight:600; letter-spacing:0.02em; }
+  .statusbar-logo .chip-dot{ width:7px; height:7px; background: var(--teal); }
+  .statusbar-logo .pg-logo{ width:22px; height:20px; flex-shrink:0; }
+  .statusbar-nav{ display:flex; gap:16px; }
+  .statusbar-nav a:hover{ color: var(--silk); }
+  .statusbar-nav a.active{ color: var(--teal); }
+  .statusbar-right{ display:flex; align-items:center; gap:16px; }
+  .icon-btn{ position:relative; width:34px; height:34px; border-radius:8px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .icon-btn svg{ width:16px; height:16px; stroke: var(--silk-dim); }
+  .icon-btn:hover{ border-color: var(--teal-dim); }
+  .icon-btn:hover svg{ stroke: var(--silk); }
+  .badge-count{
+    position:absolute; top:-5px; right:-5px;
+    background:#e2543f; color:#fff; font-size:9.5px; font-weight:700;
+    width:15px; height:15px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    border: 1.5px solid var(--bg);
+  }
+  .user-chip{ display:flex; align-items:center; gap:8px; color: var(--silk); font-weight:500; cursor:pointer; }
+  .user-chip .avatar{
+    width:26px; height:26px; border-radius:50%;
+    background: linear-gradient(155deg, var(--teal), #157a5f);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:11px; color:#04231b;
+  }
+  .user-chip svg{ stroke: var(--silk-faint); margin-left:-2px; }
+  @media (max-width:960px){ .statusbar-nav{ display:none; } }
+
+  /* ---------- PAGE HEADER ---------- */
+  .page-head{
+    max-width:1220px; margin:0 auto; padding: 30px 28px 0;
+    display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:10px;
+  }
+  .page-kicker{ font-family:'IBM Plex Mono',monospace; font-size:12px; color: var(--silk-faint); }
+  .page-kicker .cur{ color: var(--teal); }
+  .page-title{ font-size:26px; font-weight:600; margin:6px 0 0; }
+  .btn{
+    font-size:13px; font-weight:600; padding: 10px 16px;
+    border: 1px solid var(--border); cursor:pointer; border-radius:8px;
+    display:inline-flex; align-items:center; justify-content:center; gap:7px;
+  }
+  .btn-primary{ background: var(--teal); color:#04231b; border-color: var(--teal); }
+  .btn-ghost{ background: transparent; color: var(--silk); border-color: var(--border); }
+  .btn-sm{ font-size:12px; padding:7px 12px; }
+
+  /* ---------- MAIN GRID ---------- */
+  .main{
+    max-width:1220px; margin:0 auto; padding: 22px 28px 90px;
+    display:grid; grid-template-columns: 1fr 300px; gap:22px; align-items:start;
+  }
+  @media (max-width:960px){ .main{ grid-template-columns:1fr; } }
+
+  /* ---------- EDITOR CARD ---------- */
+  .card{
+    background: var(--bg-panel); border:1px solid var(--border); border-radius:14px;
+    overflow:hidden; margin-bottom:22px;
+  }
+  .card-head{
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
+    padding: 18px 22px; border-bottom:1px solid var(--border);
+  }
+  .card-head-left{ display:flex; align-items:center; gap:12px; }
+  .date-nav{ display:flex; align-items:center; gap:8px; font-family:'IBM Plex Mono',monospace; font-size:12px; color: var(--silk-dim); }
+  .date-nav button{
+    width:22px; height:22px; border-radius:6px; border:1px solid var(--border);
+    background:transparent; color:var(--silk-dim); cursor:pointer;
+  }
+  .card-head h3{ font-size:14.5px; margin:0; font-weight:600; }
+  .streak-chip{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; color: var(--amber);
+    background: var(--amber-dim); border-radius:999px; padding:5px 11px;
+    display:inline-flex; align-items:center; gap:5px;
+  }
+
+  .card-body{ padding: 20px 22px 22px; }
+  .field-label{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:0.1em; color: var(--silk-faint); margin:0 0 8px; }
+
+  .log-textarea{
+    width:100%; min-height:96px; resize:vertical;
+    background: var(--bg-raised); border:1px solid var(--border); border-radius:10px;
+    padding:14px 16px; color: var(--silk); font-size:13.5px; line-height:1.65;
+    font-family:'IBM Plex Sans KR', sans-serif;
+  }
+  .log-textarea:focus{ outline:none; border-color: var(--teal-dim); }
+
+  .checklist{ margin-top:18px; }
+  .check-row{
+    display:flex; align-items:flex-start; gap:10px;
+    padding: 9px 0; border-bottom:1px solid var(--border);
+  }
+  .check-row:last-of-type{ border-bottom:none; }
+  .check-box{
+    width:17px; height:17px; border-radius:5px; border:1px solid var(--border);
+    flex-shrink:0; margin-top:1px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .check-row.done .check-box{ background: var(--teal); border-color: var(--teal); }
+  .check-box svg{ width:10px; height:10px; stroke:#04231b; stroke-width:3; display:none; }
+  .check-row.done .check-box svg{ display:block; }
+  .check-text{ font-size:13px; color: var(--silk); }
+  .check-row.done .check-text{ color: var(--silk-faint); text-decoration:line-through; }
+  .check-add{
+    display:flex; align-items:center; gap:8px; padding-top:10px;
+    font-family:'IBM Plex Mono',monospace; font-size:12px; color: var(--silk-faint);
+  }
+  .check-add input{
+    flex:1; background:transparent; border:none; border-bottom:1px dashed var(--border);
+    padding:6px 2px; color: var(--silk); font-size:13px; font-family:inherit;
+  }
+  .check-add input:focus{ outline:none; border-color: var(--teal-dim); }
+
+  .card-foot{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 14px 22px; border-top:1px solid var(--border);
+    font-family:'IBM Plex Mono',monospace; font-size:11px; color: var(--silk-faint);
+  }
+  .card-foot .link-out{ color: var(--teal); display:inline-flex; align-items:center; gap:5px; }
+  .card-foot .link-out svg{ width:11px; height:11px; stroke: var(--teal); }
+
+  /* ---------- PAST LOG LIST ---------- */
+  .list-card{
+    background: var(--bg-panel); border:1px solid var(--border); border-radius:14px;
+    overflow:hidden;
+  }
+  .list-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 18px 22px; border-bottom:1px solid var(--border);
+  }
+  .list-head h3{ font-size:14.5px; margin:0; font-weight:600; }
+  .list-head span{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; color: var(--silk-faint); }
+
+  .log-row{ padding: 17px 22px; border-bottom:1px solid var(--border); }
+  .log-row:last-child{ border-bottom:none; }
+  .log-row-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:7px; gap:10px; flex-wrap:wrap; }
+  .log-date{ font-size:13.5px; font-weight:600; color: var(--silk); }
+  .log-date .dow{ font-family:'IBM Plex Mono',monospace; font-size:11px; color: var(--silk-faint); font-weight:500; margin-left:6px; }
+  .log-tags{ display:flex; gap:6px; }
+  .log-tag{
+    font-family:'IBM Plex Mono',monospace; font-size:9.5px; font-weight:700;
+    padding:2px 7px; border-radius:4px;
+    background: var(--teal-dim); color: var(--teal);
+  }
+  .log-tag.linked{ background: var(--amber-dim); color: var(--amber); }
+  .log-desc{ font-size:12.5px; color: var(--silk-dim); line-height:1.6; margin:0 0 8px; max-width:66ch; }
+  .log-checks{ display:flex; align-items:center; gap:6px; font-family:'IBM Plex Mono',monospace; font-size:11px; color: var(--silk-faint); }
+  .mini-track{ width:64px; height:4px; border-radius:3px; background: var(--bg-raised); overflow:hidden; }
+  .mini-fill{ height:100%; background: var(--teal); border-radius:3px; }
+
+  /* ---------- TODAY TEAM FEED ---------- */
+  .log-author{ display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; color: var(--silk); }
+  .log-author .avatar-sm{
+    width:20px; height:20px; border-radius:50%;
+    background: linear-gradient(155deg, var(--teal), #157a5f);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:9.5px; color:#04231b; flex-shrink:0;
+  }
+  .log-author .log-time{ color: var(--silk-faint); font-weight:400; }
+  .log-row.mine{ background: rgba(72,217,176,0.035); }
+  .log-row.empty{ color: var(--silk-faint); font-size:12.5px; padding:17px 22px; }
+  .log-row.clickable{ cursor:pointer; }
+  .log-row.clickable:hover{ background: rgba(72,217,176,0.035); }
+  .log-edit-link{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; color: var(--teal);
+    cursor:pointer; background:none; border:none; padding:0;
+  }
+  .log-edit-link:hover{ text-decoration:underline; }
+
+  /* ---------- WRITE MODAL ---------- */
+  .modal-overlay{
+    display:none; position:fixed; inset:0; background: rgba(4,10,8,0.65);
+    align-items:center; justify-content:center; z-index:100; padding:20px;
+  }
+  .modal-overlay.open{ display:flex; }
+  .modal{
+    background: var(--bg-panel); border:1px solid var(--border); border-radius:14px;
+    width:100%; max-width:560px; max-height:88vh; overflow-y:auto;
+  }
+  .modal-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 22px; border-bottom:1px solid var(--border);
+  }
+  .modal-head h3{ font-size:14.5px; margin:0; font-weight:600; }
+  .modal-close{
+    background:transparent; border:none; color:var(--silk-faint); font-size:20px;
+    cursor:pointer; line-height:1; padding:2px 4px;
+  }
+  .modal-close:hover{ color: var(--silk); }
+  .modal-body{ padding:20px 22px 22px; }
+  .modal-foot{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 22px; border-top:1px solid var(--border);
+  }
+
+  /* ---------- SIDEBAR ---------- */
+  .side-card{
+    background: var(--bg-panel); border:1px solid var(--border); border-radius:12px;
+    padding: 18px 18px 16px; margin-bottom:16px;
+  }
+  .side-head{ font-size:13.5px; font-weight:600; margin:0 0 14px; }
+
+  .week-strip{ display:flex; justify-content:space-between; }
+  .week-day{ display:flex; flex-direction:column; align-items:center; gap:7px; }
+  .week-day .dow{ font-family:'IBM Plex Mono',monospace; font-size:9.5px; color: var(--silk-faint); }
+  .week-day .dot{ width:22px; height:22px; border-radius:50%; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; }
+  .week-day.done .dot{ background: var(--teal-dim); border-color: var(--teal-dim); }
+  .week-day.done .dot svg{ width:10px; height:10px; stroke: var(--teal); stroke-width:3; }
+  .week-day.today .dot{ border-color: var(--teal); }
+  .week-day .dnum{ font-size:10.5px; color: var(--silk-faint); }
+
+  .streak-num{ font-family:'IBM Plex Mono',monospace; font-size:30px; font-weight:700; color: var(--teal); line-height:1; margin-top:14px; }
+  .streak-sub{ font-size:11.5px; color: var(--silk-faint); margin-top:6px; }
+
+  .promo-card{
+    background: linear-gradient(155deg, rgba(72,217,176,0.1), rgba(72,217,176,0.02));
+    border:1px solid var(--teal-dim); border-radius:12px;
+    padding: 16px 16px 15px; margin-bottom:16px;
+  }
+  .promo-card p{ font-size:12px; color: var(--silk-dim); line-height:1.6; margin:0 0 12px; }
+  .promo-card a.btn{ width:100%; }
+
+  .tmpl-item{ display:flex; align-items:center; justify-content:space-between; padding:7px 0; border-bottom:1px solid var(--border); font-size:12px; }
+  .tmpl-item:last-child{ border-bottom:none; padding-bottom:0; }
+  .tmpl-item span{ color: var(--silk-dim); }
+  .tmpl-item button{ background:transparent; border:none; color: var(--teal); font-family:'IBM Plex Mono',monospace; font-size:11px; cursor:pointer; }
+
+  footer{
+    max-width:1220px; margin:0 auto; padding: 28px 28px 56px;
+    display:flex; justify-content:space-between;
+    border-top:1px solid var(--border);
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11px; color: var(--silk-faint);
+  }
+</style>
+</head>
+<body>
+
+  <div class="statusbar">
+    <div class="statusbar-in">
+      <div class="statusbar-logo"><svg class="pg-logo" viewBox="0 0 48 44" role="img" aria-label="Playground"><defs><linearGradient id="pg-logo-grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#a3e635"/><stop offset="55%" stop-color="#22c55e"/><stop offset="100%" stop-color="#0e7a3c"/></linearGradient></defs><g stroke="url(#pg-logo-grad)" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M24 8 L8.5 34 M24 8 L39.5 34 M24 8 L24 25 M24 25 L8.5 34 M24 25 L39.5 34" stroke-width="3.2"/><g fill="url(#pg-logo-grad)" stroke-width="3"><path d="M24 2.5 L28.8 5.25 L28.8 10.75 L24 13.5 L19.2 10.75 L19.2 5.25 Z"/><path d="M8.5 28.5 L13.3 31.25 L13.3 36.75 L8.5 39.5 L3.7 36.75 L3.7 31.25 Z"/><path d="M39.5 28.5 L44.3 31.25 L44.3 36.75 L39.5 39.5 L34.7 36.75 L34.7 31.25 Z"/></g></g></svg> PLAY_GROUND</div>
+      <div class="statusbar-nav">
+        <a href="index.html">홈</a><a href="schedule.html">일정</a><a href="results.html">실적</a><a class="active" href="#">데일리</a><a href="ideas.html">아이디어</a><a href="meetings.html">회의록</a><a href="files.html">자료실</a><a href="about.html">회사소개</a><a href="team.html">팀소개</a>
+      </div>
+      <div class="statusbar-right">
+        <div class="icon-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>
+          <span class="badge-count">3</span>
+        </div>
+        <div class="icon-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+        </div>
+        <div class="user-chip">
+          <span class="avatar">연</span>김연구
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-head">
+    <div>
+      <p class="page-kicker">PLAY GROUND / <span class="cur">데일리 업무 정리</span></p>
+      <h1 class="page-title">데일리 업무 정리</h1>
+    </div>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <span class="streak-chip">🔥 5일 연속 기록 중</span>
+      <button class="btn btn-primary" id="btnOpenLogModal">+ 오늘 기록 작성</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div>
+      <!-- ===== TODAY — TEAM FEED ===== -->
+      <div class="list-card" style="margin-bottom:22px;">
+        <div class="list-head">
+          <h3>팀 기록</h3>
+          <div style="display:flex; align-items:center; gap:14px;">
+            <span id="feedRatio">3/4명 작성</span>
+            <div class="date-nav">
+              <button id="feedPrev">‹</button><span id="feedDateLabel">8월 31일 (월)</span><button id="feedNext">›</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="feedRows">
+        <div class="log-row mine">
+          <div class="log-row-top">
+            <span class="log-author"><span class="avatar-sm">연</span>김연구<span class="log-time"> · 09:14</span></span>
+            <button class="log-edit-link" id="btnEditMine">수정</button>
+          </div>
+          <p class="log-desc">DC 리플 기반 SOH 추정 continual learning 실험 1차 마무리. 배치 학습 대비 드리프트 대응 정확도 비교표 정리해서 김병철 교수님께 공유. 오후에는 KEPCO 과제 중간보고서 리뷰 참여.</p>
+          <div class="log-checks"><div class="mini-track"><div class="mini-fill" style="width:50%"></div></div>2/4 완료</div>
+        </div>
+
+        <div class="log-row">
+          <div class="log-row-top">
+            <span class="log-author"><span class="avatar-sm">하</span>이하늘<span class="log-time"> · 10:32</span></span>
+          </div>
+          <p class="log-desc">온도 조건별 SOC 추정 논문 실험 셋업 리뷰, 결과 도표 다듬기. 오후에 김연구와 실험 섹션 논의 예정.</p>
+          <div class="log-checks"><div class="mini-track"><div class="mini-fill" style="width:100%"></div></div>2/2 완료</div>
+        </div>
+
+        <div class="log-row">
+          <div class="log-row-top">
+            <span class="log-author"><span class="avatar-sm">준</span>박준서<span class="log-time"> · 11:05</span></span>
+          </div>
+          <p class="log-desc">전공수업 후 EDCL 정기 미팅 참석, IDEC 2026 색상 식별기 회로도 리뷰 코멘트 반영.</p>
+          <div class="log-checks"><div class="mini-track"><div class="mini-fill" style="width:50%"></div></div>1/2 완료</div>
+        </div>
+
+        <div class="log-row empty">정민재님은 아직 오늘 기록을 작성하지 않았어요.</div>
+        </div>
+      </div>
+
+      <!-- ===== WRITE / EDIT MODAL ===== -->
+      <div class="modal-overlay" id="logModalOverlay">
+        <div class="modal">
+          <div class="modal-head">
+            <h3>오늘의 기록 · 8월 31일 (월)</h3>
+            <button class="modal-close" id="btnCloseModal">&times;</button>
+          </div>
+          <div class="modal-body">
+            <p class="field-label">오늘 한 일 (자유 서술)</p>
+            <textarea class="log-textarea" id="modalTextarea">DC 리플 기반 SOH 추정 continual learning 실험 1차 마무리. 배치 학습 대비 드리프트 대응 정확도 비교표 정리해서 김병철 교수님께 공유. 오후에는 KEPCO 과제 중간보고서 리뷰 참여.</textarea>
+
+            <p class="field-label" style="margin-top:20px;">체크리스트</p>
+            <div class="checklist">
+              <div class="check-row done">
+                <div class="check-box"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></div>
+                <div class="check-text">continual learning 실험 결과 정리</div>
+              </div>
+              <div class="check-row done">
+                <div class="check-box"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></div>
+                <div class="check-text">교수님께 결과 공유 메일 발송</div>
+              </div>
+              <div class="check-row">
+                <div class="check-box"></div>
+                <div class="check-text">KEPCO 중간보고서 리뷰 코멘트 반영</div>
+              </div>
+              <div class="check-row">
+                <div class="check-box"></div>
+                <div class="check-text">다음 주 파라미터 튜닝 계획 작성</div>
+              </div>
+              <div class="check-add">
+                <span>+</span>
+                <input type="text" placeholder="할 일 추가...">
+              </div>
+            </div>
+          </div>
+          <div class="modal-foot">
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--silk-faint);">마지막 저장 09:14</span>
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-ghost btn-sm" id="btnCancelModal">취소</button>
+              <button class="btn btn-primary btn-sm" id="btnSaveModal">저장</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== PAST LOGS ===== -->
+      <div class="list-card">
+        <div class="list-head">
+          <h3>지난 기록</h3>
+          <span>이번 주 4건 · 클릭하면 그날 팀 기록 보기</span>
+        </div>
+
+        <div class="log-row clickable" data-date="0829">
+          <div class="log-row-top">
+            <span class="log-date">8월 29일<span class="dow">금</span></span>
+            <div class="log-tags"><span class="log-tag linked">실적 연동</span></div>
+          </div>
+          <p class="log-desc">SOH continual learning 실험 셋업 완료, 기존 배치 모델과 비교 실험 시작. 저녁에 실적 관리에 등록.</p>
+          <div class="log-checks"><div class="mini-track"><div class="mini-fill" style="width:100%"></div></div>3/3 완료</div>
+        </div>
+
+        <div class="log-row clickable" data-date="0828">
+          <div class="log-row-top">
+            <span class="log-date">8월 28일<span class="dow">목</span></span>
+            <div class="log-tags"><span class="log-tag linked">실적 연동</span></div>
+          </div>
+          <p class="log-desc">KEPCO 과제 중간보고서 초안 작성, PPO 학습 진행상황 정리해서 팀 채널에 공유.</p>
+          <div class="log-checks"><div class="mini-track"><div class="mini-fill" style="width:66%"></div></div>2/3 완료</div>
+        </div>
+
+        <div class="log-row clickable" data-date="0827">
+          <div class="log-row-top">
+            <span class="log-date">8월 27일<span class="dow">수</span></span>
+            <div class="log-tags"></div>
+          </div>
+          <p class="log-desc">온도 조건별 SOC 추정 하이브리드 모델 논문 초안 리뷰, 이하늘과 실험 셋업 섹션 논의.</p>
+          <div class="log-checks"><div class="mini-track"><div class="mini-fill" style="width:100%"></div></div>2/2 완료</div>
+        </div>
+
+        <div class="log-row clickable" data-date="0826">
+          <div class="log-row-top">
+            <span class="log-date">8월 26일<span class="dow">화</span></span>
+            <div class="log-tags"></div>
+          </div>
+          <p class="log-desc">IDEC 2026 색상 식별기 브레드보드 테스트, 오차 범위 확인 후 회로도 수정.</p>
+          <div class="log-checks"><div class="mini-track"><div class="mini-fill" style="width:50%"></div></div>1/2 완료</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="side-card">
+        <h4 class="side-head">이번 주 기록 현황</h4>
+        <div class="week-strip">
+          <div class="week-day done"><span class="dow">월</span><div class="dot"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></div><span class="dnum">25</span></div>
+          <div class="week-day done"><span class="dow">화</span><div class="dot"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></div><span class="dnum">26</span></div>
+          <div class="week-day done"><span class="dow">수</span><div class="dot"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></div><span class="dnum">27</span></div>
+          <div class="week-day done"><span class="dow">목</span><div class="dot"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></div><span class="dnum">28</span></div>
+          <div class="week-day done"><span class="dow">금</span><div class="dot"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></div><span class="dnum">29</span></div>
+          <div class="week-day"><span class="dow">토</span><div class="dot"></div><span class="dnum">30</span></div>
+          <div class="week-day today"><span class="dow">일</span><div class="dot"></div><span class="dnum">31</span></div>
+        </div>
+        <div class="streak-num">5일</div>
+        <div class="streak-sub">연속 기록 중 · 이번 달 최고 기록 8일</div>
+      </div>
+
+      <div class="promo-card">
+        <p><b style="color:var(--silk);">실적 관리와 연동돼요.</b><br>체크리스트를 완료하면 주간·월간 실적 취합에 자동으로 반영할 수 있어요.</p>
+        <a class="btn btn-ghost" href="results.html">실적 관리에서 보기</a>
+      </div>
+
+      <div class="side-card">
+        <h4 class="side-head">자주 쓰는 체크리스트</h4>
+        <div class="tmpl-item"><span>실험 진행 템플릿</span><button>+ 추가</button></div>
+        <div class="tmpl-item"><span>논문 작성 템플릿</span><button>+ 추가</button></div>
+        <div class="tmpl-item"><span>회의 준비 템플릿</span><button>+ 추가</button></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span>PLAY_GROUND / rev.0.2</span>
+    <span>© 2026 PLAY GROUND</span>
+  </footer>
+
+  <script>
+    document.querySelectorAll('.check-box').forEach(box => {
+      box.addEventListener('click', () => {
+        const row = box.closest('.check-row');
+        row.classList.toggle('done');
+        box.innerHTML = row.classList.contains('done')
+          ? '<svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg>'
+          : '';
+      });
+    });
+
+    const logModalOverlay = document.getElementById('logModalOverlay');
+    const openLogModal = () => logModalOverlay.classList.add('open');
+    const closeLogModal = () => logModalOverlay.classList.remove('open');
+
+    document.getElementById('btnOpenLogModal').addEventListener('click', openLogModal);
+    document.getElementById('btnCloseModal').addEventListener('click', closeLogModal);
+    document.getElementById('btnCancelModal').addEventListener('click', closeLogModal);
+    document.getElementById('btnSaveModal').addEventListener('click', closeLogModal);
+    logModalOverlay.addEventListener('click', (e) => {
+      if (e.target === logModalOverlay) closeLogModal();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeLogModal();
+    });
+
+    // ---------- team feed: date navigation ----------
+    const FEED_DATES = ['0831', '0829', '0828', '0827', '0826'];
+    const FEED_DATA = {
+      '0831': {
+        label: '8월 31일 (월)', ratio: '3/4명 작성',
+        entries: [
+          { mine:true, name:'김연구', avatar:'연', time:'09:14', desc:'DC 리플 기반 SOH 추정 continual learning 실험 1차 마무리. 배치 학습 대비 드리프트 대응 정확도 비교표 정리해서 김병철 교수님께 공유. 오후에는 KEPCO 과제 중간보고서 리뷰 참여.', check:'2/4 완료', pct:50 },
+          { name:'이하늘', avatar:'하', time:'10:32', desc:'온도 조건별 SOC 추정 논문 실험 셋업 리뷰, 결과 도표 다듬기. 오후에 김연구와 실험 섹션 논의 예정.', check:'2/2 완료', pct:100 },
+          { name:'박준서', avatar:'준', time:'11:05', desc:'전공수업 후 EDCL 정기 미팅 참석, IDEC 2026 색상 식별기 회로도 리뷰 코멘트 반영.', check:'1/2 완료', pct:50 },
+        ],
+        emptyNote: '정민재님은 아직 오늘 기록을 작성하지 않았어요.'
+      },
+      '0829': {
+        label: '8월 29일 (금)', ratio: '2/4명 작성',
+        entries: [
+          { mine:true, name:'김연구', avatar:'연', time:'18:20', desc:'SOH continual learning 실험 셋업 완료, 기존 배치 모델과 비교 실험 시작. 저녁에 실적 관리에 등록.', check:'3/3 완료', pct:100 },
+          { name:'정민재', avatar:'민', time:'17:05', desc:'KEPCO 과제 관련 데이터 수집 스크립트 정리, 다음 주 시뮬레이션 파라미터 셋업.', check:'2/3 완료', pct:66 },
+        ],
+        emptyNote: '이하늘, 박준서님은 이날 기록을 작성하지 않았어요.'
+      },
+      '0828': {
+        label: '8월 28일 (목)', ratio: '2/4명 작성',
+        entries: [
+          { mine:true, name:'김연구', avatar:'연', time:'19:40', desc:'KEPCO 과제 중간보고서 초안 작성, PPO 학습 진행상황 정리해서 팀 채널에 공유.', check:'2/3 완료', pct:66 },
+          { name:'강태윤', avatar:'태', time:'16:15', desc:'투자자 미팅 자료 초안 정리, GoldenLink 데모 시나리오 구성.', check:'1/2 완료', pct:50 },
+        ],
+        emptyNote: '이하늘, 박준서님은 이날 기록을 작성하지 않았어요.'
+      },
+      '0827': {
+        label: '8월 27일 (수)', ratio: '2/4명 작성',
+        entries: [
+          { mine:true, name:'김연구', avatar:'연', time:'20:02', desc:'온도 조건별 SOC 추정 하이브리드 모델 논문 초안 리뷰, 이하늘과 실험 셋업 섹션 논의.', check:'2/2 완료', pct:100 },
+          { name:'이하늘', avatar:'하', time:'19:55', desc:'SOC 논문 실험 셋업 섹션 초안 작성, 김연구와 리뷰 논의.', check:'2/2 완료', pct:100 },
+        ],
+        emptyNote: '박준서, 정민재님은 이날 기록을 작성하지 않았어요.'
+      },
+      '0826': {
+        label: '8월 26일 (화)', ratio: '1/4명 작성',
+        entries: [
+          { mine:true, name:'김연구', avatar:'연', time:'21:10', desc:'IDEC 2026 색상 식별기 브레드보드 테스트, 오차 범위 확인 후 회로도 수정.', check:'1/2 완료', pct:50 },
+        ],
+        emptyNote: '이하늘, 박준서, 정민재님은 이날 기록을 작성하지 않았어요.'
+      },
+    };
+
+    const feedRows = document.getElementById('feedRows');
+    const feedDateLabel = document.getElementById('feedDateLabel');
+    const feedRatio = document.getElementById('feedRatio');
+    let feedIndex = 0;
+
+    function renderFeed(index){
+      feedIndex = Math.max(0, Math.min(FEED_DATES.length - 1, index));
+      const data = FEED_DATA[FEED_DATES[feedIndex]];
+      feedDateLabel.textContent = data.label;
+      feedRatio.textContent = data.ratio;
+
+      feedRows.innerHTML = data.entries.map(e => `
+        <div class="log-row${e.mine ? ' mine' : ''}">
+          <div class="log-row-top">
+            <span class="log-author"><span class="avatar-sm">${e.avatar}</span>${e.name}<span class="log-time"> · ${e.time}</span></span>
+            ${e.mine ? '<button class="log-edit-link" id="btnEditMine">수정</button>' : ''}
+          </div>
+          <p class="log-desc">${e.desc}</p>
+          <div class="log-checks"><div class="mini-track"><div class="mini-fill" style="width:${e.pct}%"></div></div>${e.check}</div>
+        </div>
+      `).join('') + `<div class="log-row empty">${data.emptyNote}</div>`;
+
+      const editBtn = document.getElementById('btnEditMine');
+      if (editBtn) editBtn.addEventListener('click', openLogModal);
+    }
+
+    document.getElementById('feedPrev').addEventListener('click', () => renderFeed(feedIndex + 1)); // older
+    document.getElementById('feedNext').addEventListener('click', () => renderFeed(feedIndex - 1)); // newer
+
+    document.querySelectorAll('.log-row.clickable[data-date]').forEach(row => {
+      row.addEventListener('click', () => {
+        const idx = FEED_DATES.indexOf(row.dataset.date);
+        if (idx !== -1){
+          renderFeed(idx);
+          document.querySelector('.list-card').scrollIntoView({ behavior:'smooth', block:'start' });
+        }
+      });
+    });
+
+    renderFeed(0);
+  </script>
+</body>
+</html>

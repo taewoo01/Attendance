@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>실적 관리 — PLAY GROUND</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #081512;
+    --bg-panel: #0b1e19;
+    --bg-raised: #0e231d;
+    --teal: #48d9b0;
+    --teal-dim: rgba(72,217,176,0.16);
+    --amber: #e2a83f;
+    --amber-dim: rgba(226,168,63,0.16);
+    --silk: #e7efec;
+    --silk-dim: #86a199;
+    --silk-faint: #45594f;
+    --trace: rgba(231,239,236,0.028);
+    --border: rgba(231,239,236,0.10);
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg);
+    color: var(--silk);
+    font-family: 'IBM Plex Sans KR', -apple-system, sans-serif;
+    min-height:100vh;
+  }
+  a{ color:inherit; text-decoration:none; }
+  button{ font-family:inherit; }
+
+  /* ---------- STATUS BAR (shared) ---------- */
+  .statusbar{ border-bottom: 1px solid var(--border); background: rgba(8,21,18,0.7); }
+  .statusbar-in{
+    max-width: 1220px; margin:0 auto;
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 16px 28px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12px; color: var(--silk-dim);
+  }
+  .statusbar-logo{ display:flex; align-items:center; gap:9px; color: var(--silk); font-weight:600; letter-spacing:0.02em; }
+  .statusbar-logo .chip-dot{ width:7px; height:7px; background: var(--teal); }
+  .statusbar-logo .pg-logo{ width:22px; height:20px; flex-shrink:0; }
+  .statusbar-nav{ display:flex; gap:16px; }
+  .statusbar-nav a:hover{ color: var(--silk); }
+  .statusbar-nav a.active{ color: var(--teal); }
+  .statusbar-right{ display:flex; align-items:center; gap:16px; }
+  .icon-btn{ position:relative; width:34px; height:34px; border-radius:8px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .icon-btn svg{ width:16px; height:16px; stroke: var(--silk-dim); }
+  .icon-btn:hover{ border-color: var(--teal-dim); }
+  .icon-btn:hover svg{ stroke: var(--silk); }
+  .badge-count{
+    position:absolute; top:-5px; right:-5px;
+    background:#e2543f; color:#fff; font-size:9.5px; font-weight:700;
+    width:15px; height:15px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    border: 1.5px solid var(--bg);
+  }
+  .user-chip{ display:flex; align-items:center; gap:8px; color: var(--silk); font-weight:500; cursor:pointer; }
+  .user-chip .avatar{
+    width:26px; height:26px; border-radius:50%;
+    background: linear-gradient(155deg, var(--teal), #157a5f);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:11px; color:#04231b;
+  }
+  .user-chip svg{ stroke: var(--silk-faint); margin-left:-2px; }
+  @media (max-width:960px){ .statusbar-nav{ display:none; } }
+
+  /* ---------- PAGE HEADER ---------- */
+  .page-head{
+    max-width:1220px; margin:0 auto; padding: 30px 28px 0;
+    display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:10px;
+  }
+  .page-kicker{ font-family:'IBM Plex Mono',monospace; font-size:12px; color: var(--silk-faint); }
+  .page-kicker .cur{ color: var(--teal); }
+  .page-title{ font-size:26px; font-weight:600; margin:6px 0 0; }
+  .btn{
+    font-size:13px; font-weight:600; padding: 10px 16px;
+    border: 1px solid var(--border); cursor:pointer; border-radius:8px;
+    display:inline-flex; align-items:center; justify-content:center; gap:7px;
+  }
+  .btn-primary{ background: var(--teal); color:#04231b; border-color: var(--teal); }
+  .btn-ghost{ background: transparent; color: var(--silk); border-color: var(--border); }
+  .btn-sm{ font-size:12px; padding:7px 12px; }
+
+  /* ---------- REGISTER-RESULT MODAL ---------- */
+  .modal-overlay{
+    display:none; position:fixed; inset:0; background: rgba(4,10,8,0.65);
+    align-items:center; justify-content:center; z-index:100; padding:20px;
+  }
+  .modal-overlay.open{ display:flex; }
+  .modal{
+    background: var(--bg-panel); border:1px solid var(--border); border-radius:14px;
+    width:100%; max-width:560px; max-height:88vh; overflow-y:auto;
+  }
+  .modal-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 22px; border-bottom:1px solid var(--border);
+  }
+  .modal-head h3{ font-size:14.5px; margin:0; font-weight:600; }
+  .modal-close{
+    background:transparent; border:none; color:var(--silk-faint); font-size:20px;
+    cursor:pointer; line-height:1; padding:2px 4px;
+  }
+  .modal-close:hover{ color: var(--silk); }
+  .modal-body{ padding:20px 22px 22px; }
+  .modal-foot{
+    display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    padding:14px 22px; border-top:1px solid var(--border);
+  }
+
+  .field-label{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:0.1em; color: var(--silk-faint); margin:0 0 8px; }
+  .form-row{ margin-bottom:18px; }
+  .form-row:last-child{ margin-bottom:0; }
+  .form-grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .form-input, .form-textarea{
+    width:100%; background: var(--bg-raised); border:1px solid var(--border); border-radius:10px;
+    padding:11px 14px; color: var(--silk); font-size:13.5px; font-family:'IBM Plex Sans KR', sans-serif;
+  }
+  .form-input:focus, .form-textarea:focus{ outline:none; border-color: var(--teal-dim); }
+  .form-textarea{ min-height:88px; resize:vertical; line-height:1.6; }
+
+  .type-toggle{ display:flex; border:1px solid var(--border); border-radius:8px; overflow:hidden; width:fit-content; }
+  .type-toggle button{
+    background:transparent; border:none; color: var(--silk-dim);
+    font-size:12.5px; font-weight:600; padding:8px 18px; cursor:pointer;
+  }
+  .type-toggle button.active{ background: var(--teal); color:#04231b; }
+
+  .file-attach-btn{
+    display:inline-flex; align-items:center; gap:7px;
+    background: var(--bg-raised); border:1px dashed var(--border); border-radius:8px;
+    padding:9px 13px; font-size:12.5px; color: var(--silk-dim); cursor:pointer;
+  }
+  .file-attach-btn svg{ width:13px; height:13px; stroke: var(--silk-faint); }
+  .file-attach-btn:hover{ border-color: var(--teal-dim); color: var(--silk); }
+
+  /* ---------- MAIN GRID ---------- */
+  .main{
+    max-width:1220px; margin:0 auto; padding: 22px 28px 90px;
+    display:grid; grid-template-columns: 1fr 300px; gap:22px; align-items:start;
+  }
+  @media (max-width:960px){ .main{ grid-template-columns:1fr; } }
+
+  /* ---------- TOOLBAR ---------- */
+  .cal-toolbar{
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
+    margin-bottom:14px; font-family:'IBM Plex Mono',monospace; font-size:12px; color: var(--silk-dim);
+  }
+  .toolbar-left{ display:flex; align-items:center; gap:10px; }
+  .view-toggle{ display:flex; border:1px solid var(--border); border-radius:7px; overflow:hidden; }
+  .view-toggle button{
+    background:transparent; border:none; color: var(--silk-dim);
+    font-family:'IBM Plex Mono',monospace; font-size:11.5px; font-weight:600;
+    padding: 7px 14px; cursor:pointer;
+  }
+  .view-toggle button.active{ background: var(--teal); color:#04231b; }
+  .cal-nav{ display:flex; align-items:center; gap:10px; }
+  .cal-nav button{
+    width:24px; height:24px; border-radius:6px; border:1px solid var(--border);
+    background:transparent; color:var(--silk-dim); cursor:pointer;
+  }
+  .sort-select{
+    font-family:'IBM Plex Mono',monospace; font-size:11.5px; color: var(--silk-dim);
+    background: var(--bg-panel); border:1px solid var(--border); border-radius:7px;
+    padding:7px 10px; cursor:pointer;
+  }
+
+  /* ---------- RESULT LIST ---------- */
+  .list-card{
+    background: var(--bg-panel); border:1px solid var(--border); border-radius:14px;
+    overflow:hidden;
+  }
+  .list-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 18px 22px; border-bottom:1px solid var(--border);
+  }
+  .list-head h3{ font-size:14.5px; margin:0; font-weight:600; }
+  .list-head span{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; color: var(--silk-faint); }
+
+  .res-row{
+    display:grid; grid-template-columns: 40px 1fr auto;
+    gap:14px; align-items:flex-start;
+    padding: 17px 22px; border-bottom:1px solid var(--border);
+  }
+  .res-row:last-child{ border-bottom:none; }
+  .res-row:hover{ background: rgba(231,239,236,0.02); }
+
+  .res-avatar{
+    width:34px; height:34px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:12px;
+    background: rgba(72,217,176,0.14); color: var(--teal);
+    margin-top:1px;
+  }
+  .res-row.team .res-avatar{ background: var(--amber-dim); color: var(--amber); }
+
+  .res-top{ display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin-bottom:4px; }
+  .res-title{ font-size:14px; font-weight:600; color: var(--silk); }
+  .res-tag{
+    font-family:'IBM Plex Mono',monospace; font-size:9.5px; font-weight:700;
+    padding: 2px 6px; border-radius:4px; letter-spacing:0.03em;
+    background: rgba(72,217,176,0.14); color: var(--teal);
+  }
+  .res-row.team .res-tag{ background: var(--amber-dim); color: var(--amber); }
+  .res-desc{ font-size:12.5px; color: var(--silk-dim); line-height:1.55; margin:0 0 8px; max-width:64ch; }
+  .res-meta{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; font-family:'IBM Plex Mono',monospace; font-size:11px; color: var(--silk-faint); }
+  .res-meta .who{ color: var(--silk-dim); }
+  .res-file{ display:inline-flex; align-items:center; gap:5px; }
+  .res-file svg{ width:11px; height:11px; stroke: var(--silk-faint); }
+
+  .res-right{ display:flex; flex-direction:column; align-items:flex-end; gap:8px; }
+  .res-date{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; color: var(--silk-faint); white-space:nowrap; }
+  .metric-chip{
+    font-family:'IBM Plex Mono',monospace; font-size:11.5px; font-weight:700;
+    padding: 5px 10px; border-radius:7px;
+    background: var(--bg-raised); border:1px solid var(--border); color: var(--teal);
+    white-space:nowrap;
+  }
+  .metric-chip .l{ color: var(--silk-faint); font-weight:500; margin-right:5px; }
+
+  @media (max-width:640px){
+    .res-row{ grid-template-columns: 34px 1fr; }
+    .res-right{ grid-column:1 / -1; flex-direction:row; align-items:center; justify-content:space-between; margin-top:8px; padding-left:48px; }
+  }
+
+  /* ---------- SIDEBAR ---------- */
+  .side-card{
+    background: var(--bg-panel); border:1px solid var(--border); border-radius:12px;
+    padding: 18px 18px 16px; margin-bottom:16px;
+  }
+  .side-head{ font-size:13.5px; font-weight:600; margin:0 0 14px; }
+
+  .summary-num{ font-family:'IBM Plex Mono',monospace; font-size:30px; font-weight:700; color: var(--teal); line-height:1; }
+  .summary-sub{ font-size:11.5px; color: var(--silk-faint); margin-top:6px; }
+  .summary-split{ display:flex; gap:20px; margin-top:16px; padding-top:14px; border-top:1px solid var(--border); }
+  .summary-split div{ flex:1; }
+  .summary-split .n{ font-family:'IBM Plex Mono',monospace; font-size:17px; font-weight:700; color: var(--silk); }
+  .summary-split .l{ font-size:10.5px; color: var(--silk-faint); margin-top:2px; }
+
+  .member-bar-row{ margin-bottom:11px; }
+  .member-bar-row:last-child{ margin-bottom:0; }
+  .member-bar-top{ display:flex; justify-content:space-between; font-size:11.5px; margin-bottom:5px; }
+  .member-bar-top .name{ color: var(--silk-dim); }
+  .member-bar-top .cnt{ font-family:'IBM Plex Mono',monospace; color: var(--silk-faint); }
+  .member-bar-track{ height:5px; border-radius:3px; background: var(--bg-raised); overflow:hidden; }
+  .member-bar-fill{ height:100%; background: var(--teal); border-radius:3px; }
+
+  .quick-item{ display:flex; align-items:baseline; gap:9px; padding:7px 0; border-bottom:1px solid var(--border); }
+  .quick-item:last-child{ border-bottom:none; padding-bottom:0; }
+  .quick-day{ font-family:'IBM Plex Mono',monospace; color: var(--teal); font-size:10.5px; width:34px; flex-shrink:0; }
+  .quick-title{ flex:1; font-size:12px; color: var(--silk); }
+
+  footer{
+    max-width:1220px; margin:0 auto; padding: 28px 28px 56px;
+    display:flex; justify-content:space-between;
+    border-top:1px solid var(--border);
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11px; color: var(--silk-faint);
+  }
+</style>
+</head>
+<body>
+
+  <div class="statusbar">
+    <div class="statusbar-in">
+      <div class="statusbar-logo"><svg class="pg-logo" viewBox="0 0 48 44" role="img" aria-label="Playground"><defs><linearGradient id="pg-logo-grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#a3e635"/><stop offset="55%" stop-color="#22c55e"/><stop offset="100%" stop-color="#0e7a3c"/></linearGradient></defs><g stroke="url(#pg-logo-grad)" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M24 8 L8.5 34 M24 8 L39.5 34 M24 8 L24 25 M24 25 L8.5 34 M24 25 L39.5 34" stroke-width="3.2"/><g fill="url(#pg-logo-grad)" stroke-width="3"><path d="M24 2.5 L28.8 5.25 L28.8 10.75 L24 13.5 L19.2 10.75 L19.2 5.25 Z"/><path d="M8.5 28.5 L13.3 31.25 L13.3 36.75 L8.5 39.5 L3.7 36.75 L3.7 31.25 Z"/><path d="M39.5 28.5 L44.3 31.25 L44.3 36.75 L39.5 39.5 L34.7 36.75 L34.7 31.25 Z"/></g></g></svg> PLAY_GROUND</div>
+      <div class="statusbar-nav">
+        <a href="index.html">홈</a><a href="schedule.html">일정</a><a class="active" href="#">실적</a><a href="daily.html">데일리</a><a href="ideas.html">아이디어</a><a href="meetings.html">회의록</a><a href="files.html">자료실</a><a href="about.html">회사소개</a><a href="team.html">팀소개</a>
+      </div>
+      <div class="statusbar-right">
+        <div class="icon-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>
+          <span class="badge-count">3</span>
+        </div>
+        <div class="icon-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+        </div>
+        <div class="user-chip">
+          <span class="avatar">연</span>김연구
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-head">
+    <div>
+      <p class="page-kicker">PLAY GROUND / <span class="cur">실적 관리</span></p>
+      <h1 class="page-title">실적 관리</h1>
+    </div>
+    <button class="btn btn-primary" id="btnOpenResultModal">+ 실적 등록</button>
+  </div>
+
+  <!-- ===== REGISTER RESULT MODAL ===== -->
+  <div class="modal-overlay" id="resultModalOverlay">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>실적 등록</h3>
+        <button class="modal-close" id="btnCloseResultModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <p class="field-label">제목</p>
+          <input type="text" class="form-input" id="resTitle" placeholder="예: DC 리플 기반 SOH 추정 실험 완료">
+        </div>
+
+        <div class="form-row">
+          <p class="field-label">구분</p>
+          <div class="type-toggle" id="resTypeToggle">
+            <button type="button" class="active" data-type="personal">개인</button>
+            <button type="button" data-type="team">팀</button>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <p class="field-label">설명</p>
+          <textarea class="form-textarea" id="resDesc" placeholder="무엇을 했는지 간단히 설명해주세요"></textarea>
+        </div>
+
+        <div class="form-row form-grid-2">
+          <div>
+            <p class="field-label">담당자</p>
+            <input type="text" class="form-input" id="resWho" value="김연구">
+          </div>
+          <div>
+            <p class="field-label">날짜</p>
+            <input type="text" class="form-input" id="resDate" value="8월 31일 (월)">
+          </div>
+        </div>
+
+        <div class="form-row form-grid-2">
+          <div>
+            <p class="field-label">수치 지표 라벨 (선택)</p>
+            <input type="text" class="form-input" id="resMetricLabel" placeholder="예: 오차">
+          </div>
+          <div>
+            <p class="field-label">수치 지표 값 (선택)</p>
+            <input type="text" class="form-input" id="resMetricValue" placeholder="예: 2.8%">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <p class="field-label">첨부파일 (선택)</p>
+          <label class="file-attach-btn" for="resFileInput">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M21.44 11.05l-9.19 9.19a5 5 0 01-7.07-7.07l9.19-9.19a3.5 3.5 0 014.95 4.95l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+            <span id="resFileLabel">파일 선택</span>
+          </label>
+          <input type="file" id="resFileInput" style="display:none">
+        </div>
+      </div>
+      <div class="modal-foot">
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--silk-faint);">등록한 실적은 팀 전체에 공유돼요</span>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-ghost btn-sm" id="btnCancelResultModal">취소</button>
+          <button class="btn btn-primary btn-sm" id="btnSaveResultModal">등록</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div>
+      <div class="cal-toolbar">
+        <div class="toolbar-left">
+          <div class="view-toggle">
+            <button id="btnWeek" class="active">주간</button><button id="btnMonth">월간</button>
+          </div>
+          <div class="cal-nav">
+            <button>‹</button>
+            <span id="rangeLabel">8월 25일 – 8월 31일</span>
+            <button>›</button>
+          </div>
+        </div>
+        <select class="sort-select">
+          <option>최신순</option>
+          <option>담당자순</option>
+          <option>수치 지표순</option>
+        </select>
+      </div>
+
+      <div class="list-card">
+        <div class="list-head">
+          <h3>이번 주 실적</h3>
+          <span>7건 등록 · 개인 4 / 팀 3</span>
+        </div>
+
+        <div class="res-row">
+          <div class="res-avatar">연</div>
+          <div>
+            <div class="res-top"><span class="res-title">DC 리플 기반 SOH 추정 continual learning 실험 1차 완료</span><span class="res-tag">개인</span></div>
+            <p class="res-desc">기존 배치 학습 대비 드리프트 대응 정확도 비교 실험을 마치고 결과 정리. 다음 주 파라미터 튜닝 예정.</p>
+            <div class="res-meta">
+              <span class="who">김연구</span>
+              <span class="res-file"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 4h11l5 5v11H4z"/><path d="M15 4v5h5"/></svg>실험결과.xlsx</span>
+            </div>
+          </div>
+          <div class="res-right">
+            <span class="res-date">8월 29일 (금)</span>
+          </div>
+        </div>
+
+        <div class="res-row team">
+          <div class="res-avatar">지</div>
+          <div>
+            <div class="res-top"><span class="res-title">KEPCO 과제 중간보고서 제출</span><span class="res-tag">팀</span></div>
+            <p class="res-desc">Volt-VAR/Volt-Watt 제어 PPO 학습 진행상황 및 다음 분기 계획 포함해 제출 완료.</p>
+            <div class="res-meta">
+              <span class="who">오지훈 외 3명</span>
+              <span class="res-file"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 4h11l5 5v11H4z"/><path d="M15 4v5h5"/></svg>중간보고서.pdf</span>
+            </div>
+          </div>
+          <div class="res-right">
+            <span class="res-date">8월 28일 (목)</span>
+          </div>
+        </div>
+
+        <div class="res-row team">
+          <div class="res-avatar">지</div>
+          <div>
+            <div class="res-top"><span class="res-title">AI Rookie 경진대회 예선 통과</span><span class="res-tag">팀</span></div>
+            <p class="res-desc">응급환자 병원 매칭 시스템(GoldenLink)으로 예선 통과, 본선 진출 확정.</p>
+            <div class="res-meta">
+              <span class="who">Team GoldenLink</span>
+            </div>
+          </div>
+          <div class="res-right">
+            <span class="res-date">8월 27일 (수)</span>
+            <span class="metric-chip"><span class="l">진출</span>본선</span>
+          </div>
+        </div>
+
+        <div class="res-row">
+          <div class="res-avatar">하</div>
+          <div>
+            <div class="res-top"><span class="res-title">온도 조건별 SOC 추정 하이브리드 모델 초안 논문 작성</span><span class="res-tag">개인</span></div>
+            <p class="res-desc">신경망+칼만필터 결합 구조 설명 및 실험 셋업 섹션까지 초안 작성 완료.</p>
+            <div class="res-meta">
+              <span class="who">이하늘</span>
+              <span class="res-file"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 4h11l5 5v11H4z"/><path d="M15 4v5h5"/></svg>초안_v2.docx</span>
+            </div>
+          </div>
+          <div class="res-right">
+            <span class="res-date">8월 27일 (수)</span>
+          </div>
+        </div>
+
+        <div class="res-row">
+          <div class="res-avatar">준</div>
+          <div>
+            <div class="res-top"><span class="res-title">IDEC 2026 색상 식별기 아날로그 회로 1차 설계</span><span class="res-tag">개인</span></div>
+            <p class="res-desc">MCU 없이 비교기 기반으로 RGB 판별 회로 브레드보드 테스트 완료, 오차 범위 내 동작 확인.</p>
+            <div class="res-meta">
+              <span class="who">박준서</span>
+            </div>
+          </div>
+          <div class="res-right">
+            <span class="res-date">8월 26일 (화)</span>
+          </div>
+        </div>
+
+        <div class="res-row team">
+          <div class="res-avatar">민</div>
+          <div>
+            <div class="res-top"><span class="res-title">창업팀 협업 플랫폼 요구사항 정의서 확정</span><span class="res-tag">팀</span></div>
+            <p class="res-desc">11개 기능 확정 및 페이지별 상세 스펙 정리, 다음 단계로 와이어프레임 착수.</p>
+            <div class="res-meta">
+              <span class="who">정민재 외 2명</span>
+              <span class="res-file"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 4h11l5 5v11H4z"/><path d="M15 4v5h5"/></svg>요구사항정의서_v0.2.docx</span>
+            </div>
+          </div>
+          <div class="res-right">
+            <span class="res-date">8월 25일 (월)</span>
+          </div>
+        </div>
+
+        <div class="res-row">
+          <div class="res-avatar">도</div>
+          <div>
+            <div class="res-top"><span class="res-title">배터리 시뮬레이션 챌린지용 TGL 모델 검증</span><span class="res-tag">개인</span></div>
+            <p class="res-desc">ANSYS 열-전기 결합 시뮬레이션 결과와 실측 데이터 오차 3% 이내로 확인.</p>
+            <div class="res-meta">
+              <span class="who">최도윤</span>
+            </div>
+          </div>
+          <div class="res-right">
+            <span class="res-date">8월 25일 (월)</span>
+            <span class="metric-chip"><span class="l">오차</span>2.8%</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div>
+      <div class="side-card">
+        <h4 class="side-head">이번 주 요약</h4>
+        <div class="summary-num">7건</div>
+        <div class="summary-sub">지난주 대비 +2건</div>
+        <div class="summary-split">
+          <div><div class="n">4</div><div class="l">개인 실적</div></div>
+          <div><div class="n">3</div><div class="l">팀 실적</div></div>
+        </div>
+      </div>
+
+      <div class="side-card">
+        <h4 class="side-head">팀원별 등록 현황</h4>
+        <div class="member-bar-row">
+          <div class="member-bar-top"><span class="name">김연구</span><span class="cnt">3건</span></div>
+          <div class="member-bar-track"><div class="member-bar-fill" style="width:85%"></div></div>
+        </div>
+        <div class="member-bar-row">
+          <div class="member-bar-top"><span class="name">이하늘</span><span class="cnt">2건</span></div>
+          <div class="member-bar-track"><div class="member-bar-fill" style="width:55%"></div></div>
+        </div>
+        <div class="member-bar-row">
+          <div class="member-bar-top"><span class="name">오지훈</span><span class="cnt">2건</span></div>
+          <div class="member-bar-track"><div class="member-bar-fill" style="width:55%"></div></div>
+        </div>
+        <div class="member-bar-row">
+          <div class="member-bar-top"><span class="name">박준서</span><span class="cnt">1건</span></div>
+          <div class="member-bar-track"><div class="member-bar-fill" style="width:30%"></div></div>
+        </div>
+        <div class="member-bar-row">
+          <div class="member-bar-top"><span class="name">한서준</span><span class="cnt">0건</span></div>
+          <div class="member-bar-track"><div class="member-bar-fill" style="width:4%"></div></div>
+        </div>
+      </div>
+
+      <div class="side-card">
+        <h4 class="side-head">최근 등록</h4>
+        <div class="quick-item"><span class="quick-day">금</span><span class="quick-title">DC 리플 SOH continual learning</span></div>
+        <div class="quick-item"><span class="quick-day">목</span><span class="quick-title">KEPCO 중간보고서 제출</span></div>
+        <div class="quick-item"><span class="quick-day">수</span><span class="quick-title">AI Rookie 예선 통과</span></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span>PLAY_GROUND / rev.0.2</span>
+    <span>© 2026 PLAY GROUND</span>
+  </footer>
+
+  <script>
+    const btnWeek = document.getElementById('btnWeek');
+    const btnMonth = document.getElementById('btnMonth');
+    const rangeLabel = document.getElementById('rangeLabel');
+    btnWeek.addEventListener('click', () => {
+      btnWeek.classList.add('active'); btnMonth.classList.remove('active');
+      rangeLabel.textContent = '8월 25일 – 8월 31일';
+    });
+    btnMonth.addEventListener('click', () => {
+      btnMonth.classList.add('active'); btnWeek.classList.remove('active');
+      rangeLabel.textContent = '2026년 8월';
+    });
+
+    // ---------- register-result modal ----------
+    const resultModalOverlay = document.getElementById('resultModalOverlay');
+    const openResultModal = () => resultModalOverlay.classList.add('open');
+    const closeResultModal = () => resultModalOverlay.classList.remove('open');
+
+    document.getElementById('btnOpenResultModal').addEventListener('click', openResultModal);
+    document.getElementById('btnCloseResultModal').addEventListener('click', closeResultModal);
+    document.getElementById('btnCancelResultModal').addEventListener('click', closeResultModal);
+    document.getElementById('btnSaveResultModal').addEventListener('click', closeResultModal);
+    resultModalOverlay.addEventListener('click', (e) => {
+      if (e.target === resultModalOverlay) closeResultModal();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeResultModal();
+    });
+
+    document.querySelectorAll('#resTypeToggle button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#resTypeToggle button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+
+    document.getElementById('resFileInput').addEventListener('change', (e) => {
+      const label = document.getElementById('resFileLabel');
+      label.textContent = e.target.files.length ? e.target.files[0].name : '파일 선택';
+    });
+  </script>
+</body>
+</html>
