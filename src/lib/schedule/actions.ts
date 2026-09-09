@@ -11,7 +11,7 @@ const VALID_DAY_OF_WEEK = new Set(["월", "화", "수", "목", "금", "토", "�
 export type CreatePersonalEventState = { error?: string; success?: boolean };
 
 /**
- * "+ 개인 일정 등록" Server Action. 순서: Authentication → 입력 검증 → insert.
+ * "+ 일정 등록" Server Action. 순서: Authentication → 입력 검증 → insert.
  * 원본 schedule.html에는 이 버튼에 대응하는 등록 폼/모달이 없어(정적 버튼) 새로
  * 최소 폼(RegisterEventModal.tsx)을 만들었다 — 필드는 personal_events 스키마
  * (eventDate/eventTime/title)와 1:1로 대응한다.

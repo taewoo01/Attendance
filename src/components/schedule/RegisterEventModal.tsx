@@ -17,6 +17,8 @@ const DAYS_OF_WEEK = ["월", "화", "수", "목", "금", "토", "일"];
  * 일정 페이지 고도화 #1/#2: 요일은 select 하나가 아니라 복수 선택 가능한 chip
  * 그룹(hidden input들로 제출)이고, 시간은 자유 텍스트("09–11시") 대신 개인
  * 일정과 동일하게 시작/종료 time input으로 구조화했다.
+ * 버튼 라벨은 "+ 개인 일정 등록"이었으나, 모달 안에서 "개인 일정"/"고정 시간표"를
+ * 둘 다 고를 수 있어 이름과 실제 기능이 어긋나서 "+ 일정 등록"으로 바꿨다.
  */
 export function RegisterEventModal() {
   const router = useRouter();
@@ -70,7 +72,7 @@ export function RegisterEventModal() {
         onClick={() => setOpen(true)}
         className="inline-flex cursor-pointer items-center justify-center gap-[7px] rounded-button border border-teal bg-teal px-[15px] py-[9px] text-[13px] font-semibold text-[#04231b]"
       >
-        + 개인 일정 등록
+        + 일정 등록
       </button>
 
       <div
