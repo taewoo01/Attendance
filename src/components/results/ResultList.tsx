@@ -18,29 +18,37 @@ export type Result = {
   /** 실적 페이지 상세화 #8: 실적 하나에 여러 개 첨부 가능(achievement_files). */
   files?: { id: string; name: string }[];
   link?: string;
+  /** 표시용 파생값("8월 31일 (월)"). 기간 필터링은 dateKey(ISO)로 한다. */
   date: string;
+  /** ISO 날짜("YYYY-MM-DD") — ResultsBoard가 주간/월간 기간 필터링에 쓴다. */
+  dateKey: string;
   metric?: { label: string; value: string };
 };
 
 type ResultListProps = {
   results: Result[];
   currentUserId?: string;
+  /** 현재 선택된 기간을 반영한 헤더 문구(예: "이번 주 실적"/"이번 달 실적") — ResultsBoard가 계산해 내려준다. */
+  heading: string;
 };
 
 /**
  * playground-design/results.html의 .list-card 전체(헤더 + .res-row 목록).
- * 원본 <script>가 건드리지 않는 정적 영역이라 Server Component로 유지한다.
+ * 컴포넌트 자체는 훅이 없는 순수 프레젠테이션이라(하드코딩 헤더 문구만 있던
+ * 원본과 달리 이제 heading을 prop으로 받는다) 이제는 ResultsBoard(client)
+ * 안에서 필터링된 results로 렌더링된다 — 기간(주간/월간) 필터링 자체는
+ * ResultsBoard가 담당한다.
  * TASK-026: 하드코딩 7건 대신 실제 achievements를 page.tsx에서 조회해
  * props로 받는다. `tag`("개인"/"팀")는 `team`에서 파생해 렌더링 시 계산한다.
  */
-export function ResultList({ results, currentUserId }: ResultListProps) {
+export function ResultList({ results, currentUserId, heading }: ResultListProps) {
   const personalCount = results.filter((r) => !r.team).length;
   const teamCount = results.filter((r) => r.team).length;
 
   return (
     <div className="overflow-hidden rounded-card border border-border bg-bg-panel">
       <div className="flex items-center justify-between border-b border-border px-[22px] py-[18px]">
-        <h3 className="m-0 text-[14.5px] font-semibold">이번 주 실적</h3>
+        <h3 className="m-0 text-[14.5px] font-semibold">{heading}</h3>
         <span className="font-mono text-[11.5px] text-silk-faint">
           {results.length}건 등록 · 개인 {personalCount} / 팀 {teamCount}
         </span>

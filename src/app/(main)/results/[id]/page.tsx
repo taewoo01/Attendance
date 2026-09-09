@@ -4,6 +4,7 @@ import { AchievementFileLink } from "@/components/results/AchievementFileLink";
 import { ResultDeleteButton } from "@/components/results/ResultDeleteButton";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { getAchievementById, listAchievementFilesFor } from "@/lib/db/achievements";
+import { formatKoreanDateLabel } from "@/lib/date";
 
 // 목록과 동일하게 매 요청마다 렌더링한다(TASK-026 dynamic 설정과 동일 원칙).
 export const dynamic = "force-dynamic";
@@ -75,7 +76,7 @@ export default async function ResultDetailPage({ params }: { params: Promise<{ i
             </div>
             <div>
               <p className="m-0 mb-1 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">날짜</p>
-              <p className="m-0 text-[13.5px] text-silk">{achievement.resultDate}</p>
+              <p className="m-0 text-[13.5px] text-silk">{formatKoreanDateLabel(achievement.resultDate)}</p>
             </div>
             {achievement.team && achievement.teamMembers.length > 0 && (
               <div className="col-span-2">

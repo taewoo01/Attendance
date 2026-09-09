@@ -1,10 +1,11 @@
 import { RegisterResultModal } from "@/components/results/RegisterResultModal";
-import { ResultList, type Result } from "@/components/results/ResultList";
+import { ResultsBoard } from "@/components/results/ResultsBoard";
+import type { Result } from "@/components/results/ResultList";
 import { ResultsSidebar } from "@/components/results/ResultsSidebar";
-import { ResultsToolbar } from "@/components/results/ResultsToolbar";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { listAchievementFiles, listAchievements } from "@/lib/db/achievements";
 import { listProfiles } from "@/lib/db/profiles";
+import { formatKoreanDateLabel, seoulDateKey } from "@/lib/date";
 
 // TASK-026: DB 조회가 build 시점에 고정되지 않도록 매 요청마다 렌더링한다.
 export const dynamic = "force-dynamic";
@@ -39,19 +40,19 @@ export default async function ResultsPage() {
     file: row.file,
     files: filesByAchievement.get(row.id),
     link: row.link || undefined,
-    date: row.resultDate,
+    date: formatKoreanDateLabel(row.resultDate),
+    dateKey: row.resultDate,
     metric: row.metricLabel ? { label: row.metricLabel, value: row.metricValue } : undefined,
   }));
+
+  const todayKey = seoulDateKey(new Date());
 
   return (
     <>
       <RegisterResultModal members={members} />
 
       <div className="mx-auto grid max-w-[1220px] grid-cols-[1fr_300px] items-start gap-[22px] px-7 pt-[22px] pb-[90px] max-[960px]:grid-cols-1">
-        <div>
-          <ResultsToolbar />
-          <ResultList results={results} currentUserId={user?.id} />
-        </div>
+        <ResultsBoard results={results} currentUserId={user?.id} todayKey={todayKey} />
         <ResultsSidebar results={results} members={members} />
       </div>
     </>

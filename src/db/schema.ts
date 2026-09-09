@@ -195,6 +195,9 @@ export const achievements = pgTable("achievements", {
   who: text("who").notNull().default(""),
   link: text("link").notNull().default(""),
   file: text("file").notNull().default(""),
+  /** ISO 날짜("YYYY-MM-DD", personal_events.eventDate와 동일 컨벤션) — 실적 페이지의
+   * 주간/월간 기간 필터링에 실제 날짜 연산이 필요해 자유 텍스트 대신 이 형식으로 저장한다.
+   * 화면 표시는 formatKoreanDateLabel(src/lib/date.ts)로 렌더링 시점에 변환한다. */
   resultDate: text("result_date").notNull().default(""),
   metricLabel: text("metric_label").notNull().default(""),
   metricValue: text("metric_value").notNull().default(""),

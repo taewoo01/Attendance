@@ -1,4 +1,5 @@
 import { weekdayIndex, DOW_KO, formatTimeRange } from "@/lib/schedule/calendar";
+import { seoulDateKey } from "@/lib/date";
 import { RegisterEventModal } from "@/components/schedule/RegisterEventModal";
 import { ScheduleCalendar } from "@/components/schedule/ScheduleCalendar";
 import {
@@ -14,11 +15,6 @@ import { listFixedSchedules, listPersonalEvents } from "@/lib/db/schedule";
 
 // TASK-028: DB 조회가 build 시점에 고정되지 않도록 매 요청마다 렌더링한다.
 export const dynamic = "force-dynamic";
-
-/** Asia/Seoul 기준 캘린더 날짜 키(YYYY-MM-DD). */
-function seoulDateKey(date: Date): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" }).format(date);
-}
 
 function seoulTime(date: Date): string {
   return new Intl.DateTimeFormat("ko-KR", {

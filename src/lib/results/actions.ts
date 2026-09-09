@@ -9,15 +9,6 @@ import { achievementFiles, achievements } from "@/db/schema";
 import { getAchievementFileById, listAchievementFilesFor } from "@/lib/db/achievements";
 import { ALLOWED_EXTENSIONS, BUCKET, MAX_SIZE_BYTES, extensionOf, sanitizeFileName } from "@/lib/files/upload-shared";
 
-const DOW_KO = ["일", "월", "화", "수", "목", "금", "토"];
-
-/** `<input type="date">`가 주는 "YYYY-MM-DD"를 기존 표기("8월 31일 (월)")로 변환한다. */
-function formatResultDate(isoDate: string): string {
-  const [y, m, d] = isoDate.split("-").map(Number);
-  const dow = DOW_KO[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
-  return `${m}월 ${d}일 (${dow})`;
-}
-
 export type CreateAchievementState = { error?: string; success?: boolean };
 
 /**
@@ -25,8 +16,13 @@ export type CreateAchievementState = { error?: string; success?: boolean };
  * TASK-026 당시엔 등록 기능 자체가 없어(RegisterResultModal.tsx가 저장 로직 없는
  * 정적 마크업이었다) 등록해도 목록에 안 보이는 문제가 있었다 — 이 액션이 그 실제
  * 저장 경로다. `avatar`는 TeamGrid의 이니셜 표기와 동일한 컨벤션(이름 첫 글자)으로
- * 서버에서 파생한다. `resultDate`는 여전히 자유 텍스트 컬럼이라(스키마를 바꾸지
- * 않는다) 날짜 피커가 준 ISO 값을 기존 표기 형식으로 변환해서 저장한다.
+ * 서버에서 파생한다. `resultDate`는 컬럼 자체는 여전히 text지만(스키마를 바꾸지
+ * 않는다) 날짜 피커가 준 ISO 값("YYYY-MM-DD") 그대로 저장한다 — personal_events.
+ * eventDate와 동일한 컨벤션이다. 예전에는 "8월 31일 (월)" 같은 표기로 미리 변환해
+ * 저장해서 실제 Date로 되돌릴 수 없었고, 그래서 실적 페이지의 주간/월간 기간
+ * 이동이 항상 정적 문자열만 보여주고 실제로 필터링되지 않는 문제가 있었다.
+ * 화면 표시용 "M월 D일 (요일)" 변환은 이제 렌더링 시점에 formatKoreanDateLabel
+ * (src/lib/date.ts)로 한다(ResultsBoard/results/[id]/page.tsx 참고).
  * 첨부파일(#7/#8, 여러 개 가능)은 files 기능(src/lib/files/actions.ts)과 동일한
  * Storage 버킷/allowlist/용량 제한을 그대로 재사용하고, 경로만 `achievements/<id>/...`
  * 로 구분한다. 실적 행이 "첨부파일 깨짐" 상태로 반쯍 생성되는 걸 피하려고, id를
@@ -118,7 +114,7 @@ export async function createAchievement(formData: FormData): Promise<CreateAchie
     desc,
     who,
     link,
-    resultDate: formatResultDate(resultDateInput),
+    resultDate: resultDateInput,
     metricLabel,
     metricValue,
   });

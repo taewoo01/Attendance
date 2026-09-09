@@ -1,5 +1,9 @@
-export const DOW_EN = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
-export const DOW_KO = ["일", "월", "화", "수", "목", "금", "토"];
+import { DOW_EN, DOW_KO, addDays, daysInMonth, mondayKeyOf, monthKeyOf, weekdayIndex } from "@/lib/date";
+
+// 주/월 날짜 연산 자체는 실적 페이지(results)도 필요로 하는 범용 로직이라
+// src/lib/date.ts로 뽑아냈다 — 여기서는 재수출만 해서 기존 import 경로
+// ("@/lib/schedule/calendar"에서 addDays 등을 가져오던 컴포넌트들)를 그대로 유지한다.
+export { DOW_EN, DOW_KO, addDays, addMonths, mondayKeyOf, monthKeyOf, weekdayIndex, weekRangeLabelOf, monthRangeLabelOf } from "@/lib/date";
 
 /**
  * "내 일정" / "팀 전체(고정 일정 X)" / "팀 전체(고정 일정 O)" 3단 필터.
@@ -63,64 +67,17 @@ export type MonthCell = {
   today?: boolean;
   count?: string;
   dots?: Array<"personal" | "fixed">;
+  /** 해당 날짜의 전체 이벤트(자르지 않은 원본) — "팀 전체" 뷰에서 몇 개까지 보여줄지/
+   * 펼쳤는지는 MonthView가 (week view와 동일하게) 렌더링 시점에 결정한다. */
   events?: MonthEvent[];
-  moreCount?: number;
 };
 
-const TEAM_CAP = 2;
-
-/** dateKey("YYYY-MM-DD") 기준 +/- delta일. */
-export function addDays(dateKey: string, delta: number): string {
-  const [y, m, d] = dateKey.split("-").map(Number);
-  const dt = new Date(Date.UTC(y, m - 1, d));
-  dt.setUTCDate(dt.getUTCDate() + delta);
-  return dt.toISOString().slice(0, 10);
-}
-
-export function weekdayIndex(dateKey: string): number {
-  const [y, m, d] = dateKey.split("-").map(Number);
-  return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
-}
-
-export function mondayKeyOf(dateKey: string): string {
-  return addDays(dateKey, -((weekdayIndex(dateKey) + 6) % 7));
-}
-
-export function weekRangeLabelOf(mondayKey: string, sundayKey: string): string {
-  const [startY, startM, startD] = mondayKey.split("-").map(Number);
-  const [endY, endM, endD] = sundayKey.split("-").map(Number);
-  return startY === endY && startM === endM
-    ? `${startM}월 ${startD}일 – ${endD}일`
-    : `${startM}월 ${startD}일 – ${endM}월 ${endD}일`;
-}
-
-/** dateKey("YYYY-MM-DD")의 "YYYY-MM" 부분. */
-export function monthKeyOf(dateKey: string): string {
-  return dateKey.slice(0, 7);
-}
-
-export function daysInMonth(monthKey: string): number {
-  const [y, m] = monthKey.split("-").map(Number);
-  return new Date(Date.UTC(y, m, 0)).getUTCDate();
-}
-
-/** monthKey("YYYY-MM") 기준 +/- delta개월. */
-export function addMonths(monthKey: string, delta: number): string {
-  const [y, m] = monthKey.split("-").map(Number);
-  const total = y * 12 + (m - 1) + delta;
-  const ny = Math.floor(total / 12);
-  const nm = ((total % 12) + 12) % 12;
-  return `${ny}-${String(nm + 1).padStart(2, "0")}`;
-}
+/** "팀 전체" 뷰(owner !== "me")에서 하루에 보여줄 기본 이벤트 개수. week/month view가 공유한다. */
+export const TEAM_CAP = 2;
 
 /** 종료 시간이 있으면 "시작–종료", 없으면 시작 시간만. */
 export function formatTimeRange(time: string, endTime?: string): string {
   return endTime ? `${time}–${endTime}` : time;
-}
-
-export function monthRangeLabelOf(monthKey: string): string {
-  const [y, m] = monthKey.split("-").map(Number);
-  return `${y}년 ${m}월`;
 }
 
 /**
@@ -179,6 +136,12 @@ export function buildWeekDays(
  * "내 일정"일 때는 week view처럼 개수 제한(TEAM_CAP) 없이 전부 보여준다.
  * "팀 전체(고정 일정 X)"는 fixed_schedules 자체를 아예 조회 대상에서 뺀다(dots도
  * "fixed" 점이 안 뜬다) — OwnerFilter 참고.
+ * 버그 수정: 예전에는 여기서 이벤트를 TEAM_CAP개로 미리 잘라서 내려보내고 moreCount만
+ * 계산해뒀는데, MonthView의 "+N개 더보기"가 그 잘린 나머지를 펼쳐서 보여줄 방법이
+ * 없었다(week view는 ScheduleCalendar가 전체 목록을 들고 렌더링 시점에 펼침 여부를
+ * 계산하는데, month view만 원본 자체가 이미 잘려 있었다) — 그래서 "더보기"를 눌러도
+ * 아무 일도 없었다. 이제 이 함수는 자르지 않은 전체 events를 내려주고, 몇 개까지
+ * 보여줄지/펼쳤는지는 week view와 동일하게 MonthView가 렌더링 시점에 결정한다.
  */
 export function buildMonthCells(
   monthKey: string,
@@ -193,7 +156,6 @@ export function buildMonthCells(
   const gridStart = mondayKeyOf(firstDateKey);
   const gridEnd = addDays(mondayKeyOf(lastDateKey), 6);
   const isMine = (rowUserId: string) => userId !== undefined && rowUserId === userId;
-  const cap = owner === "me" ? Number.POSITIVE_INFINITY : TEAM_CAP;
 
   const cells: MonthCell[] = [];
   for (let dateKey = gridStart; dateKey <= gridEnd; dateKey = addDays(dateKey, 1)) {
@@ -239,8 +201,7 @@ export function buildMonthCells(
       today: dateKey === todayKey,
       count: peopleCount > 0 ? `${peopleCount}명` : undefined,
       dots: dots.length > 0 ? dots : undefined,
-      events: events.length > 0 ? events.slice(0, cap) : undefined,
-      moreCount: Number.isFinite(cap) && events.length > cap ? events.length - cap : 0,
+      events: events.length > 0 ? events : undefined,
     });
   }
 
