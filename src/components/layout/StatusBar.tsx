@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { ShareChip } from "@/components/about/ShareChip";
 import { IconButton } from "@/components/ui/IconButton";
+import { LogoutButton } from "@/components/ui/LogoutButton";
 import { UserChip } from "@/components/ui/UserChip";
 import { Navigation } from "./Navigation";
 
@@ -14,7 +15,11 @@ import { Navigation } from "./Navigation";
  * 다른 8개 페이지의 렌더링 결과는 아래 기본 분기 그대로 변경 없이 유지된다.
  * 실제 알림/사용자 데이터는 연결하지 않고 원본 mockup 값을 그대로 표시한다.
  */
-export function StatusBar() {
+type StatusBarProps = {
+  userName?: string;
+};
+
+export function StatusBar({ userName }: StatusBarProps) {
   const pathname = usePathname();
   const isAbout = pathname === "/about";
 
@@ -81,7 +86,8 @@ export function StatusBar() {
                 <path d="M3 10h18M8 3v4M16 3v4" />
               </svg>
             </IconButton>
-            <UserChip />
+            <UserChip name={userName} initial={userName?.charAt(0)} />
+            <LogoutButton />
           </div>
         )}
       </div>

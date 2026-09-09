@@ -6,14 +6,26 @@ import { deleteFixedSchedule } from "@/lib/schedule/actions";
 import { EditFixedScheduleModal, type EditableFixedSchedule } from "@/components/schedule/EditFixedScheduleModal";
 import type { FixedScheduleItem } from "@/components/schedule/ScheduleSidebar";
 
+const DAY_ORDER = ["월", "화", "수", "목", "금", "토", "일"];
+
 /**
- * ScheduleSidebar의 "내 고정 시간표" 카드. 목록 자체는 원본 side-card 구조를
- * 그대로 쓰지만, TASK-032에서 항목별 삭제/수정 버튼이 추가되어(0016_fixed_schedules_rls.sql
- * 로 본인 소유 쓰기 RLS가 생긴 뒤) 이 부분만 Client Component로 분리했다.
- * "오늘" 아젠다 카드는 이 상태와 무관해 ScheduleSidebar에 Server Component로 남는다.
+ * ScheduleSidebar의 "고정 시간표" 카드. "내 고정 시간표"(본인 것만)와 "전체 고정
+ * 시간표"(팀 전체, 예: 다른 팀원의 알바 시간표)는 서로 다른 데이터라 하나로 합치지
+ * 않고 탭으로 나눠 보여준다. "전체" 탭에서도 본인 소유 항목만 수정/삭제 가능하다
+ * (다른 사람 것은 읽기 전용) — deleteFixedSchedule/updateFixedSchedule 자체가 서버에서
+ * userId를 검사해 막아주지만, UI에서도 애초에 버튼을 보여주지 않는다.
  */
-export function FixedScheduleCard({ items }: { items: FixedScheduleItem[] }) {
+export function FixedScheduleCard({
+  items,
+  allItems,
+  userId,
+}: {
+  items: FixedScheduleItem[];
+  allItems: FixedScheduleItem[];
+  userId?: string;
+}) {
   const router = useRouter();
+  const [tab, setTab] = useState<"mine" | "all">("mine");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editing, setEditing] = useState<EditableFixedSchedule | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -30,34 +42,71 @@ export function FixedScheduleCard({ items }: { items: FixedScheduleItem[] }) {
     router.refresh();
   }
 
+  const visibleItems =
+    tab === "mine" ? items : [...allItems].sort((a, b) => DAY_ORDER.indexOf(a.day) - DAY_ORDER.indexOf(b.day));
+
   return (
     <div className="mb-[14px] rounded-panel border border-border bg-bg-panel px-4 pt-[15px] pb-[14px]">
-      <p className="m-0 mb-2.5 text-[13px] font-semibold">내 고정 시간표</p>
-      {items.map((item) => (
-        <div
-          key={item.id}
-          className="flex items-baseline justify-between gap-2 border-b border-border py-1.5 text-xs last:border-b-0 last:pb-0"
+      <div className="mb-2.5 flex w-fit overflow-hidden rounded-chip border border-border">
+        <button
+          type="button"
+          onClick={() => setTab("mine")}
+          className={`cursor-pointer border-none px-3 py-1 font-mono text-[10px] font-semibold ${
+            tab === "mine" ? "bg-teal text-[#04231b]" : "bg-transparent text-silk-dim"
+          }`}
         >
-          <span className="w-5 shrink-0 font-mono text-[10.5px] text-amber">{item.day}</span>
-          <button
-            type="button"
-            onClick={() => setEditing({ id: item.id, title: item.title, dayOfWeek: item.day, timeRange: item.time })}
-            className="mx-2 flex-1 cursor-pointer border-none bg-transparent p-0 text-left text-xs text-silk hover:underline"
+          내 고정 시간표
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("all")}
+          className={`cursor-pointer border-none px-3 py-1 font-mono text-[10px] font-semibold ${
+            tab === "all" ? "bg-teal text-[#04231b]" : "bg-transparent text-silk-dim"
+          }`}
+        >
+          전체 고정 시간표
+        </button>
+      </div>
+
+      {visibleItems.length === 0 && (
+        <p className="m-0 py-1.5 text-[11.5px] text-silk-faint">등록된 고정 시간표가 없습니다.</p>
+      )}
+
+      {visibleItems.map((item) => {
+        const editable = tab === "mine" || item.userId === userId;
+        const label = tab === "all" ? `${item.name ?? ""} · ${item.title}` : item.title;
+        return (
+          <div
+            key={item.id}
+            className="flex items-baseline justify-between gap-2 border-b border-border py-1.5 text-xs last:border-b-0 last:pb-0"
           >
-            {item.title}
-          </button>
-          <span className="font-mono text-[10px] text-silk-faint">{item.time}</span>
-          <button
-            type="button"
-            onClick={() => handleDelete(item.id)}
-            disabled={deletingId === item.id}
-            aria-label="고정 시간표 삭제"
-            className="cursor-pointer border-none bg-transparent p-0 leading-none text-silk-faint hover:text-[#e2543f] disabled:cursor-not-allowed"
-          >
-            ×
-          </button>
-        </div>
-      ))}
+            <span className="w-5 shrink-0 font-mono text-[10.5px] text-amber">{item.day}</span>
+            {editable ? (
+              <button
+                type="button"
+                onClick={() => setEditing({ id: item.id, title: item.title, dayOfWeek: item.day, timeRange: item.time })}
+                className="mx-2 flex-1 cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap border-none bg-transparent p-0 text-left text-xs text-silk hover:underline"
+              >
+                {label}
+              </button>
+            ) : (
+              <span className="mx-2 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-xs text-silk-dim">{label}</span>
+            )}
+            <span className="shrink-0 font-mono text-[10px] text-silk-faint">{item.time}</span>
+            {editable && (
+              <button
+                type="button"
+                onClick={() => handleDelete(item.id)}
+                disabled={deletingId === item.id}
+                aria-label="고정 시간표 삭제"
+                className="shrink-0 cursor-pointer border-none bg-transparent p-0 leading-none text-silk-faint hover:text-[#e2543f] disabled:cursor-not-allowed"
+              >
+                ×
+              </button>
+            )}
+          </div>
+        );
+      })}
       {error && <p className="m-0 mt-2 font-mono text-[10.5px] text-[#e2543f]">{error}</p>}
       <EditFixedScheduleModal item={editing} onClose={() => setEditing(null)} />
     </div>

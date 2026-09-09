@@ -1,19 +1,11 @@
-export type MonthEvent = { time: string; label: string; type: "personal" | "fixed" };
-
-export type MonthCell = {
-  dateKey: string;
-  date: number;
-  muted?: boolean;
-  today?: boolean;
-  count?: string;
-  dots?: Array<"personal" | "fixed">;
-  events?: MonthEvent[];
-  moreCount?: number;
-};
-
-export type MonthData = { monthKey: string; rangeLabel: string; cells: MonthCell[] };
+import { formatTimeRange, type MonthCell, type MonthEvent } from "@/lib/schedule/calendar";
 
 const DOW_LABELS = ["월", "화", "수", "목", "금", "토", "일"];
+
+type MonthViewProps = {
+  cells: MonthCell[];
+  onEdit: (event: MonthEvent) => void;
+};
 
 /**
  * playground-design/schedule.html의 #monthView(.month-grid). TASK-028 당시에는
@@ -25,8 +17,11 @@ const DOW_LABELS = ["월", "화", "수", "목", "금", "토", "일"];
  * 동일하게 이벤트 칩(최대 2개 + "+N개 더보기")을 보여준다(week view의 TEAM_CAP과
  * 동일한 원칙). owner(내 일정/팀 전체) 토글의 영향을 받지 않는 것은 원본과 동일
  * (원본 script도 #weekView .day-events만 필터링).
+ * 내 소유 개인 일정 칩은 칩 전체(시간+제목)를 눌러 수정 모달을 연다. 삭제는 이 좁은
+ * 칸 안에 별도 × 버튼을 두지 않고 그 수정 모달의 "삭제" 버튼으로 처리한다(칸이 좁아
+ * 텍스트와 겹치는 별도 버튼은 클릭이 어렵다는 피드백 반영 — EditPersonalEventModal 참고).
  */
-export function MonthView({ cells }: { cells: MonthCell[] }) {
+export function MonthView({ cells, onEdit }: MonthViewProps) {
   return (
     <div className="grid grid-cols-7 overflow-hidden rounded-panel border border-border bg-bg-panel max-[640px]:grid-cols-[repeat(7,minmax(46px,1fr))] max-[640px]:overflow-x-auto">
       {DOW_LABELS.map((label) => (
@@ -63,16 +58,31 @@ export function MonthView({ cells }: { cells: MonthCell[] }) {
 
           {cell.events && cell.events.length > 0 && (
             <div className="mt-[5px] flex flex-col gap-[3px]">
-              {cell.events.map((ev, j) => (
-                <div
-                  key={j}
-                  className={`overflow-hidden text-ellipsis whitespace-nowrap rounded-badge px-[5px] py-0.5 text-[9px] leading-[1.3] border-l-2 ${
-                    cell.muted ? "bg-[rgba(231,239,236,0.03)]" : "bg-bg-raised"
-                  } ${ev.type === "personal" ? "border-l-teal" : "border-l-amber"}`}
-                >
-                  {ev.time} {ev.label}
-                </div>
-              ))}
+              {cell.events.map((ev, j) => {
+                const editable = ev.owner === "me" && ev.type === "personal" && ev.id && ev.eventDate && ev.title;
+                return (
+                  <div
+                    key={j}
+                    className={`overflow-hidden rounded-badge px-[5px] py-1 text-[9px] leading-[1.3] border-l-2 ${
+                      cell.muted ? "bg-[rgba(231,239,236,0.03)]" : "bg-bg-raised"
+                    } ${ev.type === "personal" ? "border-l-teal" : "border-l-amber"}`}
+                  >
+                    {editable ? (
+                      <button
+                        type="button"
+                        onClick={() => onEdit(ev)}
+                        className="block w-full cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap border-none bg-transparent p-0 text-left text-[9px] leading-[1.3] text-silk hover:underline"
+                      >
+                        {formatTimeRange(ev.time, ev.endTime)} {ev.label}
+                      </button>
+                    ) : (
+                      <span className="block overflow-hidden text-ellipsis whitespace-nowrap">
+                        {formatTimeRange(ev.time, ev.endTime)} {ev.label}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
               {cell.moreCount != null && cell.moreCount > 0 && (
                 <div className="px-[5px] py-px font-mono text-[8.5px] text-silk-dim">+{cell.moreCount}개 더보기</div>
               )}

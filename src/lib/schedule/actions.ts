@@ -25,6 +25,7 @@ export async function createPersonalEvent(formData: FormData): Promise<CreatePer
   const title = String(formData.get("title") ?? "").trim();
   const eventDate = String(formData.get("eventDate") ?? "").trim();
   const eventTime = String(formData.get("eventTime") ?? "").trim();
+  const eventEndTime = String(formData.get("eventEndTime") ?? "").trim();
 
   if (!title) {
     return { error: "일정 제목을 입력해 주세요." };
@@ -37,6 +38,7 @@ export async function createPersonalEvent(formData: FormData): Promise<CreatePer
     userId: user.id,
     eventDate,
     eventTime,
+    eventEndTime: eventEndTime || null,
     title,
   });
 
@@ -61,6 +63,7 @@ export async function updatePersonalEvent(id: string, formData: FormData): Promi
   const title = String(formData.get("title") ?? "").trim();
   const eventDate = String(formData.get("eventDate") ?? "").trim();
   const eventTime = String(formData.get("eventTime") ?? "").trim();
+  const eventEndTime = String(formData.get("eventEndTime") ?? "").trim();
 
   if (!title) {
     return { error: "일정 제목을 입력해 주세요." };
@@ -71,7 +74,7 @@ export async function updatePersonalEvent(id: string, formData: FormData): Promi
 
   const updated = await db
     .update(personalEvents)
-    .set({ title, eventDate, eventTime })
+    .set({ title, eventDate, eventTime, eventEndTime: eventEndTime || null })
     .where(and(eq(personalEvents.id, id), eq(personalEvents.userId, user.id)))
     .returning({ id: personalEvents.id });
 

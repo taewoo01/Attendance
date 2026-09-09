@@ -116,8 +116,8 @@ export function RegisterEventModal() {
               </div>
 
               {kind === "personal" ? (
-                <div className="mb-[18px] grid grid-cols-2 gap-[14px]">
-                  <div>
+                <>
+                  <div className="mb-[18px]">
                     <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">날짜</p>
                     <input
                       name="eventDate"
@@ -126,15 +126,25 @@ export function RegisterEventModal() {
                       className="w-full rounded-input border border-border bg-bg-raised px-[14px] py-[11px] font-sans text-[13.5px] text-silk focus:border-teal-dim focus:outline-none"
                     />
                   </div>
-                  <div>
-                    <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">시간</p>
-                    <input
-                      name="eventTime"
-                      type="time"
-                      className="w-full rounded-input border border-border bg-bg-raised px-[14px] py-[11px] font-sans text-[13.5px] text-silk focus:border-teal-dim focus:outline-none"
-                    />
+                  <div className="mb-[18px] grid grid-cols-2 gap-[14px]">
+                    <div>
+                      <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">시작 시간</p>
+                      <input
+                        name="eventTime"
+                        type="time"
+                        className="w-full rounded-input border border-border bg-bg-raised px-[14px] py-[11px] font-sans text-[13.5px] text-silk focus:border-teal-dim focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">종료 시간</p>
+                      <input
+                        name="eventEndTime"
+                        type="time"
+                        className="w-full rounded-input border border-border bg-bg-raised px-[14px] py-[11px] font-sans text-[13.5px] text-silk focus:border-teal-dim focus:outline-none"
+                      />
+                    </div>
                   </div>
-                </div>
+                </>
               ) : (
                 <div className="mb-[18px] grid grid-cols-2 gap-[14px]">
                   <div>

@@ -9,12 +9,14 @@ type IconButtonProps = {
   children: ReactNode;
   badge?: ReactNode;
   "aria-label"?: string;
+  onClick?: () => void;
 };
 
-export function IconButton({ children, badge, ...rest }: IconButtonProps) {
+export function IconButton({ children, badge, onClick, ...rest }: IconButtonProps) {
   return (
     <div
       className="relative flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-button border border-border [&_svg]:h-4 [&_svg]:w-4 [&_svg]:stroke-silk-dim hover:border-teal-dim hover:[&_svg]:stroke-silk"
+      onClick={onClick}
       {...rest}
     >
       {children}

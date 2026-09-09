@@ -176,19 +176,48 @@ export const dailyLogTemplates = pgTable("daily_log_templates", {
  * 별도 컬럼으로 두지 않는다. `file`/`metric_label`/`metric_value`는 원본처럼
  * 선택 항목이라 빈 문자열을 "없음"으로 취급한다(다른 테이블과 동일 컨벤션).
  * `createdAt`은 "최근 등록"(사이드바) 정렬/파생에 필요해 추가했다.
+ * 일정 페이지 상세화와 동일하게(실적 페이지 상세화 #1/#2/#8) 이후 추가된 컬럼:
+ * `userId`(작성자 — 등록 기능 자체가 없던 TASK-026 당시엔 없었다, ideas.userId와
+ * 동일하게 nullable + onDelete set null), `link`(참고 링크, 선택), `teamMembers`
+ * (구분이 "팀"일 때 참여자 목록, ideas.tags와 동일한 text[] 컨벤션). `file`(단일
+ * 첨부파일 텍스트)은 기존 데이터 호환을 위해 그대로 두고, 여러 첨부파일은 별도
+ * achievementFiles 테이블(1:N)로 관리한다(files 테이블의 Storage 업로드 패턴 재사용).
  */
 export const achievements = pgTable("achievements", {
   id: uuid("id").primaryKey().defaultRandom(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  userId: uuid("user_id").references(() => authUsers.id, { onDelete: "set null" }),
   avatar: text("avatar").notNull().default(""),
   team: boolean("team").notNull().default(false),
+  teamMembers: text("team_members").array().notNull().default([]),
   title: text("title").notNull().default(""),
   desc: text("desc").notNull().default(""),
   who: text("who").notNull().default(""),
+  link: text("link").notNull().default(""),
   file: text("file").notNull().default(""),
   resultDate: text("result_date").notNull().default(""),
   metricLabel: text("metric_label").notNull().default(""),
   metricValue: text("metric_value").notNull().default(""),
+});
+
+/**
+ * TASK(실적 페이지 상세화 #8): 실적 하나에 이미지/파일을 여러 개 첨부할 수 있어야
+ * 해서 achievements.file(단일 text) 대신 1:N 테이블로 분리했다. Storage 업로드는
+ * files 테이블(TASK-029)과 동일한 패턴(private 버킷 + storagePath 메타데이터만
+ * DB에 저장, 다운로드는 서버가 발급하는 presigned URL)을 그대로 재사용한다.
+ * `userId`는 업로드한 사람 추적용이라 nullable(achievements.userId와 동일 원칙) —
+ * 첨부파일 자체의 존재/삭제는 achievementId(부모 실적)에 종속된다(cascade).
+ */
+export const achievementFiles = pgTable("achievement_files", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  achievementId: uuid("achievement_id")
+    .notNull()
+    .references(() => achievements.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").references(() => authUsers.id, { onDelete: "set null" }),
+  storagePath: text("storage_path").notNull(),
+  name: text("name").notNull().default(""),
+  sizeBytes: integer("size_bytes").notNull().default(0),
+  uploadedAt: timestamp("uploaded_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 /**
@@ -220,6 +249,8 @@ export const personalEvents = pgTable("personal_events", {
     .references(() => authUsers.id, { onDelete: "cascade" }),
   eventDate: date("event_date").notNull(),
   eventTime: text("event_time").notNull().default(""),
+  /** 종료 시간은 선택 입력이라 nullable — 없으면 시작 시간만 표시한다. */
+  eventEndTime: text("event_end_time"),
   title: text("title").notNull().default(""),
 });
 

@@ -148,6 +148,34 @@
       "when": 1788858551012,
       "tag": "0020_daily_log_templates_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1788942269816,
+      "tag": "0021_personal_events_end_time",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1788943360397,
+      "tag": "0022_achievements_extend",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1788943360398,
+      "tag": "0023_achievements_write_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1788943360399,
+      "tag": "0024_profiles_update_own_rls",
+      "breakpoints": true
     }
   ]
 }

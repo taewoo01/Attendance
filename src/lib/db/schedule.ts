@@ -15,6 +15,7 @@ export async function listPersonalEvents() {
       userId: personalEvents.userId,
       eventDate: personalEvents.eventDate,
       eventTime: personalEvents.eventTime,
+      eventEndTime: personalEvents.eventEndTime,
       title: personalEvents.title,
       name: profiles.name,
     })

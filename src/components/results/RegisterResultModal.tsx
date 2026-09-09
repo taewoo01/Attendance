@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState, type FormEvent } from "react";
+import { createAchievement } from "@/lib/results/actions";
 
 /**
  * playground-design/results.html의 .page-head(제목+실적 등록 버튼)와
@@ -9,11 +11,29 @@ import { useEffect, useState } from "react";
  * Component에서 원본과 동일한 DOM 순서(Fragment)로 반환한다.
  * 모달은 원본처럼 항상 마운트된 채 className으로 표시 여부만 토글한다
  * (display 토글형 — DESIGN-SYSTEM.md 10.3절, index.html의 fade형과 다름).
+ * 실적 페이지 상세화 #3/#4: 원본은 "등록" 버튼이 저장 로직 없이 모달만 닫는
+ * 정적 마크업이라(input에 name도 없었다) 등록해도 목록에 안 보이고, 모달을 다시
+ * 열면 입력값이 그대로 남아있었다 — 실제 Server Action(createAchievement) 연결 +
+ * 성공 시 form.reset()으로 두 문제를 함께 해결한다.
+ * 실적 페이지 상세화 #5/#6: "날짜"는 자유 텍스트 대신 `type="date"` 피커로,
+ * "담당자"는 하드코딩 기본값 대신 팀원 목록(`members`, page.tsx가 listProfiles()로
+ * 조회해 내려준다) 드롭다운으로 바꿨다. 아직 이름을 입력하지 않은 팀원(온보딩
+ * 미완료, profiles.name === "")은 목록에서 제외한다 — 안 그러면 그 사람의 빈
+ * option이 "선택" placeholder(값도 "")와 값이 겹쳐 구분이 안 된다.
+ * 실적 페이지 상세화 #7/#8: 첨부파일을 여러 개 선택할 수 있고(`multiple`), 선택한
+ * 파일은 즉시 업로드하지 않고 `files` state로 들고 있다가 등록 시 한 번에 보낸다 —
+ * 선택 목록에서 개별로 빼고(×) 다시 추가할 수 있어야 해서, 네이티브 input의
+ * FileList를 그대로 쓰지 않고 배열로 직접 관리한다(그래서 이 input엔 `name`이
+ * 없다 — 제출은 `files` state를 handleSubmit에서 FormData에 직접 append한다).
  */
-export function RegisterResultModal() {
+export function RegisterResultModal({ members: allMembers }: { members: { userId: string; name: string }[] }) {
+  const members = allMembers.filter((m) => m.name);
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<"personal" | "team">("personal");
-  const [fileLabel, setFileLabel] = useState("파일 선택");
+  const [files, setFiles] = useState<File[]>([]);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -23,6 +43,45 @@ export function RegisterResultModal() {
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [open]);
+
+  function closeModal() {
+    setOpen(false);
+    setType("personal");
+    setFiles([]);
+    setError(null);
+  }
+
+  function addFiles(picked: File[]) {
+    if (picked.length === 0) return;
+    setFiles((prev) => [...prev, ...picked]);
+  }
+
+  function removeFile(index: number) {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    setPending(true);
+    setError(null);
+
+    const formData = new FormData(form);
+    for (const file of files) {
+      formData.append("files", file);
+    }
+
+    const result = await createAchievement(formData);
+
+    setPending(false);
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
+    form.reset();
+    closeModal();
+    router.refresh();
+  }
 
   return (
     <>
@@ -47,7 +106,7 @@ export function RegisterResultModal() {
           open ? "flex" : "hidden"
         }`}
         onClick={(e) => {
-          if (e.target === e.currentTarget) setOpen(false);
+          if (e.target === e.currentTarget) closeModal();
         }}
       >
         <div className="max-h-[88vh] w-full max-w-[560px] overflow-y-auto rounded-card border border-border bg-bg-panel">
@@ -55,132 +114,203 @@ export function RegisterResultModal() {
             <h3 className="m-0 text-[14.5px] font-semibold">실적 등록</h3>
             <button
               type="button"
-              onClick={() => setOpen(false)}
+              onClick={closeModal}
               className="cursor-pointer border-none bg-transparent px-1 py-0.5 text-xl leading-none text-silk-faint hover:text-silk"
             >
               ×
             </button>
           </div>
 
-          <div className="px-[22px] pt-5 pb-[22px]">
-            <div className="mb-[18px]">
-              <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">제목</p>
-              <input
-                type="text"
-                placeholder="예: DC 리플 기반 SOH 추정 실험 완료"
-                className="w-full rounded-input border border-border bg-bg-raised px-[14px] py-[11px] font-sans text-[13.5px] text-silk focus:border-teal-dim focus:outline-none"
-              />
+          <form onSubmit={handleSubmit}>
+            <input type="hidden" name="kind" value={type} />
+
+            <div className="px-[22px] pt-5 pb-[22px]">
+              <div className="mb-[18px]">
+                <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">제목</p>
+                <input
+                  name="title"
+                  type="text"
+                  required
+                  placeholder="예: DC 리플 기반 SOH 추정 실험 완료"
+                  className="w-full rounded-input border border-border bg-bg-raised px-[14px] py-[11px] font-sans text-[13.5px] text-silk focus:border-teal-dim focus:outline-none"
+                />
+              </div>
+
+              <div className="mb-[18px]">
+                <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">구분</p>
+                <div className="flex w-fit overflow-hidden rounded-button border border-border">
+                  <button
+                    type="button"
+                    onClick={() => setType("personal")}
+                    className={`cursor-pointer border-none px-[18px] py-2 text-[12.5px] font-semibold ${
+                      type === "personal" ? "bg-teal text-[#04231b]" : "bg-transparent text-silk-dim"
+                    }`}
+                  >
+                    개인
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setType("team")}
+                    className={`cursor-pointer border-none px-[18px] py-2 text-[12.5px] font-semibold ${
+                      type === "team" ? "bg-teal text-[#04231b]" : "bg-transparent text-silk-dim"
+                    }`}
+                  >
+                    팀
+                  </button>
+                </div>
+              </div>
+
+              {type === "team" && (
+                <div className="mb-[18px]">
+                  <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">팀원</p>
+                  <div className="flex flex-wrap gap-x-4 gap-y-2 rounded-input border border-border bg-bg-raised px-[14px] py-[11px]">
+                    {members.map((member) => (
+                      <label key={member.userId} className="flex cursor-pointer items-center gap-[6px] text-[13px] text-silk">
+                        <input type="checkbox" name="teamMembers" value={member.name} className="cursor-pointer accent-teal" />
+                        {member.name}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="mb-[18px]">
+                <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">설명</p>
+                <textarea
+                  name="desc"
+                  placeholder="무엇을 했는지 간단히 설명해주세요"
+                  className="min-h-[88px] w-full resize-y rounded-input border border-border bg-bg-raised px-[14px] py-[11px] font-sans text-[13.5px] leading-[1.6] text-silk focus:border-teal-dim focus:outline-none"
+                />
+              </div>
+
+              <div className="mb-[18px] grid grid-cols-2 gap-[14px]">
+                <div>
+                  <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">담당자</p>
+                  <select
+                    name="who"
+                    required
+                    defaultValue=""
+                    className="w-full rounded-input border border-border bg-bg-raised px-[14px] py-[11px] font-sans text-[13.5px] text-silk focus:border-teal-dim focus:outline-none"
+                  >
+                    <option value="" disabled>
+                      선택
+                    </option>
+                    {members.map((member) => (
+                      <option key={member.userId} value={member.name}>
+                        {member.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">날짜</p>
+                  <input
+                    name="resultDate"
+                    type="date"
+                    required
+                    className="w-full rounded-input border border-border bg-bg-raised px-[14px] py-[11px] font-sans text-[13.5px] text-silk focus:border-teal-dim focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="mb-[18px] grid grid-cols-2 gap-[14px]">
+                <div>
+                  <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">수치 지표 라벨 (선택)</p>
+                  <input
+                    name="metricLabel"
+                    type="text"
+                    placeholder="예: 오차"
+                    className="w-full rounded-input border border-border bg-bg-raised px-[14px] py-[11px] font-sans text-[13.5px] text-silk focus:border-teal-dim focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">수치 지표 값 (선택)</p>
+                  <input
+                    name="metricValue"
+                    type="text"
+                    placeholder="예: 2.8%"
+                    className="w-full rounded-input border border-border bg-bg-raised px-[14px] py-[11px] font-sans text-[13.5px] text-silk focus:border-teal-dim focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="mb-[18px]">
+                <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">참고 링크 (선택)</p>
+                <input
+                  name="link"
+                  type="url"
+                  placeholder="예: https://github.com/team/repo/pull/12"
+                  className="w-full rounded-input border border-border bg-bg-raised px-[14px] py-[11px] font-sans text-[13.5px] text-silk focus:border-teal-dim focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">첨부파일 (선택)</p>
+                <label
+                  htmlFor="resFileInput"
+                  className="inline-flex cursor-pointer items-center gap-[7px] rounded-button border border-dashed border-border bg-bg-raised px-[13px] py-[9px] text-[12.5px] text-silk-dim hover:border-teal-dim hover:text-silk"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.8" className="h-[13px] w-[13px] stroke-silk-faint">
+                    <path d="M21.44 11.05l-9.19 9.19a5 5 0 01-7.07-7.07l9.19-9.19a3.5 3.5 0 014.95 4.95l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
+                  </svg>
+                  <span>파일 선택 (여러 개 가능)</span>
+                </label>
+                <input
+                  type="file"
+                  id="resFileInput"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    const picked = Array.from(e.target.files ?? []);
+                    e.target.value = "";
+                    addFiles(picked);
+                  }}
+                />
+                {files.length > 0 && (
+                  <ul className="m-0 mt-2 flex list-none flex-col gap-1.5 p-0">
+                    {files.map((file, i) => (
+                      <li
+                        key={i}
+                        className="flex items-center justify-between gap-2 rounded-input border border-border bg-bg-raised px-[12px] py-[7px] text-[12px] text-silk"
+                      >
+                        <span className="overflow-hidden text-ellipsis whitespace-nowrap">{file.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeFile(i)}
+                          aria-label="첨부파일 제거"
+                          className="shrink-0 cursor-pointer border-none bg-transparent p-0 leading-none text-silk-faint hover:text-[#e2543f]"
+                        >
+                          ×
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              {error && <p className="m-0 mt-[14px] font-mono text-[11px] text-[#e2543f]">{error}</p>}
             </div>
 
-            <div className="mb-[18px]">
-              <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">구분</p>
-              <div className="flex w-fit overflow-hidden rounded-button border border-border">
+            <div className="flex flex-wrap items-center justify-between gap-2.5 border-t border-border px-[22px] py-[14px]">
+              <span className="font-mono text-[11px] text-silk-faint">등록한 실적은 팀 전체에 공유돼요</span>
+              <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => setType("personal")}
-                  className={`cursor-pointer border-none px-[18px] py-2 text-[12.5px] font-semibold ${
-                    type === "personal" ? "bg-teal text-[#04231b]" : "bg-transparent text-silk-dim"
-                  }`}
+                  onClick={closeModal}
+                  className="inline-flex cursor-pointer items-center justify-center gap-[7px] rounded-button border border-border bg-transparent px-3 py-[7px] text-xs font-semibold text-silk"
                 >
-                  개인
+                  취소
                 </button>
                 <button
-                  type="button"
-                  onClick={() => setType("team")}
-                  className={`cursor-pointer border-none px-[18px] py-2 text-[12.5px] font-semibold ${
-                    type === "team" ? "bg-teal text-[#04231b]" : "bg-transparent text-silk-dim"
-                  }`}
+                  type="submit"
+                  disabled={pending}
+                  className="inline-flex cursor-pointer items-center justify-center gap-[7px] rounded-button border border-teal bg-teal px-3 py-[7px] text-xs font-semibold text-[#04231b] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  팀
+                  {pending ? "등록 중..." : "등록"}
                 </button>
               </div>
             </div>
-
-            <div className="mb-[18px]">
-              <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">설명</p>
-              <textarea
-                placeholder="무엇을 했는지 간단히 설명해주세요"
-                className="min-h-[88px] w-full resize-y rounded-input border border-border bg-bg-raised px-[14px] py-[11px] font-sans text-[13.5px] leading-[1.6] text-silk focus:border-teal-dim focus:outline-none"
-              />
-            </div>
-
-            <div className="mb-[18px] grid grid-cols-2 gap-[14px]">
-              <div>
-                <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">담당자</p>
-                <input
-                  type="text"
-                  defaultValue="김연구"
-                  className="w-full rounded-input border border-border bg-bg-raised px-[14px] py-[11px] font-sans text-[13.5px] text-silk focus:border-teal-dim focus:outline-none"
-                />
-              </div>
-              <div>
-                <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">날짜</p>
-                <input
-                  type="text"
-                  defaultValue="8월 31일 (월)"
-                  className="w-full rounded-input border border-border bg-bg-raised px-[14px] py-[11px] font-sans text-[13.5px] text-silk focus:border-teal-dim focus:outline-none"
-                />
-              </div>
-            </div>
-
-            <div className="mb-[18px] grid grid-cols-2 gap-[14px]">
-              <div>
-                <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">수치 지표 라벨 (선택)</p>
-                <input
-                  type="text"
-                  placeholder="예: 오차"
-                  className="w-full rounded-input border border-border bg-bg-raised px-[14px] py-[11px] font-sans text-[13.5px] text-silk focus:border-teal-dim focus:outline-none"
-                />
-              </div>
-              <div>
-                <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">수치 지표 값 (선택)</p>
-                <input
-                  type="text"
-                  placeholder="예: 2.8%"
-                  className="w-full rounded-input border border-border bg-bg-raised px-[14px] py-[11px] font-sans text-[13.5px] text-silk focus:border-teal-dim focus:outline-none"
-                />
-              </div>
-            </div>
-
-            <div>
-              <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">첨부파일 (선택)</p>
-              <label
-                htmlFor="resFileInput"
-                className="inline-flex cursor-pointer items-center gap-[7px] rounded-button border border-dashed border-border bg-bg-raised px-[13px] py-[9px] text-[12.5px] text-silk-dim hover:border-teal-dim hover:text-silk"
-              >
-                <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.8" className="h-[13px] w-[13px] stroke-silk-faint">
-                  <path d="M21.44 11.05l-9.19 9.19a5 5 0 01-7.07-7.07l9.19-9.19a3.5 3.5 0 014.95 4.95l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
-                </svg>
-                <span>{fileLabel}</span>
-              </label>
-              <input
-                type="file"
-                id="resFileInput"
-                className="hidden"
-                onChange={(e) => setFileLabel(e.target.files?.length ? e.target.files[0].name : "파일 선택")}
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-between gap-2.5 border-t border-border px-[22px] py-[14px]">
-            <span className="font-mono text-[11px] text-silk-faint">등록한 실적은 팀 전체에 공유돼요</span>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="inline-flex cursor-pointer items-center justify-center gap-[7px] rounded-button border border-border bg-transparent px-3 py-[7px] text-xs font-semibold text-silk"
-              >
-                취소
-              </button>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="inline-flex cursor-pointer items-center justify-center gap-[7px] rounded-button border border-teal bg-teal px-3 py-[7px] text-xs font-semibold text-[#04231b]"
-              >
-                등록
-              </button>
-            </div>
-          </div>
+          </form>
         </div>
       </div>
     </>

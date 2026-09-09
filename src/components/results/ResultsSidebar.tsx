@@ -1,15 +1,8 @@
 import type { Result } from "@/components/results/ResultList";
 
-const MEMBER_BARS = [
-  { name: "김연구", count: "3건", width: "85%" },
-  { name: "이하늘", count: "2건", width: "55%" },
-  { name: "오지훈", count: "2건", width: "55%" },
-  { name: "박준서", count: "1건", width: "30%" },
-  { name: "한서준", count: "0건", width: "4%" },
-];
-
 type ResultsSidebarProps = {
   results: Result[];
+  members: { userId: string; name: string }[];
 };
 
 /** "8월 29일 (금)" 같은 원본 date 표기에서 괄호 안 요일 한 글자만 뽑아낸다. */
@@ -24,14 +17,26 @@ function extractWeekday(dateText: string): string {
  * .member-bar-fill의 width는 원본에서도 inline style로 동적 수치를 표현하므로
  * (docs/MIGRATION.md 2절) Tailwind 클래스가 아닌 style={{ width }}로 그대로 유지한다.
  * TASK-026: "이번 주 요약"의 건수/개인·팀 실적과 "최근 등록"(최신순 3건)은
- * 실제 results props에서 계산한다. "지난주 대비" 증감과 "팀원별 등록 현황"은
- * 실적을 팀원별로 정확히 귀속시키려면(팀 실적의 "N명" 처리, 지난주 날짜 범위
- * 비교) 이번 TASK 범위를 넘어서는 로직이 필요해 하드코딩을 유지한다.
+ * 실제 results props에서 계산한다. "지난주 대비" 증감은 resultDate가 실제
+ * date 컬럼이 아니라 자유 텍스트 표기라 주간 범위 비교가 어려워 하드코딩을 유지한다.
+ * "팀원별 등록 현황"(실적 페이지 상세화 후속)은 achievements.userId(실적 페이지
+ * 상세화 1단계에서 추가)로 실제 등록 건수를 집계한다 — "등록 현황"이라 팀 실적의
+ * teamMembers(참여자)가 아니라 "누가 실제로 등록했는지"(userId)만 센다.
  */
-export function ResultsSidebar({ results }: ResultsSidebarProps) {
+export function ResultsSidebar({ results, members }: ResultsSidebarProps) {
   const personalCount = results.filter((r) => !r.team).length;
   const teamCount = results.filter((r) => r.team).length;
   const quickItems = results.slice(0, 3).map((r) => ({ day: extractWeekday(r.date), title: r.title }));
+
+  const countByUserId = new Map<string, number>();
+  for (const r of results) {
+    if (!r.userId) continue;
+    countByUserId.set(r.userId, (countByUserId.get(r.userId) ?? 0) + 1);
+  }
+  const memberBars = members
+    .map((m) => ({ name: m.name, count: countByUserId.get(m.userId) ?? 0 }))
+    .sort((a, b) => b.count - a.count);
+  const maxCount = Math.max(1, ...memberBars.map((m) => m.count));
 
   return (
     <div>
@@ -53,14 +58,17 @@ export function ResultsSidebar({ results }: ResultsSidebarProps) {
 
       <div className="mb-4 rounded-panel border border-border bg-bg-panel px-[18px] pt-[18px] pb-4">
         <h4 className="m-0 mb-[14px] text-[13.5px] font-semibold">팀원별 등록 현황</h4>
-        {MEMBER_BARS.map((m) => (
+        {memberBars.map((m) => (
           <div key={m.name} className="mb-[11px] last:mb-0">
             <div className="mb-[5px] flex justify-between text-[11.5px]">
               <span className="text-silk-dim">{m.name}</span>
-              <span className="font-mono text-silk-faint">{m.count}</span>
+              <span className="font-mono text-silk-faint">{m.count}건</span>
             </div>
             <div className="h-[5px] overflow-hidden rounded-[3px] bg-bg-raised">
-              <div className="h-full rounded-[3px] bg-teal" style={{ width: m.width }} />
+              <div
+                className="h-full rounded-[3px] bg-teal"
+                style={{ width: `${Math.max((m.count / maxCount) * 100, 4)}%` }}
+              />
             </div>
           </div>
         ))}

@@ -1,60 +1,65 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { deletePersonalEvent } from "@/lib/schedule/actions";
+import {
+  addDays,
+  addMonths,
+  buildMonthCells,
+  buildWeekDays,
+  formatTimeRange,
+  mondayKeyOf,
+  monthKeyOf,
+  monthRangeLabelOf,
+  weekRangeLabelOf,
+  type FixedScheduleRow,
+  type PersonalEventRow,
+} from "@/lib/schedule/calendar";
 import { EditPersonalEventModal, type EditablePersonalEvent } from "@/components/schedule/EditPersonalEventModal";
-import { MonthView, type MonthData } from "@/components/schedule/MonthView";
-
-export type WeekEvent = {
-  id?: string;
-  time: string;
-  label: string;
-  type: "personal" | "fixed";
-  owner: "me" | "team";
-  /** personal 타입 + owner "me"일 때만 존재 — 수정 모달을 채우는 데 쓴다. */
-  eventDate?: string;
-  title?: string;
-};
-export type WeekDay = { dow: string; date: number; today?: boolean; events: WeekEvent[] };
-export type WeekData = { mondayKey: string; weekDays: WeekDay[]; rangeLabel: string };
+import { MonthView } from "@/components/schedule/MonthView";
 
 const TEAM_CAP = 2;
 
 type ScheduleCalendarProps = {
-  weeks: WeekData[];
-  initialWeekIndex: number;
-  months: MonthData[];
-  initialMonthIndex: number;
+  personalEvents: PersonalEventRow[];
+  fixedSchedules: FixedScheduleRow[];
+  todayKey: string;
+  userId?: string;
 };
 
 /**
  * playground-design/schedule.html의 .cal-toolbar(주/월 전환, 내 일정/팀 전체 필터) +
  * #weekView + #monthView를 담당한다. 원본 <script>의 view/owner state를 useState로 옮긴다.
- * TASK-028: 하드코딩된 WEEK_DAYS/RANGE_LABEL.week 대신 page.tsx가 실제 이번 주
- * personal_events/fixed_schedules를 계산한 결과를 props로 받는다.
- * 주간/월간 이전·다음(cal-nav ‹›) 네비게이션: page.tsx가 personal_events가 존재하는
- * 모든 주/달(+ 이번 주/달)을 미리 계산해 `weeks`/`months` 배열로 내려주면, 여기서는
- * DailyBoard의 feedIndex와 동일한 패턴으로 배열 인덱스만 client state로 옮겨 다닌다
- * (새 서버 요청/URL 파라미터 없음). TASK-032부터 MonthView도 실데이터 기반이라
- * (이전에는 정적 목업이라 Server Component로 children 주입) 이제 monthIndex에 따라
- * 직접 렌더링한다.
+ * TASK-028: 하드코딩된 WEEK_DAYS/RANGE_LABEL.week 대신 page.tsx가 실제 personal_events/
+ * fixed_schedules 전체 목록을 props로 내려주고, 여기서 현재 보고 있는 주(mondayKey)/달
+ * (monthKey)을 client state로 들고 필요한 주/달만 그때그때 계산한다(useMemo).
+ * 주간/월간 이전·다음(cal-nav ‹›) 네비게이션은 순수 날짜 연산(addDays/addMonths)이라
+ * 해당 주/달에 일정이 있는지와 무관하게 항상 이동 가능하다 — 이전에는 personal_events가
+ * 존재하는 주/달만 미리 배열로 만들어 인덱스만 옮겨 다니는 구조라 일정이 없는 주/달로는
+ * 이동이 안 되는 문제가 있었다.
  */
-export function ScheduleCalendar({ weeks, initialWeekIndex, months, initialMonthIndex }: ScheduleCalendarProps) {
+export function ScheduleCalendar({ personalEvents, fixedSchedules, todayKey, userId }: ScheduleCalendarProps) {
   const router = useRouter();
   const [view, setView] = useState<"week" | "month">("week");
   const [owner, setOwner] = useState<"me" | "team">("me");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [editingEvent, setEditingEvent] = useState<EditablePersonalEvent | null>(null);
-  const [weekIndex, setWeekIndex] = useState(initialWeekIndex);
-  const [monthIndex, setMonthIndex] = useState(initialMonthIndex);
+  const [mondayKey, setMondayKey] = useState(() => mondayKeyOf(todayKey));
+  const [monthKey, setMonthKey] = useState(() => monthKeyOf(todayKey));
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
 
-  const clampWeek = (i: number) => Math.max(0, Math.min(weeks.length - 1, i));
-  const clampMonth = (i: number) => Math.max(0, Math.min(months.length - 1, i));
-  const currentWeek = weeks[weekIndex];
-  const currentMonth = months[monthIndex];
+  const weekDays = useMemo(
+    () => buildWeekDays(mondayKey, todayKey, personalEvents, fixedSchedules, userId),
+    [mondayKey, todayKey, personalEvents, fixedSchedules, userId],
+  );
+  const monthCells = useMemo(
+    () => buildMonthCells(monthKey, todayKey, personalEvents, fixedSchedules, userId),
+    [monthKey, todayKey, personalEvents, fixedSchedules, userId],
+  );
+  const currentWeek = { mondayKey, weekDays, rangeLabel: weekRangeLabelOf(mondayKey, addDays(mondayKey, 6)) };
+  const currentMonth = { monthKey, cells: monthCells, rangeLabel: monthRangeLabelOf(monthKey) };
 
   async function handleDelete(id: string) {
     setDeletingId(id);
@@ -95,8 +100,8 @@ export function ScheduleCalendar({ weeks, initialWeekIndex, months, initialMonth
           <button
             type="button"
             onClick={() => {
-              if (view === "week") setWeekIndex((i) => clampWeek(i + 1));
-              else setMonthIndex((i) => clampMonth(i + 1));
+              if (view === "week") setMondayKey((k) => addDays(k, -7));
+              else setMonthKey((k) => addMonths(k, -1));
             }}
             className="h-6 w-6 cursor-pointer rounded-md border border-border bg-transparent text-silk-dim"
           >
@@ -106,8 +111,8 @@ export function ScheduleCalendar({ weeks, initialWeekIndex, months, initialMonth
           <button
             type="button"
             onClick={() => {
-              if (view === "week") setWeekIndex((i) => clampWeek(i - 1));
-              else setMonthIndex((i) => clampMonth(i - 1));
+              if (view === "week") setMondayKey((k) => addDays(k, 7));
+              else setMonthKey((k) => addMonths(k, 1));
             }}
             className="h-6 w-6 cursor-pointer rounded-md border border-border bg-transparent text-silk-dim"
           >
@@ -170,7 +175,7 @@ export function ScheduleCalendar({ weeks, initialWeekIndex, months, initialMonth
                         }`}
                       >
                         <div className="flex items-start justify-between gap-1">
-                          <span className="block font-mono text-[9px] text-silk-faint">{ev.time}</span>
+                          <span className="block font-mono text-[9px] text-silk-faint">{formatTimeRange(ev.time, ev.endTime)}</span>
                           {ev.owner === "me" && ev.id && (
                             <button
                               type="button"
@@ -186,7 +191,9 @@ export function ScheduleCalendar({ weeks, initialWeekIndex, months, initialMonth
                         {editable ? (
                           <button
                             type="button"
-                            onClick={() => setEditingEvent({ id: ev.id!, title: ev.title!, eventDate: ev.eventDate!, eventTime: ev.time })}
+                            onClick={() =>
+                              setEditingEvent({ id: ev.id!, title: ev.title!, eventDate: ev.eventDate!, eventTime: ev.time, eventEndTime: ev.endTime })
+                            }
                             className="cursor-pointer border-none bg-transparent p-0 text-left text-[10px] leading-[1.35] text-silk hover:underline"
                           >
                             {ev.label}
@@ -227,7 +234,12 @@ export function ScheduleCalendar({ weeks, initialWeekIndex, months, initialMonth
           })}
         </div>
       ) : (
-        <MonthView cells={currentMonth.cells} />
+        <MonthView
+          cells={currentMonth.cells}
+          onEdit={(ev) =>
+            setEditingEvent({ id: ev.id!, title: ev.title!, eventDate: ev.eventDate!, eventTime: ev.time, eventEndTime: ev.endTime })
+          }
+        />
       )}
 
       {deleteError && <p className="mt-2 font-mono text-[11px] text-[#e2543f]">{deleteError}</p>}
