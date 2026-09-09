@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { BrandPanel } from "./BrandPanel";
 import { LoginForm } from "./LoginForm";
 import type { PillState } from "./LoginBattery";
@@ -22,8 +21,6 @@ const BOTTOM_UP_DOM_INDEX = [4, 3, 2, 1, 0];
  * BrandPanel/LoginForm에는 controlled props로만 내려준다.
  */
 export function LoginScreen() {
-  const router = useRouter();
-
   const [cellsFilled, setCellsFilled] = useState<boolean[]>([false, false, false, false, false]);
   const [soc, setSoc] = useState(0);
   const [pill, setPill] = useState<PillState>({ label: "CHARGING", error: false });
@@ -134,7 +131,15 @@ export function LoginScreen() {
         loginBtnLabel={loginBtnLabel}
         goHomeVisible={goHomeVisible}
         onSubmit={handleSubmit}
-        onGoHome={() => router.push("/")}
+        onGoHome={() => {
+          // router.push(소프트 내비게이션)는 프로덕션 빌드에서 라우터 캐시 때문에
+          // 로그인 직후 세션 쿠키를 미들웨어가 못 읽는 경우가 있었다(원본도
+          // location.href='index.html'로 완전한 페이지 이동이었다 — 그 방식대로
+          // 되돌린다). 로그인 성공 → 인증 상태로의 전환은 미들웨어가 최신 쿠키로
+          // 다시 평가되는 게 더 중요해서 의도적으로 완전 새로고침을 쓴다.
+          // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+          window.location.href = "/";
+        }}
       />
     </div>
   );
