@@ -1,7 +1,12 @@
 import { weekdayIndex, DOW_KO, formatTimeRange } from "@/lib/schedule/calendar";
 import { RegisterEventModal } from "@/components/schedule/RegisterEventModal";
 import { ScheduleCalendar } from "@/components/schedule/ScheduleCalendar";
-import { ScheduleSidebar, type AgendaItem, type FixedScheduleItem } from "@/components/schedule/ScheduleSidebar";
+import {
+  ScheduleSidebar,
+  type AgendaItem,
+  type FixedScheduleItem,
+  type PersonalEventItem,
+} from "@/components/schedule/ScheduleSidebar";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { listAttendance } from "@/lib/db/attendance";
 import { getProfileByUserId } from "@/lib/db/profiles";
@@ -94,6 +99,22 @@ export default async function SchedulePage() {
     userId: f.userId,
   }));
 
+  const myPersonalEvents: PersonalEventItem[] = personalEvents
+    .filter((e) => user && e.userId === user.id)
+    .sort((a, b) => `${a.eventDate}T${a.eventTime}`.localeCompare(`${b.eventDate}T${b.eventTime}`))
+    .map((e) => {
+      const [, m, d] = e.eventDate.split("-").map(Number);
+      return {
+        id: e.id,
+        dateLabel: `${m}/${d}`,
+        title: e.title,
+        time: formatTimeRange(e.eventTime, e.eventEndTime ?? undefined),
+        eventDate: e.eventDate,
+        eventTime: e.eventTime,
+        eventEndTime: e.eventEndTime ?? undefined,
+      };
+    });
+
   const [, tm, td] = todayKey.split("-").map(Number);
   const todayLabel = `${tm}월 ${td}일 (${DOW_KO[weekdayIndex(todayKey)]})`;
 
@@ -121,6 +142,7 @@ export default async function SchedulePage() {
           agenda={agenda}
           fixedSchedule={myFixedSchedule}
           allFixedSchedule={allFixedSchedule}
+          personalEvents={myPersonalEvents}
           userId={user?.id}
         />
       </div>

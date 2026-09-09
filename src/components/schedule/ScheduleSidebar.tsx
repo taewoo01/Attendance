@@ -1,5 +1,6 @@
 import { AgendaCard } from "@/components/schedule/AgendaCard";
 import { FixedScheduleCard } from "@/components/schedule/FixedScheduleCard";
+import { PersonalEventCard } from "@/components/schedule/PersonalEventCard";
 
 export type AgendaItem = {
   time: string;
@@ -25,11 +26,24 @@ export type FixedScheduleItem = {
   userId?: string;
 };
 
+export type PersonalEventItem = {
+  id: string;
+  /** 표시용 날짜("9/9"). 고정 시간표의 요일과 달리 개인 일정은 특정 날짜 하나뿐이다. */
+  dateLabel: string;
+  title: string;
+  /** 표시용 파생값("09:00–12:00"). 수정 모달은 eventTime/eventEndTime을 따로 쓴다. */
+  time: string;
+  eventDate: string;
+  eventTime: string;
+  eventEndTime?: string;
+};
+
 type ScheduleSidebarProps = {
   todayLabel: string;
   agenda: AgendaItem[];
   fixedSchedule: FixedScheduleItem[];
   allFixedSchedule: FixedScheduleItem[];
+  personalEvents: PersonalEventItem[];
   userId?: string;
 };
 
@@ -42,12 +56,23 @@ type ScheduleSidebarProps = {
  * Client Component로 분리했다(FixedScheduleCard와 동일한 패턴).
  * "내 고정 시간표"(본인 것만)와 "전체 고정 시간표"(팀 전체)는 서로 다른 데이터라
  * FixedScheduleCard 안에 탭으로 나눠 보여준다 — 본인 것만 수정/삭제 가능하다.
+ * "개인 일정" 카드(PersonalEventCard)는 본인 소유 personal_events 전체를 목록으로
+ * 보여준다 — 캘린더 안에서는 더 이상 삭제할 수 없어서(칸이 좁아 오조작 잦음),
+ * 고정 시간표 카드 바로 아래에 동일한 리스트+삭제 패턴으로 둔다.
  */
-export function ScheduleSidebar({ todayLabel, agenda, fixedSchedule, allFixedSchedule, userId }: ScheduleSidebarProps) {
+export function ScheduleSidebar({
+  todayLabel,
+  agenda,
+  fixedSchedule,
+  allFixedSchedule,
+  personalEvents,
+  userId,
+}: ScheduleSidebarProps) {
   return (
     <aside>
       <AgendaCard todayLabel={todayLabel} agenda={agenda} />
       <FixedScheduleCard items={fixedSchedule} allItems={allFixedSchedule} userId={userId} />
+      <PersonalEventCard items={personalEvents} />
     </aside>
   );
 }

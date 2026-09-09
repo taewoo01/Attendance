@@ -1,8 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { deletePersonalEvent } from "@/lib/schedule/actions";
 import {
   addDays,
   addMonths,
@@ -44,11 +42,8 @@ type ScheduleCalendarProps = {
  * 항상 팀 전체를 보여줘서 "내 일정"을 선택해도 다른 사람 일정이 그대로 보였다.
  */
 export function ScheduleCalendar({ personalEvents, fixedSchedules, todayKey, userId }: ScheduleCalendarProps) {
-  const router = useRouter();
   const [view, setView] = useState<"week" | "month">("week");
   const [owner, setOwner] = useState<OwnerFilter>("me");
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [editingEvent, setEditingEvent] = useState<EditablePersonalEvent | null>(null);
   const [mondayKey, setMondayKey] = useState(() => mondayKeyOf(todayKey));
   const [monthKey, setMonthKey] = useState(() => monthKeyOf(todayKey));
@@ -64,18 +59,6 @@ export function ScheduleCalendar({ personalEvents, fixedSchedules, todayKey, use
   );
   const currentWeek = { mondayKey, weekDays, rangeLabel: weekRangeLabelOf(mondayKey, addDays(mondayKey, 6)) };
   const currentMonth = { monthKey, cells: monthCells, rangeLabel: monthRangeLabelOf(monthKey) };
-
-  async function handleDelete(id: string) {
-    setDeletingId(id);
-    setDeleteError(null);
-    const result = await deletePersonalEvent(id);
-    setDeletingId(null);
-    if (result.error) {
-      setDeleteError(result.error);
-      return;
-    }
-    router.refresh();
-  }
 
   return (
     <div>
@@ -192,20 +175,7 @@ export function ScheduleCalendar({ personalEvents, fixedSchedules, todayKey, use
                           ev.type === "personal" ? "border-l-teal" : "border-l-amber"
                         }`}
                       >
-                        <div className="flex items-start justify-between gap-1">
-                          <span className="block font-mono text-[9px] text-silk-faint">{formatTimeRange(ev.time, ev.endTime)}</span>
-                          {ev.owner === "me" && ev.id && (
-                            <button
-                              type="button"
-                              onClick={() => handleDelete(ev.id!)}
-                              disabled={deletingId === ev.id}
-                              aria-label="일정 삭제"
-                              className="cursor-pointer border-none bg-transparent p-0 leading-none text-silk-faint hover:text-[#e2543f] disabled:cursor-not-allowed"
-                            >
-                              ×
-                            </button>
-                          )}
-                        </div>
+                        <span className="block font-mono text-[9px] text-silk-faint">{formatTimeRange(ev.time, ev.endTime)}</span>
                         {editable ? (
                           <button
                             type="button"
@@ -259,8 +229,6 @@ export function ScheduleCalendar({ personalEvents, fixedSchedules, todayKey, use
           }
         />
       )}
-
-      {deleteError && <p className="mt-2 font-mono text-[11px] text-[#e2543f]">{deleteError}</p>}
 
       <EditPersonalEventModal event={editingEvent} onClose={() => setEditingEvent(null)} />
     </div>
