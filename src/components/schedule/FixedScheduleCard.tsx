@@ -14,6 +14,10 @@ const DAY_ORDER = ["월", "화", "수", "목", "금", "토", "일"];
  * 않고 탭으로 나눠 보여준다. "전체" 탭에서도 본인 소유 항목만 수정/삭제 가능하다
  * (다른 사람 것은 읽기 전용) — deleteFixedSchedule/updateFixedSchedule 자체가 서버에서
  * userId를 검사해 막아주지만, UI에서도 애초에 버튼을 보여주지 않는다.
+ * 일정이 쌓이면 카드가 한없이 길어지는 문제가 있어, 요일별로 그룹을 나누고
+ * 그룹 헤더를 눌러 접고 펼 수 있게 했다(PersonalEventCard와 동일한 패턴).
+ * 기본값은 전부 펼친 상태(collapsedDays가 빈 Set)라 기존처럼 항목이 적을 때는
+ * 동작이 그대로고, 요일별로 늘어날 때만 필요한 요일을 접어서 줄일 수 있다.
  */
 export function FixedScheduleCard({
   items,
@@ -29,6 +33,7 @@ export function FixedScheduleCard({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editing, setEditing] = useState<EditableFixedSchedule | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [collapsedDays, setCollapsedDays] = useState<Set<string>>(new Set());
 
   async function handleDelete(id: string) {
     setDeletingId(id);
@@ -42,8 +47,21 @@ export function FixedScheduleCard({
     router.refresh();
   }
 
+  function toggleDay(day: string) {
+    setCollapsedDays((prev) => {
+      const next = new Set(prev);
+      if (next.has(day)) next.delete(day);
+      else next.add(day);
+      return next;
+    });
+  }
+
   const visibleItems =
     tab === "mine" ? items : [...allItems].sort((a, b) => DAY_ORDER.indexOf(a.day) - DAY_ORDER.indexOf(b.day));
+
+  const groups = DAY_ORDER.map((day) => ({ day, items: visibleItems.filter((item) => item.day === day) })).filter(
+    (g) => g.items.length > 0,
+  );
 
   return (
     <div className="mb-[14px] rounded-panel border border-border bg-bg-panel px-4 pt-[15px] pb-[14px]">
@@ -68,43 +86,68 @@ export function FixedScheduleCard({
         </button>
       </div>
 
-      {visibleItems.length === 0 && (
+      {groups.length === 0 && (
         <p className="m-0 py-1.5 text-[11.5px] text-silk-faint">등록된 고정 시간표가 없습니다.</p>
       )}
 
-      {visibleItems.map((item) => {
-        const editable = tab === "mine" || item.userId === userId;
-        const label = tab === "all" ? `${item.name ?? ""} · ${item.title}` : item.title;
+      {groups.map(({ day, items: dayItems }) => {
+        const isCollapsed = collapsedDays.has(day);
         return (
-          <div
-            key={item.id}
-            className="flex items-baseline justify-between gap-2 border-b border-border py-1.5 text-xs last:border-b-0 last:pb-0"
-          >
-            <span className="w-5 shrink-0 font-mono text-[10.5px] text-amber">{item.day}</span>
-            {editable ? (
-              <button
-                type="button"
-                onClick={() =>
-                  setEditing({ id: item.id, title: item.title, dayOfWeek: item.day, startTime: item.startTime, endTime: item.endTime })
-                }
-                className="mx-2 flex-1 cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap border-none bg-transparent p-0 text-left text-xs text-silk hover:underline"
-              >
-                {label}
-              </button>
-            ) : (
-              <span className="mx-2 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-xs text-silk-dim">{label}</span>
-            )}
-            <span className="shrink-0 font-mono text-[10px] text-silk-faint">{item.time}</span>
-            {editable && (
-              <button
-                type="button"
-                onClick={() => handleDelete(item.id)}
-                disabled={deletingId === item.id}
-                aria-label="고정 시간표 삭제"
-                className="shrink-0 cursor-pointer border-none bg-transparent p-0 leading-none text-silk-faint hover:text-[#e2543f] disabled:cursor-not-allowed"
-              >
-                ×
-              </button>
+          <div key={day} className="border-b border-border last:border-b-0">
+            <button
+              type="button"
+              onClick={() => toggleDay(day)}
+              className="flex w-full cursor-pointer items-center justify-between border-none bg-transparent py-1.5 text-left"
+            >
+              <span className="font-mono text-[10.5px] font-semibold text-amber">
+                {day}요일 <span className="text-silk-faint">· {dayItems.length}건</span>
+              </span>
+              <span className="text-[9px] text-silk-faint">{isCollapsed ? "▸" : "▾"}</span>
+            </button>
+            {!isCollapsed && (
+              <div className="pb-1.5">
+                {dayItems.map((item) => {
+                  const editable = tab === "mine" || item.userId === userId;
+                  const label = tab === "all" ? `${item.name ?? ""} · ${item.title}` : item.title;
+                  return (
+                    <div key={item.id} className="flex items-baseline justify-between gap-2 py-1 text-xs">
+                      {editable ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setEditing({
+                              id: item.id,
+                              title: item.title,
+                              dayOfWeek: item.day,
+                              startTime: item.startTime,
+                              endTime: item.endTime,
+                            })
+                          }
+                          className="flex-1 cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap border-none bg-transparent p-0 text-left text-xs text-silk hover:underline"
+                        >
+                          {label}
+                        </button>
+                      ) : (
+                        <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-xs text-silk-dim">
+                          {label}
+                        </span>
+                      )}
+                      <span className="shrink-0 font-mono text-[10px] text-silk-faint">{item.time}</span>
+                      {editable && (
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(item.id)}
+                          disabled={deletingId === item.id}
+                          aria-label="고정 시간표 삭제"
+                          className="shrink-0 cursor-pointer border-none bg-transparent p-0 leading-none text-silk-faint hover:text-[#e2543f] disabled:cursor-not-allowed"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
         );
