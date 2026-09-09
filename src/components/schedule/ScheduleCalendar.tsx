@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import {
+  TEAM_CAP,
   addDays,
   addMonths,
   buildMonthCells,
@@ -15,10 +16,7 @@ import {
   type OwnerFilter,
   type PersonalEventRow,
 } from "@/lib/schedule/calendar";
-import { EditPersonalEventModal, type EditablePersonalEvent } from "@/components/schedule/EditPersonalEventModal";
 import { MonthView } from "@/components/schedule/MonthView";
-
-const TEAM_CAP = 2;
 
 type ScheduleCalendarProps = {
   personalEvents: PersonalEventRow[];
@@ -40,11 +38,14 @@ type ScheduleCalendarProps = {
  * 버그 수정: month view도 owner(내 일정/팀 전체)에 따라 필터링되도록 buildMonthCells에
  * owner를 넘긴다 — 예전에는 week view만 필터링되고 month view는 owner 토글과 무관하게
  * 항상 팀 전체를 보여줘서 "내 일정"을 선택해도 다른 사람 일정이 그대로 보였다.
+ * 달력(week/month view) 안에서는 개인 일정을 클릭해도 수정 모달이 뜨지 않는다 —
+ * 수정/삭제는 사이드바의 PersonalEventCard로만 한다(ScheduleSidebar 참고). 예전에는
+ * 여기서도 클릭해서 EditPersonalEventModal을 열 수 있었지만, 사이드바에 전용 관리
+ * 카드가 생긴 뒤로는 두 경로가 중복이라 없앴다.
  */
 export function ScheduleCalendar({ personalEvents, fixedSchedules, todayKey, userId }: ScheduleCalendarProps) {
   const [view, setView] = useState<"week" | "month">("week");
   const [owner, setOwner] = useState<OwnerFilter>("me");
-  const [editingEvent, setEditingEvent] = useState<EditablePersonalEvent | null>(null);
   const [mondayKey, setMondayKey] = useState(() => mondayKeyOf(todayKey));
   const [monthKey, setMonthKey] = useState(() => monthKeyOf(todayKey));
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
@@ -166,32 +167,17 @@ export function ScheduleCalendar({ personalEvents, fixedSchedules, todayKey, use
                   <div className={`mt-px text-sm font-semibold ${day.today ? "text-teal" : ""}`}>{day.date}</div>
                 </div>
                 <div className="flex flex-col gap-1">
-                  {visible.map((ev, i) => {
-                    const editable = ev.owner === "me" && ev.type === "personal" && ev.id && ev.eventDate && ev.title;
-                    return (
-                      <div
-                        key={ev.id ?? i}
-                        className={`rounded-[5px] bg-bg-raised px-[6px] py-1 text-[10px] leading-[1.35] border-l-2 ${
-                          ev.type === "personal" ? "border-l-teal" : "border-l-amber"
-                        }`}
-                      >
-                        <span className="block font-mono text-[9px] text-silk-faint">{formatTimeRange(ev.time, ev.endTime)}</span>
-                        {editable ? (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setEditingEvent({ id: ev.id!, title: ev.title!, eventDate: ev.eventDate!, eventTime: ev.time, eventEndTime: ev.endTime })
-                            }
-                            className="cursor-pointer border-none bg-transparent p-0 text-left text-[10px] leading-[1.35] text-silk hover:underline"
-                          >
-                            {ev.label}
-                          </button>
-                        ) : (
-                          ev.label
-                        )}
-                      </div>
-                    );
-                  })}
+                  {visible.map((ev, i) => (
+                    <div
+                      key={ev.id ?? i}
+                      className={`rounded-[5px] bg-bg-raised px-[6px] py-1 text-[10px] leading-[1.35] border-l-2 ${
+                        ev.type === "personal" ? "border-l-teal" : "border-l-amber"
+                      }`}
+                    >
+                      <span className="block font-mono text-[9px] text-silk-faint">{formatTimeRange(ev.time, ev.endTime)}</span>
+                      {ev.label}
+                    </div>
+                  ))}
                   {moreCount > 0 && (
                     <button
                       type="button"
@@ -222,15 +208,8 @@ export function ScheduleCalendar({ personalEvents, fixedSchedules, todayKey, use
           })}
         </div>
       ) : (
-        <MonthView
-          cells={currentMonth.cells}
-          onEdit={(ev) =>
-            setEditingEvent({ id: ev.id!, title: ev.title!, eventDate: ev.eventDate!, eventTime: ev.time, eventEndTime: ev.endTime })
-          }
-        />
+        <MonthView cells={currentMonth.cells} owner={owner} />
       )}
-
-      <EditPersonalEventModal event={editingEvent} onClose={() => setEditingEvent(null)} />
     </div>
   );
 }
