@@ -254,14 +254,23 @@ export const personalEvents = pgTable("personal_events", {
   title: text("title").notNull().default(""),
 });
 
-/** dayOfWeek는 "월"/"화"/"수"/"목"/"금"/"토"/"일" 중 하나(원본 표기 그대로). */
+/**
+ * dayOfWeek는 "월"/"화"/"수"/"목"/"금"/"토"/"일" 중 하나(원본 표기 그대로).
+ * 한 row = 요일 하나(+ 시간 하나)다 — 등록 폼에서 여러 요일을 한 번에 고르면
+ * (일정 페이지 고도화 #2) day마다 별도 row를 insert한다(createFixedSchedule
+ * 참고). timeRange(자유 텍스트, "9~12" 등 표기가 들쭉날쭉했다) 대신
+ * personal_events.eventTime/eventEndTime과 동일한 컨벤션으로 startTime/endTime을
+ * 구조화된 값으로 저장한다.
+ */
 export const fixedSchedules = pgTable("fixed_schedules", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id")
     .notNull()
     .references(() => authUsers.id, { onDelete: "cascade" }),
   dayOfWeek: text("day_of_week").notNull().default(""),
-  timeRange: text("time_range").notNull().default(""),
+  startTime: text("start_time").notNull().default(""),
+  /** 종료 시간은 선택 입력이라 nullable — personal_events.eventEndTime과 동일. */
+  endTime: text("end_time"),
   title: text("title").notNull().default(""),
 });
 

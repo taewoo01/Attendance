@@ -5,6 +5,7 @@ import type { DailyLogChecklistItem } from "@/db/schema";
 
 export type FeedEntry = {
   id: string;
+  userId: string;
   mine?: boolean;
   name: string;
   avatar: string;
@@ -15,6 +16,8 @@ export type FeedEntry = {
   /** 수정 모달을 채우는 데 쓰는 원본 데이터(desc/checklist는 표시용 파생값과 별개). */
   checklist: DailyLogChecklistItem[];
 };
+
+export type RosterMember = { userId: string; name: string };
 
 /**
  * playground-design/daily.html의 #feedRows를 감싸는 .list-card("팀 기록").
@@ -33,6 +36,10 @@ export function TeamFeedCard({
   onNext,
   onEditMine,
   containerRef,
+  roster,
+  selectedUserId,
+  onSelectUser,
+  onToggleItem,
 }: {
   label: string;
   ratio: string;
@@ -42,11 +49,29 @@ export function TeamFeedCard({
   onNext: () => void;
   onEditMine: () => void;
   containerRef: RefObject<HTMLDivElement | null>;
+  roster: RosterMember[];
+  selectedUserId: string;
+  onSelectUser: (userId: string) => void;
+  onToggleItem: (index: number) => void;
 }) {
   return (
     <div ref={containerRef} className="mb-[22px] overflow-hidden rounded-card border border-border bg-bg-panel">
-      <div className="flex items-center justify-between border-b border-border px-[22px] py-[18px]">
-        <h3 className="m-0 text-[14.5px] font-semibold">팀 기록</h3>
+      <div className="flex flex-wrap items-center justify-between gap-[10px] border-b border-border px-[22px] py-[18px]">
+        <div className="flex items-center gap-[10px]">
+          <h3 className="m-0 text-[14.5px] font-semibold">팀 기록</h3>
+          <select
+            value={selectedUserId}
+            onChange={(e) => onSelectUser(e.target.value)}
+            className="cursor-pointer rounded-chip border border-border bg-bg-panel px-2.5 py-[5px] font-mono text-[11px] text-silk-dim"
+          >
+            <option value="all">전체</option>
+            {roster.map((member) => (
+              <option key={member.userId} value={member.userId}>
+                {member.name}
+              </option>
+            ))}
+          </select>
+        </div>
         <div className="flex items-center gap-[14px]">
           <span className="font-mono text-[11.5px] text-silk-faint">{ratio}</span>
           <div className="flex items-center gap-2 font-mono text-xs text-silk-dim">
@@ -72,7 +97,7 @@ export function TeamFeedCard({
       <div>
         {entries.map((e) => (
           <div
-            key={e.name}
+            key={e.id}
             className={`border-b border-border px-[22px] py-[17px] last:border-b-0 ${
               e.mine ? "bg-[rgba(72,217,176,0.035)]" : ""
             }`}
@@ -96,6 +121,30 @@ export function TeamFeedCard({
               )}
             </div>
             <p className="m-0 mb-2 max-w-[66ch] text-[12.5px] leading-[1.6] text-silk-dim">{e.desc}</p>
+            {e.checklist.length > 0 && (
+              <div className="mb-2 flex flex-col gap-[5px]">
+                {e.checklist.map((item, i) => (
+                  <div
+                    key={i}
+                    onClick={e.mine ? () => onToggleItem(i) : undefined}
+                    className={`flex items-center gap-[8px] text-[12px] ${e.mine ? "cursor-pointer" : ""}`}
+                  >
+                    <span
+                      className={`flex h-[15px] w-[15px] shrink-0 items-center justify-center rounded-[4px] border border-border ${
+                        item.done ? "border-teal bg-teal" : ""
+                      }`}
+                    >
+                      {item.done && (
+                        <svg viewBox="0 0 24 24" fill="none" strokeWidth="3" className="h-2 w-2 stroke-[#04231b]">
+                          <path d="M5 12l5 5 9-10" />
+                        </svg>
+                      )}
+                    </span>
+                    <span className={item.done ? "text-silk-faint line-through" : "text-silk-dim"}>{item.text}</span>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="flex items-center gap-[6px] font-mono text-[11px] text-silk-faint">
               <div className="h-1 w-16 overflow-hidden rounded-[3px] bg-bg-raised">
                 <div className="h-full rounded-[3px] bg-teal" style={{ width: `${e.pct}%` }} />

@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState, type KeyboardEvent } from "react";
 import type { DailyLogTemplate } from "@/components/daily/WriteLogModal";
+import { createTemplate, deleteTemplate } from "@/lib/daily/actions";
 
 export type WeekStatusDay = { dow: string; dnum: number; done: boolean; today: boolean };
 
@@ -23,6 +26,57 @@ type DailySidebarProps = {
  * 해서 Client Component가 됐다. 실적 연동 프로모 카드(Link)는 원본 그대로 정적.
  */
 export function DailySidebar({ weekStatus, streakCurrent, streakBest, templates, onApplyTemplate }: DailySidebarProps) {
+  const router = useRouter();
+  const [creating, setCreating] = useState(false);
+  const [title, setTitle] = useState("");
+  const [items, setItems] = useState<string[]>([]);
+  const [itemText, setItemText] = useState("");
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function addItem() {
+    const text = itemText.trim();
+    if (!text) return;
+    setItems((prev) => [...prev, text]);
+    setItemText("");
+  }
+
+  function handleItemKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addItem();
+    }
+  }
+
+  function removeItem(index: number) {
+    setItems((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  async function handleCreate() {
+    const trimmedTitle = title.trim();
+    if (!trimmedTitle || items.length === 0) return;
+    setPending(true);
+    setError(null);
+    const formData = new FormData();
+    formData.set("title", trimmedTitle);
+    formData.set("itemsJson", JSON.stringify(items));
+    const result = await createTemplate(formData);
+    setPending(false);
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
+    setTitle("");
+    setItems([]);
+    setCreating(false);
+    router.refresh();
+  }
+
+  async function handleDelete(id: string) {
+    const result = await deleteTemplate(id);
+    if (!result.error) router.refresh();
+  }
+
   return (
     <div>
       <div className="mb-4 rounded-panel border border-border bg-bg-panel px-[18px] pt-[18px] pb-4">
@@ -65,15 +119,27 @@ export function DailySidebar({ weekStatus, streakCurrent, streakBest, templates,
       </div>
 
       <div className="mb-4 rounded-panel border border-border bg-bg-panel px-[18px] pt-[18px] pb-4">
-        <h4 className="m-0 mb-[14px] text-[13.5px] font-semibold">자주 쓰는 체크리스트</h4>
-        {templates.length === 0 ? (
-          <p className="m-0 text-xs text-silk-faint">
-            아직 저장된 템플릿이 없어요. 기록 작성 모달에서 체크리스트를 &ldquo;템플릿으로 저장&rdquo;할 수 있어요.
-          </p>
-        ) : (
-          templates.map((t) => (
-            <div key={t.id} className="flex items-center justify-between border-b border-border py-[7px] text-xs last:border-b-0 last:pb-0">
-              <span className="text-silk-dim">{t.title}</span>
+        <div className="mb-[14px] flex items-center justify-between">
+          <h4 className="m-0 text-[13.5px] font-semibold">자주 쓰는 체크리스트</h4>
+          {!creating && (
+            <button
+              type="button"
+              onClick={() => setCreating(true)}
+              className="cursor-pointer border-none bg-transparent font-mono text-[11px] text-teal hover:underline"
+            >
+              + 새 템플릿
+            </button>
+          )}
+        </div>
+
+        {templates.length === 0 && !creating && (
+          <p className="m-0 text-xs text-silk-faint">아직 저장된 템플릿이 없어요. &ldquo;+ 새 템플릿&rdquo;으로 만들어 보세요.</p>
+        )}
+
+        {templates.map((t) => (
+          <div key={t.id} className="flex items-center justify-between border-b border-border py-[7px] text-xs last:border-b-0 last:pb-0">
+            <span className="text-silk-dim">{t.title}</span>
+            <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => onApplyTemplate(t.items)}
@@ -81,8 +147,88 @@ export function DailySidebar({ weekStatus, streakCurrent, streakBest, templates,
               >
                 + 추가
               </button>
+              <button
+                type="button"
+                onClick={() => handleDelete(t.id)}
+                aria-label="템플릿 삭제"
+                className="cursor-pointer border-none bg-transparent p-0 leading-none text-silk-faint hover:text-[#e2543f]"
+              >
+                ×
+              </button>
             </div>
-          ))
+          </div>
+        ))}
+
+        {creating && (
+          <div className={templates.length > 0 ? "mt-3" : ""}>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="템플릿 이름"
+              className="mb-2 w-full rounded-input border border-border bg-bg-raised px-2.5 py-2 font-sans text-xs text-silk focus:border-teal-dim focus:outline-none"
+            />
+
+            {items.length > 0 && (
+              <div className="mb-2 flex flex-wrap gap-[6px]">
+                {items.map((item, i) => (
+                  <span
+                    key={i}
+                    className="inline-flex items-center gap-1.5 rounded-pill border border-border bg-bg-raised px-2.5 py-1 font-mono text-[10.5px] text-silk-dim"
+                  >
+                    {item}
+                    <button
+                      type="button"
+                      onClick={() => removeItem(i)}
+                      aria-label="항목 삭제"
+                      className="cursor-pointer border-none bg-transparent p-0 leading-none text-silk-faint hover:text-[#e2543f]"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div className="mb-2 flex items-center gap-2">
+              <input
+                type="text"
+                value={itemText}
+                onChange={(e) => setItemText(e.target.value)}
+                onKeyDown={handleItemKeyDown}
+                placeholder="할 일 추가..."
+                className="flex-1 rounded-input border border-border bg-bg-raised px-2.5 py-2 font-sans text-xs text-silk focus:border-teal-dim focus:outline-none"
+              />
+              <button type="button" onClick={addItem} className="cursor-pointer border-none bg-transparent font-mono text-[11px] text-teal">
+                추가
+              </button>
+            </div>
+
+            {error && <p className="m-0 mb-2 font-mono text-[10.5px] text-[#e2543f]">{error}</p>}
+
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setCreating(false);
+                  setTitle("");
+                  setItems([]);
+                  setError(null);
+                }}
+                className="cursor-pointer rounded-button border border-border bg-transparent px-2.5 py-[5px] text-[11px] font-semibold text-silk"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={handleCreate}
+                disabled={pending || !title.trim() || items.length === 0}
+                className="cursor-pointer rounded-button border border-teal bg-teal px-2.5 py-[5px] text-[11px] font-semibold text-[#04231b] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {pending ? "저장 중..." : "저장"}
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </div>

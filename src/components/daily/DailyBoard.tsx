@@ -1,10 +1,12 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { DailySidebar, type WeekStatusDay } from "@/components/daily/DailySidebar";
 import { PastLogsCard, type PastLog } from "@/components/daily/PastLogsCard";
-import { TeamFeedCard, type FeedEntry } from "@/components/daily/TeamFeedCard";
+import { TeamFeedCard, type FeedEntry, type RosterMember } from "@/components/daily/TeamFeedCard";
 import { WriteLogModal, type DailyLogTemplate, type WriteLogTarget } from "@/components/daily/WriteLogModal";
+import { toggleDailyLogChecklistItem } from "@/lib/daily/actions";
 
 export type FeedDay = { dateKey: string; label: string; ratio: string; entries: FeedEntry[]; emptyNote: string };
 
@@ -16,6 +18,7 @@ type DailyBoardProps = {
   weekStatus: WeekStatusDay[];
   streakCurrent: number;
   streakBest: number;
+  roster: RosterMember[];
 };
 
 /**
@@ -32,13 +35,34 @@ type DailyBoardProps = {
  * 이 컴포넌트의 모달 오픈 로직과 연결돼야 해서(콜백 prop 필요) 더 이상
  * page.tsx가 내려주는 정적 children이 아니라 여기서 직접 렌더링한다.
  */
-export function DailyBoard({ feedDays, pastLogs, todayKey, templates, weekStatus, streakCurrent, streakBest }: DailyBoardProps) {
+export function DailyBoard({
+  feedDays,
+  pastLogs,
+  todayKey,
+  templates,
+  weekStatus,
+  streakCurrent,
+  streakBest,
+  roster,
+}: DailyBoardProps) {
+  const router = useRouter();
   const [editTarget, setEditTarget] = useState<WriteLogTarget | null>(null);
   const [feedIndex, setFeedIndex] = useState(0);
+  const [selectedUserId, setSelectedUserId] = useState("all");
   const feedCardRef = useRef<HTMLDivElement>(null);
 
   const clamp = (i: number) => Math.max(0, Math.min(feedDays.length - 1, i));
   const data = feedDays[feedIndex];
+  const visibleEntries = selectedUserId === "all" ? data.entries : data.entries.filter((e) => e.userId === selectedUserId);
+  const selectedName = roster.find((m) => m.userId === selectedUserId)?.name;
+  const noun = data.dateKey === todayKey ? "오늘" : "이날";
+  const displayEmptyNote =
+    selectedUserId !== "all" && visibleEntries.length === 0 ? `${selectedName ?? ""}님은 아직 ${noun} 기록을 작성하지 않았어요.` : data.emptyNote;
+
+  async function handleToggleItem(index: number) {
+    const result = await toggleDailyLogChecklistItem(data.dateKey, index);
+    if (!result.error) router.refresh();
+  }
 
   function openEditor(day: FeedDay, extraItems: string[] = []) {
     const mine = day.entries.find((e) => e.mine);
@@ -88,14 +112,23 @@ export function DailyBoard({ feedDays, pastLogs, todayKey, templates, weekStatus
           <TeamFeedCard
             label={data.label}
             ratio={data.ratio}
-            entries={data.entries}
-            emptyNote={data.emptyNote}
+            entries={visibleEntries}
+            emptyNote={displayEmptyNote}
             onPrev={() => setFeedIndex((i) => clamp(i + 1))}
             onNext={() => setFeedIndex((i) => clamp(i - 1))}
             onEditMine={() => openEditor(data)}
             containerRef={feedCardRef}
+            roster={roster}
+            selectedUserId={selectedUserId}
+            onSelectUser={setSelectedUserId}
+            onToggleItem={handleToggleItem}
           />
-          <WriteLogModal target={editTarget} onClose={() => setEditTarget(null)} templates={templates} />
+          <WriteLogModal
+            key={editTarget ? editTarget.dateKey : "closed"}
+            target={editTarget}
+            onClose={() => setEditTarget(null)}
+            templates={templates}
+          />
           <PastLogsCard
             pastLogs={pastLogs}
             onSelectDate={(date) => {

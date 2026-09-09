@@ -14,20 +14,33 @@ const DAYS_OF_WEEK = ["월", "화", "수", "목", "금", "토", "일"];
  * 기존 스타일을 그대로 재사용한다(새 디자인을 만들지 않음).
  * TASK-032: "구분"(개인 일정/고정 시간표) 토글을 RegisterResultModal의 "개인/팀"
  * 토글과 동일한 스타일로 추가해 fixed_schedules 등록도 같은 모달에서 처리한다.
+ * 일정 페이지 고도화 #1/#2: 요일은 select 하나가 아니라 복수 선택 가능한 chip
+ * 그룹(hidden input들로 제출)이고, 시간은 자유 텍스트("09–11시") 대신 개인
+ * 일정과 동일하게 시작/종료 time input으로 구조화했다.
  */
 export function RegisterEventModal() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [kind, setKind] = useState<"personal" | "fixed">("personal");
+  const [selectedDays, setSelectedDays] = useState<string[]>([]);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  function toggleDay(day: string) {
+    setSelectedDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
+  }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
-    setPending(true);
     setError(null);
 
+    if (kind === "fixed" && selectedDays.length === 0) {
+      setError("요일을 하나 이상 선택해 주세요.");
+      return;
+    }
+
+    setPending(true);
     const result =
       kind === "personal" ? await createPersonalEvent(new FormData(form)) : await createFixedSchedule(new FormData(form));
 
@@ -38,6 +51,7 @@ export function RegisterEventModal() {
     }
     form.reset();
     setKind("personal");
+    setSelectedDays([]);
     setOpen(false);
     router.refresh();
   }
@@ -45,6 +59,7 @@ export function RegisterEventModal() {
   function closeModal() {
     setOpen(false);
     setKind("personal");
+    setSelectedDays([]);
     setError(null);
   }
 
@@ -146,35 +161,48 @@ export function RegisterEventModal() {
                   </div>
                 </>
               ) : (
-                <div className="mb-[18px] grid grid-cols-2 gap-[14px]">
-                  <div>
-                    <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">요일</p>
-                    <select
-                      name="dayOfWeek"
-                      required
-                      defaultValue=""
-                      className="w-full rounded-input border border-border bg-bg-raised px-[14px] py-[11px] font-sans text-[13.5px] text-silk focus:border-teal-dim focus:outline-none"
-                    >
-                      <option value="" disabled>
-                        선택
-                      </option>
+                <>
+                  <div className="mb-[18px]">
+                    <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">요일 (복수 선택 가능)</p>
+                    <div className="flex flex-wrap gap-[6px]">
                       {DAYS_OF_WEEK.map((day) => (
-                        <option key={day} value={day}>
+                        <button
+                          key={day}
+                          type="button"
+                          onClick={() => toggleDay(day)}
+                          className={`cursor-pointer rounded-chip border px-3 py-1.5 font-mono text-[12px] font-semibold ${
+                            selectedDays.includes(day)
+                              ? "border-teal bg-teal text-[#04231b]"
+                              : "border-border bg-bg-raised text-silk-dim"
+                          }`}
+                        >
                           {day}
-                        </option>
+                        </button>
                       ))}
-                    </select>
+                    </div>
+                    {selectedDays.map((day) => (
+                      <input key={day} type="hidden" name="dayOfWeek" value={day} />
+                    ))}
                   </div>
-                  <div>
-                    <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">시간대</p>
-                    <input
-                      name="timeRange"
-                      type="text"
-                      placeholder="예: 09–11시"
-                      className="w-full rounded-input border border-border bg-bg-raised px-[14px] py-[11px] font-sans text-[13.5px] text-silk focus:border-teal-dim focus:outline-none"
-                    />
+                  <div className="mb-[18px] grid grid-cols-2 gap-[14px]">
+                    <div>
+                      <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">시작 시간</p>
+                      <input
+                        name="startTime"
+                        type="time"
+                        className="w-full rounded-input border border-border bg-bg-raised px-[14px] py-[11px] font-sans text-[13.5px] text-silk focus:border-teal-dim focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">종료 시간</p>
+                      <input
+                        name="endTime"
+                        type="time"
+                        className="w-full rounded-input border border-border bg-bg-raised px-[14px] py-[11px] font-sans text-[13.5px] text-silk focus:border-teal-dim focus:outline-none"
+                      />
+                    </div>
                   </div>
-                </div>
+                </>
               )}
 
               {error && <p className="m-0 font-mono text-[11px] text-[#e2543f]">{error}</p>}

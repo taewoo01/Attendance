@@ -99,6 +99,7 @@ export default async function DailyPage() {
       const name = row.name ?? "";
       return {
         id: row.id,
+        userId: row.userId,
         mine: user ? row.userId === user.id : false,
         name,
         avatar: name.trim().charAt(0) || "?",
@@ -167,6 +168,7 @@ export default async function DailyPage() {
       weekStatus={weekStatus}
       streakCurrent={streakCurrent}
       streakBest={streakBest}
+      roster={roster.map((profile) => ({ userId: profile.userId, name: profile.name }))}
     />
   );
 }

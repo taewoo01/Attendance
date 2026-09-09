@@ -14,6 +14,7 @@ import {
   monthRangeLabelOf,
   weekRangeLabelOf,
   type FixedScheduleRow,
+  type OwnerFilter,
   type PersonalEventRow,
 } from "@/lib/schedule/calendar";
 import { EditPersonalEventModal, type EditablePersonalEvent } from "@/components/schedule/EditPersonalEventModal";
@@ -38,11 +39,14 @@ type ScheduleCalendarProps = {
  * 해당 주/달에 일정이 있는지와 무관하게 항상 이동 가능하다 — 이전에는 personal_events가
  * 존재하는 주/달만 미리 배열로 만들어 인덱스만 옮겨 다니는 구조라 일정이 없는 주/달로는
  * 이동이 안 되는 문제가 있었다.
+ * 버그 수정: month view도 owner(내 일정/팀 전체)에 따라 필터링되도록 buildMonthCells에
+ * owner를 넘긴다 — 예전에는 week view만 필터링되고 month view는 owner 토글과 무관하게
+ * 항상 팀 전체를 보여줘서 "내 일정"을 선택해도 다른 사람 일정이 그대로 보였다.
  */
 export function ScheduleCalendar({ personalEvents, fixedSchedules, todayKey, userId }: ScheduleCalendarProps) {
   const router = useRouter();
   const [view, setView] = useState<"week" | "month">("week");
-  const [owner, setOwner] = useState<"me" | "team">("me");
+  const [owner, setOwner] = useState<OwnerFilter>("me");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [editingEvent, setEditingEvent] = useState<EditablePersonalEvent | null>(null);
@@ -55,8 +59,8 @@ export function ScheduleCalendar({ personalEvents, fixedSchedules, todayKey, use
     [mondayKey, todayKey, personalEvents, fixedSchedules, userId],
   );
   const monthCells = useMemo(
-    () => buildMonthCells(monthKey, todayKey, personalEvents, fixedSchedules, userId),
-    [monthKey, todayKey, personalEvents, fixedSchedules, userId],
+    () => buildMonthCells(monthKey, todayKey, personalEvents, fixedSchedules, userId, owner),
+    [monthKey, todayKey, personalEvents, fixedSchedules, userId, owner],
   );
   const currentWeek = { mondayKey, weekDays, rangeLabel: weekRangeLabelOf(mondayKey, addDays(mondayKey, 6)) };
   const currentMonth = { monthKey, cells: monthCells, rangeLabel: monthRangeLabelOf(monthKey) };
@@ -121,12 +125,12 @@ export function ScheduleCalendar({ personalEvents, fixedSchedules, todayKey, use
         </div>
       </div>
 
-      <div className="mb-2.5 flex items-center justify-between font-mono text-xs text-silk-dim">
+      <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2 font-mono text-xs text-silk-dim">
         <div className="flex overflow-hidden rounded-chip border border-border">
           <button
             type="button"
             onClick={() => setOwner("me")}
-            className={`cursor-pointer border-none px-[14px] py-1.5 font-mono text-[11.5px] font-semibold ${
+            className={`cursor-pointer border-none px-[12px] py-1.5 font-mono text-[11.5px] font-semibold ${
               owner === "me" ? "bg-teal text-[#04231b]" : "bg-transparent text-silk-dim"
             }`}
           >
@@ -134,12 +138,21 @@ export function ScheduleCalendar({ personalEvents, fixedSchedules, todayKey, use
           </button>
           <button
             type="button"
+            onClick={() => setOwner("team-no-fixed")}
+            className={`cursor-pointer border-none px-[12px] py-1.5 font-mono text-[11.5px] font-semibold ${
+              owner === "team-no-fixed" ? "bg-teal text-[#04231b]" : "bg-transparent text-silk-dim"
+            }`}
+          >
+            팀 전체(고정 일정 X)
+          </button>
+          <button
+            type="button"
             onClick={() => setOwner("team")}
-            className={`cursor-pointer border-none px-[14px] py-1.5 font-mono text-[11.5px] font-semibold ${
+            className={`cursor-pointer border-none px-[12px] py-1.5 font-mono text-[11.5px] font-semibold ${
               owner === "team" ? "bg-teal text-[#04231b]" : "bg-transparent text-silk-dim"
             }`}
           >
-            팀 전체
+            팀 전체(고정 일정 O)
           </button>
         </div>
         <span className="text-silk-faint">보기 기준</span>
@@ -150,9 +163,14 @@ export function ScheduleCalendar({ personalEvents, fixedSchedules, todayKey, use
           {currentWeek.weekDays.map((day) => {
             const dayKey = `${currentWeek.mondayKey}-${day.dow}`;
             const isExpanded = expandedDays.has(dayKey);
-            const visible =
-              owner === "me" ? day.events.filter((e) => e.owner === "me") : isExpanded ? day.events : day.events.slice(0, TEAM_CAP);
-            const moreCount = owner === "team" && !isExpanded ? Math.max(0, day.events.length - TEAM_CAP) : 0;
+            const scopedEvents =
+              owner === "me"
+                ? day.events.filter((e) => e.owner === "me")
+                : owner === "team-no-fixed"
+                  ? day.events.filter((e) => e.type !== "fixed")
+                  : day.events;
+            const visible = owner === "me" || isExpanded ? scopedEvents : scopedEvents.slice(0, TEAM_CAP);
+            const moreCount = owner !== "me" && !isExpanded ? Math.max(0, scopedEvents.length - TEAM_CAP) : 0;
             return (
               <div
                 key={day.dow}
@@ -213,7 +231,7 @@ export function ScheduleCalendar({ personalEvents, fixedSchedules, todayKey, use
                       +{moreCount}개 더보기
                     </button>
                   )}
-                  {owner === "team" && isExpanded && day.events.length > TEAM_CAP && (
+                  {owner !== "me" && isExpanded && scopedEvents.length > TEAM_CAP && (
                     <button
                       type="button"
                       onClick={() =>

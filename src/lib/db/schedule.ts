@@ -29,7 +29,8 @@ export async function listFixedSchedules() {
       id: fixedSchedules.id,
       userId: fixedSchedules.userId,
       dayOfWeek: fixedSchedules.dayOfWeek,
-      timeRange: fixedSchedules.timeRange,
+      startTime: fixedSchedules.startTime,
+      endTime: fixedSchedules.endTime,
       title: fixedSchedules.title,
       name: profiles.name,
     })

@@ -122,6 +122,9 @@ export type CreateFixedScheduleState = { error?: string; success?: boolean };
  * (Authentication → 입력 검증 → insert)를 따른다. TASK-032 이전에는
  * fixed_schedules에 쓰기 RLS 정책이 없어 등록 기능 자체가 없었다
  * (0016_fixed_schedules_rls.sql에서 INSERT/UPDATE/DELETE own 정책 추가).
+ * 일정 페이지 고도화 #2: 요일을 복수 선택할 수 있어 dayOfWeek가 여러 개(체크박스
+ * 그룹) 넘어올 수 있다 — DB는 한 row = 요일 하나 구조를 그대로 유지하므로
+ * 선택된 요일마다 같은 title/시간으로 row를 하나씩 insert한다.
  */
 export async function createFixedSchedule(formData: FormData): Promise<CreateFixedScheduleState> {
   const user = await getCurrentUser();
@@ -130,22 +133,26 @@ export async function createFixedSchedule(formData: FormData): Promise<CreateFix
   }
 
   const title = String(formData.get("title") ?? "").trim();
-  const dayOfWeek = String(formData.get("dayOfWeek") ?? "").trim();
-  const timeRange = String(formData.get("timeRange") ?? "").trim();
+  const days = formData.getAll("dayOfWeek").map((d) => String(d).trim());
+  const startTime = String(formData.get("startTime") ?? "").trim();
+  const endTime = String(formData.get("endTime") ?? "").trim();
 
   if (!title) {
     return { error: "일정 제목을 입력해 주세요." };
   }
-  if (!VALID_DAY_OF_WEEK.has(dayOfWeek)) {
+  if (days.length === 0 || days.some((d) => !VALID_DAY_OF_WEEK.has(d))) {
     return { error: "요일을 선택해 주세요." };
   }
 
-  await db.insert(fixedSchedules).values({
-    userId: user.id,
-    dayOfWeek,
-    timeRange,
-    title,
-  });
+  await db.insert(fixedSchedules).values(
+    days.map((dayOfWeek) => ({
+      userId: user.id,
+      dayOfWeek,
+      startTime,
+      endTime: endTime || null,
+      title,
+    })),
+  );
 
   revalidatePath("/schedule");
   return { success: true };
@@ -165,7 +172,8 @@ export async function updateFixedSchedule(id: string, formData: FormData): Promi
 
   const title = String(formData.get("title") ?? "").trim();
   const dayOfWeek = String(formData.get("dayOfWeek") ?? "").trim();
-  const timeRange = String(formData.get("timeRange") ?? "").trim();
+  const startTime = String(formData.get("startTime") ?? "").trim();
+  const endTime = String(formData.get("endTime") ?? "").trim();
 
   if (!title) {
     return { error: "일정 제목을 입력해 주세요." };
@@ -176,7 +184,7 @@ export async function updateFixedSchedule(id: string, formData: FormData): Promi
 
   const updated = await db
     .update(fixedSchedules)
-    .set({ title, dayOfWeek, timeRange })
+    .set({ title, dayOfWeek, startTime, endTime: endTime || null })
     .where(and(eq(fixedSchedules.id, id), eq(fixedSchedules.userId, user.id)))
     .returning({ id: fixedSchedules.id });
 

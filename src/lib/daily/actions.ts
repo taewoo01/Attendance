@@ -64,6 +64,37 @@ export async function saveDailyLog(dateKey: string, formData: FormData): Promise
   return { success: true };
 }
 
+/**
+ * 팀 기록 카드에서 "수정" 모달을 거치지 않고 체크리스트 항목 하나만 바로
+ * 토글하는 액션(TASK-036). body는 건드리지 않는다 — saveDailyLog처럼 폼
+ * 전체를 다시 보내면 모달을 열지 않고는 body를 알 수 없어서 별도로 뺐다.
+ */
+export async function toggleDailyLogChecklistItem(dateKey: string, itemIndex: number): Promise<SaveDailyLogState> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { error: "로그인이 필요합니다." };
+  }
+
+  const myLogs = await db
+    .select({ id: dailyLogs.id, loggedAt: dailyLogs.loggedAt, checklist: dailyLogs.checklist })
+    .from(dailyLogs)
+    .where(eq(dailyLogs.userId, user.id));
+  const existing = myLogs.find((row) => seoulDateKey(row.loggedAt) === dateKey);
+  if (!existing || !existing.checklist[itemIndex]) {
+    return { error: "체크리스트 항목을 찾을 수 없습니다." };
+  }
+
+  const checklist = existing.checklist.map((item, i) => (i === itemIndex ? { ...item, done: !item.done } : item));
+
+  await db
+    .update(dailyLogs)
+    .set({ checklist })
+    .where(and(eq(dailyLogs.id, existing.id), eq(dailyLogs.userId, user.id)));
+
+  revalidatePath("/daily");
+  return { success: true };
+}
+
 export type CreateTemplateState = { error?: string; success?: boolean };
 
 export async function createTemplate(formData: FormData): Promise<CreateTemplateState> {

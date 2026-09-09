@@ -176,6 +176,20 @@
       "when": 1788943360399,
       "tag": "0024_profiles_update_own_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1788961288163,
+      "tag": "0025_fixed_schedules_start_end_time",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1788961319897,
+      "tag": "0026_fixed_schedules_drop_time_range",
+      "breakpoints": true
     }
   ]
 }

@@ -1,4 +1,4 @@
-import { weekdayIndex, DOW_KO } from "@/lib/schedule/calendar";
+import { weekdayIndex, DOW_KO, formatTimeRange } from "@/lib/schedule/calendar";
 import { RegisterEventModal } from "@/components/schedule/RegisterEventModal";
 import { ScheduleCalendar } from "@/components/schedule/ScheduleCalendar";
 import { ScheduleSidebar, type AgendaItem, type FixedScheduleItem } from "@/components/schedule/ScheduleSidebar";
@@ -65,18 +65,31 @@ export default async function SchedulePage() {
       })),
     ...fixedSchedules
       .filter((f) => f.dayOfWeek === DOW_KO[weekdayIndex(todayKey)])
-      .map((f) => ({ time: f.timeRange, title: `${f.name ?? ""} · ${f.title}`, sub: "고정 일정" })),
+      .map((f) => ({
+        time: formatTimeRange(f.startTime, f.endTime ?? undefined),
+        title: `${f.name ?? ""} · ${f.title}`,
+        sub: "고정 일정",
+      })),
   ];
 
   const myFixedSchedule: FixedScheduleItem[] = fixedSchedules
     .filter((f) => user && f.userId === user.id)
-    .map((f) => ({ id: f.id, day: f.dayOfWeek, title: f.title, time: f.timeRange }));
+    .map((f) => ({
+      id: f.id,
+      day: f.dayOfWeek,
+      title: f.title,
+      time: formatTimeRange(f.startTime, f.endTime ?? undefined),
+      startTime: f.startTime,
+      endTime: f.endTime ?? undefined,
+    }));
 
   const allFixedSchedule: FixedScheduleItem[] = fixedSchedules.map((f) => ({
     id: f.id,
     day: f.dayOfWeek,
     title: f.title,
-    time: f.timeRange,
+    time: formatTimeRange(f.startTime, f.endTime ?? undefined),
+    startTime: f.startTime,
+    endTime: f.endTime ?? undefined,
     name: f.name ?? undefined,
     userId: f.userId,
   }));

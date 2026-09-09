@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { updateFixedSchedule } from "@/lib/schedule/actions";
 
-export type EditableFixedSchedule = { id: string; title: string; dayOfWeek: string; timeRange: string };
+export type EditableFixedSchedule = { id: string; title: string; dayOfWeek: string; startTime: string; endTime?: string };
 
 const DAYS_OF_WEEK = ["월", "화", "수", "목", "금", "토", "일"];
 
@@ -74,29 +74,38 @@ export function EditFixedScheduleModal({
               />
             </div>
 
+            <div className="mb-[18px]">
+              <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">요일</p>
+              <select
+                name="dayOfWeek"
+                required
+                defaultValue={item.dayOfWeek}
+                className="w-full rounded-input border border-border bg-bg-raised px-[14px] py-[11px] font-sans text-[13.5px] text-silk focus:border-teal-dim focus:outline-none"
+              >
+                {DAYS_OF_WEEK.map((day) => (
+                  <option key={day} value={day}>
+                    {day}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div className="mb-[18px] grid grid-cols-2 gap-[14px]">
               <div>
-                <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">요일</p>
-                <select
-                  name="dayOfWeek"
-                  required
-                  defaultValue={item.dayOfWeek}
+                <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">시작 시간</p>
+                <input
+                  name="startTime"
+                  type="time"
+                  defaultValue={item.startTime}
                   className="w-full rounded-input border border-border bg-bg-raised px-[14px] py-[11px] font-sans text-[13.5px] text-silk focus:border-teal-dim focus:outline-none"
-                >
-                  {DAYS_OF_WEEK.map((day) => (
-                    <option key={day} value={day}>
-                      {day}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
               <div>
-                <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">시간대</p>
+                <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">종료 시간</p>
                 <input
-                  name="timeRange"
-                  type="text"
-                  placeholder="예: 09–11시"
-                  defaultValue={item.timeRange}
+                  name="endTime"
+                  type="time"
+                  defaultValue={item.endTime}
                   className="w-full rounded-input border border-border bg-bg-raised px-[14px] py-[11px] font-sans text-[13.5px] text-silk focus:border-teal-dim focus:outline-none"
                 />
               </div>

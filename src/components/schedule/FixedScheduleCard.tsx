@@ -84,7 +84,9 @@ export function FixedScheduleCard({
             {editable ? (
               <button
                 type="button"
-                onClick={() => setEditing({ id: item.id, title: item.title, dayOfWeek: item.day, timeRange: item.time })}
+                onClick={() =>
+                  setEditing({ id: item.id, title: item.title, dayOfWeek: item.day, startTime: item.startTime, endTime: item.endTime })
+                }
                 className="mx-2 flex-1 cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap border-none bg-transparent p-0 text-left text-xs text-silk hover:underline"
               >
                 {label}

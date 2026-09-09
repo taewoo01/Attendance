@@ -16,7 +16,10 @@ export type FixedScheduleItem = {
   id: string;
   day: string;
   title: string;
+  /** 표시용 파생값("09:00–12:00"). 수정 모달은 startTime/endTime을 따로 쓴다. */
   time: string;
+  startTime: string;
+  endTime?: string;
   /** "전체 고정 시간표" 탭에서만 쓴다 — 소유자 이름/id. */
   name?: string;
   userId?: string;
