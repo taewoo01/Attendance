@@ -1,18 +1,23 @@
 "use client";
 
-import { useState } from "react";
+export const FILTERS = ["전체", "미완료 액션아이템", "이번 달"] as const;
+export type FilterOption = (typeof FILTERS)[number];
 
-const FILTERS = ["전체", "미완료 액션아이템", "이번 달"] as const;
+type SearchFilterBarProps = {
+  query: string;
+  onQueryChange: (value: string) => void;
+  active: FilterOption;
+  onActiveChange: (value: FilterOption) => void;
+};
 
 /**
  * playground-design/meetings.html의 .search-row(검색창 + .filter-chip 3개).
  * 원본 <script>는 filter-chip끼리 배타적으로 active 클래스만 토글하고
- * 실제로 목록을 필터링하지 않으므로 이 컴포넌트도 목록 내용을 바꾸지 않는다.
- * 검색 input은 원본에 change/input 리스너가 없어 상태 없이 정적으로 유지한다.
+ * 실제로 목록을 필터링하지 않았고, 검색 input도 리스너가 없는 정적
+ * 요소였다. TASK-033: 실제 검색/필터링이 필요해지면서 상태를 부모
+ * (MeetingsBoard)로 올리고 이 컴포넌트는 controlled input/버튼만 담당한다.
  */
-export function SearchFilterBar() {
-  const [active, setActive] = useState<(typeof FILTERS)[number]>("전체");
-
+export function SearchFilterBar({ query, onQueryChange, active, onActiveChange }: SearchFilterBarProps) {
   return (
     <div className="mx-auto flex max-w-[1220px] flex-wrap items-center gap-2.5 px-7 pt-[18px]">
       <div className="flex min-w-[220px] flex-1 items-center gap-[9px] rounded-input border border-border bg-bg-panel px-[14px] py-2.5">
@@ -22,6 +27,8 @@ export function SearchFilterBar() {
         </svg>
         <input
           type="text"
+          value={query}
+          onChange={(e) => onQueryChange(e.target.value)}
           placeholder="회의록 검색 — 제목, 안건, 참석자..."
           className="w-full border-none bg-transparent font-sans text-[13px] text-silk placeholder:text-silk-faint focus:outline-none"
         />
@@ -30,7 +37,7 @@ export function SearchFilterBar() {
         <button
           key={filter}
           type="button"
-          onClick={() => setActive(filter)}
+          onClick={() => onActiveChange(filter)}
           className={`cursor-pointer whitespace-nowrap rounded-button border px-[13px] py-2.5 font-mono text-[11.5px] ${
             active === filter
               ? "border-teal-dim bg-teal-dim text-teal"

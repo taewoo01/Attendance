@@ -1,6 +1,7 @@
-type MonthEvent = { time: string; label: string; type: "personal" | "fixed" };
+export type MonthEvent = { time: string; label: string; type: "personal" | "fixed" };
 
-type MonthCell = {
+export type MonthCell = {
+  dateKey: string;
   date: number;
   muted?: boolean;
   today?: boolean;
@@ -10,101 +11,22 @@ type MonthCell = {
   moreCount?: number;
 };
 
+export type MonthData = { monthKey: string; rangeLabel: string; cells: MonthCell[] };
+
 const DOW_LABELS = ["월", "화", "수", "목", "금", "토", "일"];
 
 /**
- * playground-design/schedule.html의 #monthView(.month-grid) 42칸 정적 데이터.
- * 원본 <script>는 이 데이터를 전혀 조작하지 않아(내 일정/팀 전체 필터가 .day-events만
- * 대상으로 함) 상태 없이 Server Component로 유지한다.
+ * playground-design/schedule.html의 #monthView(.month-grid). TASK-028 당시에는
+ * 42칸 정적 목업이었으나(page.tsx 옛 Notes 참고), TASK-032에서 실제
+ * personal_events/fixed_schedules 기반 달력 연산으로 교체했다 — 달 길이에 따라
+ * 그리드가 정확히 5~6주(35~42칸)로 계산되고, 원본처럼 항상 42칸 고정이 아니다.
+ * 원본은 "오늘이 포함된 마지막 줄"에만 이벤트 칩을 보여주고 나머지 칸은
+ * count/dots 요약만 보여줬지만, 실데이터에서는 이 구분이 자의적이라 모든 칸에
+ * 동일하게 이벤트 칩(최대 2개 + "+N개 더보기")을 보여준다(week view의 TEAM_CAP과
+ * 동일한 원칙). owner(내 일정/팀 전체) 토글의 영향을 받지 않는 것은 원본과 동일
+ * (원본 script도 #weekView .day-events만 필터링).
  */
-const CELLS: MonthCell[] = [
-  { date: 27, muted: true },
-  { date: 28, muted: true },
-  { date: 29, muted: true },
-  { date: 30, muted: true },
-  { date: 31, muted: true },
-  { date: 1 },
-  { date: 2 },
-
-  { date: 3, count: "4명", dots: ["fixed"] },
-  { date: 4 },
-  { date: 5, count: "3명" },
-  { date: 6 },
-  { date: 7, count: "5명", dots: ["personal"] },
-  { date: 8 },
-  { date: 9 },
-
-  { date: 10 },
-  { date: 11 },
-  { date: 12, count: "2명" },
-  { date: 13 },
-  { date: 14, count: "4명", dots: ["fixed"] },
-  { date: 15 },
-  { date: 16 },
-
-  { date: 17 },
-  { date: 18 },
-  { date: 19, count: "3명" },
-  { date: 20, dots: ["personal"] },
-  { date: 21, count: "4명", dots: ["fixed"] },
-  { date: 22 },
-  { date: 23 },
-
-  { date: 24 },
-  { date: 25 },
-  { date: 26, count: "3명" },
-  { date: 27 },
-  { date: 28, count: "5명", dots: ["personal", "fixed"] },
-  { date: 29 },
-  { date: 30 },
-
-  {
-    date: 31,
-    today: true,
-    events: [
-      { time: "10:00", label: "박준서·전공수업", type: "fixed" },
-      { time: "14:00", label: "정민재·병원예약", type: "personal" },
-    ],
-    moreCount: 2,
-  },
-  {
-    date: 1,
-    muted: true,
-    events: [
-      { time: "18:00", label: "한서준·알바", type: "fixed" },
-      { time: "13:00", label: "오지훈·학회미팅", type: "personal" },
-    ],
-  },
-  {
-    date: 2,
-    muted: true,
-    events: [
-      { time: "09:00", label: "김연구·전공수업", type: "fixed" },
-      { time: "19:00", label: "정민재·알바", type: "fixed" },
-    ],
-  },
-  {
-    date: 3,
-    muted: true,
-    events: [{ time: "15:00", label: "강태윤·투자자미팅", type: "personal" }],
-  },
-  {
-    date: 4,
-    muted: true,
-    events: [
-      { time: "10:00", label: "오지훈·세미나", type: "fixed" },
-      { time: "19:00", label: "김연구·팀회식", type: "personal" },
-    ],
-  },
-  { date: 5, muted: true },
-  {
-    date: 6,
-    muted: true,
-    events: [{ time: "14:00", label: "정민재·개인공부", type: "personal" }],
-  },
-];
-
-export function MonthView() {
+export function MonthView({ cells }: { cells: MonthCell[] }) {
   return (
     <div className="grid grid-cols-7 overflow-hidden rounded-panel border border-border bg-bg-panel max-[640px]:grid-cols-[repeat(7,minmax(46px,1fr))] max-[640px]:overflow-x-auto">
       {DOW_LABELS.map((label) => (
@@ -116,9 +38,9 @@ export function MonthView() {
         </div>
       ))}
 
-      {CELLS.map((cell, i) => (
+      {cells.map((cell) => (
         <div
-          key={i}
+          key={cell.dateKey}
           className={`relative min-h-[96px] border-r border-b border-border px-[7px] py-1.5 [&:nth-child(7n)]:border-r-0 ${
             cell.today
               ? "bg-[rgba(72,217,176,0.06)] shadow-[inset_0_2px_0_var(--teal)]"
@@ -139,7 +61,7 @@ export function MonthView() {
             </div>
           )}
 
-          {cell.events && (
+          {cell.events && cell.events.length > 0 && (
             <div className="mt-[5px] flex flex-col gap-[3px]">
               {cell.events.map((ev, j) => (
                 <div

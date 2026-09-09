@@ -1,8 +1,10 @@
 "use client";
 
 import type { RefObject } from "react";
+import type { DailyLogChecklistItem } from "@/db/schema";
 
 export type FeedEntry = {
+  id: string;
   mine?: boolean;
   name: string;
   avatar: string;
@@ -10,6 +12,8 @@ export type FeedEntry = {
   desc: string;
   check: string;
   pct: number;
+  /** 수정 모달을 채우는 데 쓰는 원본 데이터(desc/checklist는 표시용 파생값과 별개). */
+  checklist: DailyLogChecklistItem[];
 };
 
 /**
@@ -100,9 +104,11 @@ export function TeamFeedCard({
             </div>
           </div>
         ))}
-        <div className="border-b border-border px-[22px] py-[17px] text-[12.5px] text-silk-faint last:border-b-0">
-          {emptyNote}
-        </div>
+        {emptyNote && (
+          <div className="border-b border-border px-[22px] py-[17px] text-[12.5px] text-silk-faint last:border-b-0">
+            {emptyNote}
+          </div>
+        )}
       </div>
     </div>
   );

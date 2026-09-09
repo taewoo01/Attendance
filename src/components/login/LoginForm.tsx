@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent, type MouseEvent } from "react";
+import { resetPasswordAction } from "@/lib/auth/login";
 import styles from "./LoginScreen.module.css";
 
 interface LoginFormProps {
@@ -35,6 +36,17 @@ export function LoginForm({
     onSubmit(emailRef.current?.value.trim() ?? "", passwordRef.current?.value ?? "");
   }
 
+  async function handleForgotPassword(e: MouseEvent<HTMLAnchorElement>) {
+    e.preventDefault();
+    const email = emailRef.current?.value.trim();
+    if (!email) {
+      alert("이메일을 입력해 주세요.");
+      return;
+    }
+    await resetPasswordAction(email);
+    alert("비밀번호 재설정 링크를 이메일로 보냈습니다.");
+  }
+
   return (
     <div className={styles.formPanel}>
       <div className={styles.wrap}>
@@ -45,7 +57,6 @@ export function LoginForm({
 
         <p className={styles.cardKicker}>EDCL AI솔루션 팀 전용</p>
         <h1 className={styles.cardTitle}>로그인</h1>
-        <p className={styles.demoHint}>데모 계정: demo@edcl.team / 1234</p>
 
         <form onSubmit={handleSubmit}>
           <div className={styles.field}>
@@ -86,7 +97,7 @@ export function LoginForm({
               <input type="checkbox" defaultChecked />
               로그인 상태 유지
             </label>
-            <a className={styles.forgot} href="#">
+            <a className={styles.forgot} href="#" onClick={handleForgotPassword}>
               비밀번호 찾기
             </a>
           </div>

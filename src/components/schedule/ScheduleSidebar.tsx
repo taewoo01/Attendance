@@ -1,26 +1,33 @@
-const AGENDA = [
-  { time: "09:02", title: "김연구 체크인", sub: "DAY" },
-  { time: "10:00", title: "박준서 · 전공수업", sub: "고정 일정 · ~12:00" },
-  { time: "14:00", title: "정민재 · 병원 예약", sub: "개인 일정" },
-];
+import { FixedScheduleCard } from "@/components/schedule/FixedScheduleCard";
 
-const FIXED_SCHEDULE = [
-  { day: "수", title: "전공수업", time: "09–11시" },
-  { day: "금", title: "세미나수업", time: "14–16시" },
-];
+export type AgendaItem = { time: string; title: string; sub: string };
+export type FixedScheduleItem = { id: string; day: string; title: string; time: string };
+
+type ScheduleSidebarProps = {
+  todayLabel: string;
+  agenda: AgendaItem[];
+  fixedSchedule: FixedScheduleItem[];
+};
 
 /**
  * playground-design/schedule.html의 <aside>(오늘 아젠다 + 내 고정 시간표) 정적 카드.
  * 원본 <script>가 전혀 건드리지 않는 영역이라 Server Component로 유지한다.
+ * TASK-028: 하드코딩된 AGENDA(오늘 체크인 + 팀 전체의 오늘 일정)/FIXED_SCHEDULE
+ * (로그인한 사용자 본인의 고정 시간표만) 대신 page.tsx가 계산한 실제 데이터를
+ * props로 받는다.
+ * TASK-032: "내 고정 시간표" 카드는 항목별 삭제 버튼이 필요해 FixedScheduleCard
+ * Client Component로 분리했다(ScheduleCalendar의 monthView prop과 동일한 패턴 —
+ * 여기서는 반대로 정적 부모가 client 자식을 감싼다). "오늘" 아젠다는 이 상태와
+ * 무관해 그대로 Server Component로 남는다.
  */
-export function ScheduleSidebar() {
+export function ScheduleSidebar({ todayLabel, agenda, fixedSchedule }: ScheduleSidebarProps) {
   return (
     <aside>
       <div className="mb-[14px] rounded-panel border border-border bg-bg-panel px-4 pt-[15px] pb-[14px]">
-        <p className="m-0 mb-2.5 text-[13px] font-semibold">오늘 · 8월 31일 (월)</p>
-        {AGENDA.map((item) => (
+        <p className="m-0 mb-2.5 text-[13px] font-semibold">오늘 · {todayLabel}</p>
+        {agenda.map((item, i) => (
           <div
-            key={item.time}
+            key={i}
             className="flex gap-[9px] border-b border-border py-1.5 last:border-b-0 last:pb-0"
           >
             <span className="w-10 shrink-0 font-mono text-[11px] text-teal">{item.time}</span>
@@ -32,19 +39,7 @@ export function ScheduleSidebar() {
         ))}
       </div>
 
-      <div className="mb-[14px] rounded-panel border border-border bg-bg-panel px-4 pt-[15px] pb-[14px]">
-        <p className="m-0 mb-2.5 text-[13px] font-semibold">내 고정 시간표</p>
-        {FIXED_SCHEDULE.map((item) => (
-          <div
-            key={item.day + item.title}
-            className="flex items-baseline justify-between border-b border-border py-1.5 text-xs last:border-b-0 last:pb-0"
-          >
-            <span className="w-5 shrink-0 font-mono text-[10.5px] text-amber">{item.day}</span>
-            <span className="mx-2 flex-1">{item.title}</span>
-            <span className="font-mono text-[10px] text-silk-faint">{item.time}</span>
-          </div>
-        ))}
-      </div>
+      <FixedScheduleCard items={fixedSchedule} />
     </aside>
   );
 }

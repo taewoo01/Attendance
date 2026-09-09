@@ -2,31 +2,27 @@
 
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
+import type { AttendanceMember } from "@/components/attendance/AttendanceList";
 
-/**
- * playground-design/index.html의 QR 체크인 모달/출석 현황 모달 mock 데이터.
- * 실제 인증/DB 연동 전까지 원본 하드코딩 값을 local constant로 유지한다
- * (docs/MIGRATION.md 8절 Mock Data Migration).
- */
-const ATTENDANCE = [
-  { avatar: "연", name: "김연구", role: "AI솔루션 팀 · BMS", time: "09:02", status: "on" as const },
-  { avatar: "하", name: "이하늘", role: "AI솔루션 팀 · BMS", time: "08:47", status: "on" as const },
-  { avatar: "준", name: "박준서", role: "AI솔루션 팀 · Firmware", time: "09:15", status: "on" as const },
-  { avatar: "도", name: "최도윤", role: "AI솔루션 팀 · Firmware", time: "09:31", status: "on" as const },
-  { avatar: "민", name: "정민재", role: "AI솔루션 팀 · Data", time: "10:04", status: "on" as const },
-  { avatar: "서", name: "한서준", role: "AI솔루션 팀 · Data", time: "—", status: "off" as const },
-  { avatar: "지", name: "오지훈", role: "AI솔루션 팀 · PM", time: "—", status: "off" as const },
-  { avatar: "태", name: "강태윤", role: "AI솔루션 팀 · PM", time: "—", status: "off" as const },
-];
+type HeroSectionProps = {
+  children: ReactNode;
+  myName: string;
+  initialCheckedIn: boolean;
+  attendance: AttendanceMember[];
+};
 
 /**
  * header.hero 전체(인사말/워드마크/출석 체크 버튼 + QR/출석현황 모달)를 담당한다.
  * 3D 배터리 그래픽(Battery3D)은 상태가 필요 없는 순수 정적 그래픽이라
  * children으로 전달받아 Server Component로 남긴다(불필요한 use client 확대 방지).
  * 원본 DOM 순서(왼쪽 컬럼 → QR 모달 → 출석현황 모달 → scope-frame)를 그대로 유지한다.
+ * TASK-030: 인사말/출석현황 모달을 page.tsx가 조회한 실제 profiles/attendance로
+ * 채운다. "체크인 완료" 버튼은 /attendance와 동일하게 실제 체크인 로직(QR 토큰
+ * 검증)은 구현하지 않아 클릭해도 실제로 저장되지 않는다 — 다만 모달을 열었을 때
+ * 보여주는 초기 상태(오늘 이미 체크인했는지)는 이제 실제 DB 값을 반영한다.
  */
-export function HeroSection({ children }: { children: ReactNode }) {
-  const [checkedIn, setCheckedIn] = useState(false);
+export function HeroSection({ children, myName, initialCheckedIn, attendance }: HeroSectionProps) {
+  const [checkedIn, setCheckedIn] = useState(initialCheckedIn);
   const [qrOpen, setQrOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
 
@@ -34,7 +30,7 @@ export function HeroSection({ children }: { children: ReactNode }) {
     <header className="mx-auto grid max-w-[1220px] grid-cols-[0.85fr_1fr] items-center gap-[50px] px-7 pt-[52px] pb-16 max-[900px]:grid-cols-1 max-[900px]:pt-10">
       <div>
         <p className="m-0 text-[22px] font-semibold text-silk">
-          안녕하세요, 김연구님 <span className="inline-block">👋</span>
+          안녕하세요, {myName}님 <span className="inline-block">👋</span>
         </p>
         <h1 className="m-0 mt-[18px] font-mono text-[64px] font-bold leading-[0.92] tracking-[-0.01em] text-silk max-[900px]:text-[46px]">
           PLAY
@@ -362,9 +358,9 @@ export function HeroSection({ children }: { children: ReactNode }) {
             </button>
           </div>
           <div className="flex flex-col">
-            {ATTENDANCE.map((member) => (
+            {attendance.map((member) => (
               <div
-                key={member.name}
+                key={member.userId}
                 className="grid grid-cols-[36px_1fr_66px_78px] items-center gap-3 border-b border-border px-0.5 py-[11px] last:border-b-0 max-[520px]:grid-cols-[30px_1fr_60px]"
               >
                 <div

@@ -5,13 +5,10 @@ import { useRouter } from "next/navigation";
 import { BrandPanel } from "./BrandPanel";
 import { LoginForm } from "./LoginForm";
 import type { PillState } from "./LoginBattery";
+import { signInAction } from "@/lib/auth/login";
 import styles from "./LoginScreen.module.css";
 
-const DEMO_EMAIL = "demo@edcl.team";
-const DEMO_PASSWORD = "1234";
 const STEP_MS = 160; // 셀 하나 채우는/비우는 속도 (원본 login.html과 동일)
-// src/middleware.ts의 데모 로그인 게이트가 확인하는 쿠키와 이름을 맞춘다.
-const AUTH_COOKIE = "pg_demo_auth";
 
 // b3d-cell 5개는 DOM 상 위(index 0)→아래(index 4) 순서로 렌더링되고,
 // 원본 스크립트는 querySelectorAll 결과를 reverse()해 아래→위 순서로 채운다.
@@ -114,15 +111,14 @@ export function LoginScreen() {
     });
   }
 
-  function handleSubmit(email: string, password: string) {
+  async function handleSubmit(email: string, password: string) {
     setLoginErrorVisible(false);
     setLoginBtnDisabled(true);
     setLoginBtnLabel("충전 중...");
 
-    // TODO: Supabase Auth signInWithPassword()로 교체 (원본 login.html의 자리표시자와 동일)
-    if (email === DEMO_EMAIL && password === DEMO_PASSWORD) {
-      // 데모 수준 게이트: 실제 서버 세션이 아니라 middleware.ts가 확인하는 쿠키만 세팅한다.
-      document.cookie = `${AUTH_COOKIE}=1; path=/; SameSite=Lax`;
+    const { error } = await signInAction(email, password);
+
+    if (!error) {
       chargeSuccess();
     } else {
       chargeFail();

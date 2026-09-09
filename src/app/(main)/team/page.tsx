@@ -1,7 +1,13 @@
 import { FilterRow } from "@/components/team/FilterRow";
 import { TeamGrid } from "@/components/team/TeamGrid";
+import { listProfiles } from "@/lib/db/profiles";
 
-export default function TeamPage() {
+// TASK-022: DB 조회가 build 시점에 고정되지 않도록 매 요청마다 렌더링한다.
+export const dynamic = "force-dynamic";
+
+export default async function TeamPage() {
+  const members = await listProfiles();
+
   return (
     <>
       <div className="mx-auto flex max-w-[1220px] flex-wrap items-baseline justify-between gap-[10px] px-7 pt-[30px]">
@@ -21,7 +27,7 @@ export default function TeamPage() {
       </div>
 
       <FilterRow />
-      <TeamGrid />
+      <TeamGrid members={members} />
     </>
   );
 }

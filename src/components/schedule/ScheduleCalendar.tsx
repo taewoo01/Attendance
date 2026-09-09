@@ -1,77 +1,72 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { deletePersonalEvent } from "@/lib/schedule/actions";
+import { EditPersonalEventModal, type EditablePersonalEvent } from "@/components/schedule/EditPersonalEventModal";
+import { MonthView, type MonthData } from "@/components/schedule/MonthView";
 
-type WeekEvent = { time: string; label: string; type: "personal" | "fixed"; owner: "me" | "team" };
-type WeekDay = { dow: string; date: number; today?: boolean; events: WeekEvent[] };
+export type WeekEvent = {
+  id?: string;
+  time: string;
+  label: string;
+  type: "personal" | "fixed";
+  owner: "me" | "team";
+  /** personal 타입 + owner "me"일 때만 존재 — 수정 모달을 채우는 데 쓴다. */
+  eventDate?: string;
+  title?: string;
+};
+export type WeekDay = { dow: string; date: number; today?: boolean; events: WeekEvent[] };
+export type WeekData = { mondayKey: string; weekDays: WeekDay[]; rangeLabel: string };
 
 const TEAM_CAP = 2;
 
-/**
- * playground-design/schedule.html의 #weekView(.week-grid) 정적 데이터.
- * 원본 <script>가 이 데이터를 직접 조작하지 않고 owner에 따라 표시 여부만 토글하므로
- * local constant로 유지한다(docs/MIGRATION.md 8절).
- */
-const WEEK_DAYS: WeekDay[] = [
-  {
-    dow: "MON",
-    date: 31,
-    today: true,
-    events: [
-      { time: "10:00", label: "박준서 · 전공수업", type: "fixed", owner: "team" },
-      { time: "14:00", label: "정민재 · 병원 예약", type: "personal", owner: "team" },
-      { time: "20:00", label: "최도윤 · 알바", type: "fixed", owner: "team" },
-      { time: "16:00", label: "이하늘 · 스터디", type: "personal", owner: "team" },
-    ],
-  },
-  {
-    dow: "TUE",
-    date: 1,
-    events: [
-      { time: "18:00", label: "한서준 · 알바", type: "fixed", owner: "team" },
-      { time: "13:00", label: "오지훈 · 학회 미팅", type: "personal", owner: "team" },
-    ],
-  },
-  {
-    dow: "WED",
-    date: 2,
-    events: [
-      { time: "09:00", label: "김연구 · 전공수업", type: "fixed", owner: "me" },
-      { time: "19:00", label: "정민재 · 알바", type: "fixed", owner: "team" },
-    ],
-  },
-  {
-    dow: "THU",
-    date: 3,
-    events: [{ time: "15:00", label: "강태윤 · 투자자 미팅", type: "personal", owner: "team" }],
-  },
-  {
-    dow: "FRI",
-    date: 4,
-    events: [
-      { time: "10:00", label: "오지훈 · 세미나", type: "fixed", owner: "team" },
-      { time: "19:00", label: "김연구 · 팀 회식", type: "personal", owner: "me" },
-    ],
-  },
-  { dow: "SAT", date: 5, events: [] },
-  {
-    dow: "SUN",
-    date: 6,
-    events: [{ time: "14:00", label: "정민재 · 개인 공부", type: "personal", owner: "team" }],
-  },
-];
-
-const RANGE_LABEL = { week: "8월 31일 – 9월 6일", month: "2026년 8월" } as const;
+type ScheduleCalendarProps = {
+  weeks: WeekData[];
+  initialWeekIndex: number;
+  months: MonthData[];
+  initialMonthIndex: number;
+};
 
 /**
  * playground-design/schedule.html의 .cal-toolbar(주/월 전환, 내 일정/팀 전체 필터) +
  * #weekView + #monthView를 담당한다. 원본 <script>의 view/owner state를 useState로 옮긴다.
- * MonthView는 owner 필터의 영향을 받지 않는 정적 그래픽이라(원본도 .day-events만 필터링)
- * Server Component로 남기고 children으로 전달받는다.
+ * TASK-028: 하드코딩된 WEEK_DAYS/RANGE_LABEL.week 대신 page.tsx가 실제 이번 주
+ * personal_events/fixed_schedules를 계산한 결과를 props로 받는다.
+ * 주간/월간 이전·다음(cal-nav ‹›) 네비게이션: page.tsx가 personal_events가 존재하는
+ * 모든 주/달(+ 이번 주/달)을 미리 계산해 `weeks`/`months` 배열로 내려주면, 여기서는
+ * DailyBoard의 feedIndex와 동일한 패턴으로 배열 인덱스만 client state로 옮겨 다닌다
+ * (새 서버 요청/URL 파라미터 없음). TASK-032부터 MonthView도 실데이터 기반이라
+ * (이전에는 정적 목업이라 Server Component로 children 주입) 이제 monthIndex에 따라
+ * 직접 렌더링한다.
  */
-export function ScheduleCalendar({ monthView }: { monthView: ReactNode }) {
+export function ScheduleCalendar({ weeks, initialWeekIndex, months, initialMonthIndex }: ScheduleCalendarProps) {
+  const router = useRouter();
   const [view, setView] = useState<"week" | "month">("week");
   const [owner, setOwner] = useState<"me" | "team">("me");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [editingEvent, setEditingEvent] = useState<EditablePersonalEvent | null>(null);
+  const [weekIndex, setWeekIndex] = useState(initialWeekIndex);
+  const [monthIndex, setMonthIndex] = useState(initialMonthIndex);
+  const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
+
+  const clampWeek = (i: number) => Math.max(0, Math.min(weeks.length - 1, i));
+  const clampMonth = (i: number) => Math.max(0, Math.min(months.length - 1, i));
+  const currentWeek = weeks[weekIndex];
+  const currentMonth = months[monthIndex];
+
+  async function handleDelete(id: string) {
+    setDeletingId(id);
+    setDeleteError(null);
+    const result = await deletePersonalEvent(id);
+    setDeletingId(null);
+    if (result.error) {
+      setDeleteError(result.error);
+      return;
+    }
+    router.refresh();
+  }
 
   return (
     <div>
@@ -97,11 +92,25 @@ export function ScheduleCalendar({ monthView }: { monthView: ReactNode }) {
           </button>
         </div>
         <div className="flex items-center gap-2.5">
-          <button type="button" className="h-6 w-6 cursor-pointer rounded-md border border-border bg-transparent text-silk-dim">
+          <button
+            type="button"
+            onClick={() => {
+              if (view === "week") setWeekIndex((i) => clampWeek(i + 1));
+              else setMonthIndex((i) => clampMonth(i + 1));
+            }}
+            className="h-6 w-6 cursor-pointer rounded-md border border-border bg-transparent text-silk-dim"
+          >
             ‹
           </button>
-          <span>{RANGE_LABEL[view]}</span>
-          <button type="button" className="h-6 w-6 cursor-pointer rounded-md border border-border bg-transparent text-silk-dim">
+          <span>{view === "week" ? currentWeek.rangeLabel : currentMonth.rangeLabel}</span>
+          <button
+            type="button"
+            onClick={() => {
+              if (view === "week") setWeekIndex((i) => clampWeek(i - 1));
+              else setMonthIndex((i) => clampMonth(i - 1));
+            }}
+            className="h-6 w-6 cursor-pointer rounded-md border border-border bg-transparent text-silk-dim"
+          >
             ›
           </button>
         </div>
@@ -133,9 +142,12 @@ export function ScheduleCalendar({ monthView }: { monthView: ReactNode }) {
 
       {view === "week" ? (
         <div className="grid grid-cols-7 overflow-hidden rounded-panel border border-border bg-bg-panel max-[640px]:flex max-[640px]:overflow-x-auto">
-          {WEEK_DAYS.map((day) => {
-            const visible = owner === "me" ? day.events.filter((e) => e.owner === "me") : day.events.slice(0, TEAM_CAP);
-            const moreCount = owner === "team" ? Math.max(0, day.events.length - TEAM_CAP) : 0;
+          {currentWeek.weekDays.map((day) => {
+            const dayKey = `${currentWeek.mondayKey}-${day.dow}`;
+            const isExpanded = expandedDays.has(dayKey);
+            const visible =
+              owner === "me" ? day.events.filter((e) => e.owner === "me") : isExpanded ? day.events : day.events.slice(0, TEAM_CAP);
+            const moreCount = owner === "team" && !isExpanded ? Math.max(0, day.events.length - TEAM_CAP) : 0;
             return (
               <div
                 key={day.dow}
@@ -148,21 +160,66 @@ export function ScheduleCalendar({ monthView }: { monthView: ReactNode }) {
                   <div className={`mt-px text-sm font-semibold ${day.today ? "text-teal" : ""}`}>{day.date}</div>
                 </div>
                 <div className="flex flex-col gap-1">
-                  {visible.map((ev, i) => (
-                    <div
-                      key={i}
-                      className={`rounded-[5px] bg-bg-raised px-[6px] py-1 text-[10px] leading-[1.35] border-l-2 ${
-                        ev.type === "personal" ? "border-l-teal" : "border-l-amber"
-                      }`}
-                    >
-                      <span className="block font-mono text-[9px] text-silk-faint">{ev.time}</span>
-                      {ev.label}
-                    </div>
-                  ))}
+                  {visible.map((ev, i) => {
+                    const editable = ev.owner === "me" && ev.type === "personal" && ev.id && ev.eventDate && ev.title;
+                    return (
+                      <div
+                        key={ev.id ?? i}
+                        className={`rounded-[5px] bg-bg-raised px-[6px] py-1 text-[10px] leading-[1.35] border-l-2 ${
+                          ev.type === "personal" ? "border-l-teal" : "border-l-amber"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-1">
+                          <span className="block font-mono text-[9px] text-silk-faint">{ev.time}</span>
+                          {ev.owner === "me" && ev.id && (
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(ev.id!)}
+                              disabled={deletingId === ev.id}
+                              aria-label="일정 삭제"
+                              className="cursor-pointer border-none bg-transparent p-0 leading-none text-silk-faint hover:text-[#e2543f] disabled:cursor-not-allowed"
+                            >
+                              ×
+                            </button>
+                          )}
+                        </div>
+                        {editable ? (
+                          <button
+                            type="button"
+                            onClick={() => setEditingEvent({ id: ev.id!, title: ev.title!, eventDate: ev.eventDate!, eventTime: ev.time })}
+                            className="cursor-pointer border-none bg-transparent p-0 text-left text-[10px] leading-[1.35] text-silk hover:underline"
+                          >
+                            {ev.label}
+                          </button>
+                        ) : (
+                          ev.label
+                        )}
+                      </div>
+                    );
+                  })}
                   {moreCount > 0 && (
-                    <div className="cursor-pointer px-[6px] py-0.5 font-mono text-[9.5px] text-silk-dim hover:text-teal">
+                    <button
+                      type="button"
+                      onClick={() => setExpandedDays((prev) => new Set(prev).add(dayKey))}
+                      className="cursor-pointer border-none bg-transparent px-[6px] py-0.5 text-left font-mono text-[9.5px] text-silk-dim hover:text-teal"
+                    >
                       +{moreCount}개 더보기
-                    </div>
+                    </button>
+                  )}
+                  {owner === "team" && isExpanded && day.events.length > TEAM_CAP && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setExpandedDays((prev) => {
+                          const next = new Set(prev);
+                          next.delete(dayKey);
+                          return next;
+                        })
+                      }
+                      className="cursor-pointer border-none bg-transparent px-[6px] py-0.5 text-left font-mono text-[9.5px] text-silk-dim hover:text-teal"
+                    >
+                      접기
+                    </button>
                   )}
                 </div>
               </div>
@@ -170,8 +227,12 @@ export function ScheduleCalendar({ monthView }: { monthView: ReactNode }) {
           })}
         </div>
       ) : (
-        monthView
+        <MonthView cells={currentMonth.cells} />
       )}
+
+      {deleteError && <p className="mt-2 font-mono text-[11px] text-[#e2543f]">{deleteError}</p>}
+
+      <EditPersonalEventModal event={editingEvent} onClose={() => setEditingEvent(null)} />
     </div>
   );
 }

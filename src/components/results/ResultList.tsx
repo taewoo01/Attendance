@@ -1,103 +1,41 @@
-type Result = {
+export type Result = {
+  id: string;
   avatar: string;
-  team?: boolean;
+  team: boolean;
   title: string;
-  tag: "개인" | "팀";
   desc: string;
   who: string;
-  file?: string;
+  file: string;
   date: string;
   metric?: { label: string; value: string };
 };
 
-/**
- * playground-design/results.html의 .list-card(.res-row 7건) 정적 데이터.
- * 원본 <script>가 이 목록을 조작하지 않으므로 local constant로 유지한다
- * (docs/MIGRATION.md 8절 Mock Data Migration).
- */
-const RESULTS: Result[] = [
-  {
-    avatar: "연",
-    title: "DC 리플 기반 SOH 추정 continual learning 실험 1차 완료",
-    tag: "개인",
-    desc: "기존 배치 학습 대비 드리프트 대응 정확도 비교 실험을 마치고 결과 정리. 다음 주 파라미터 튜닝 예정.",
-    who: "김연구",
-    file: "실험결과.xlsx",
-    date: "8월 29일 (금)",
-  },
-  {
-    avatar: "지",
-    team: true,
-    title: "KEPCO 과제 중간보고서 제출",
-    tag: "팀",
-    desc: "Volt-VAR/Volt-Watt 제어 PPO 학습 진행상황 및 다음 분기 계획 포함해 제출 완료.",
-    who: "오지훈 외 3명",
-    file: "중간보고서.pdf",
-    date: "8월 28일 (목)",
-  },
-  {
-    avatar: "지",
-    team: true,
-    title: "AI Rookie 경진대회 예선 통과",
-    tag: "팀",
-    desc: "응급환자 병원 매칭 시스템(GoldenLink)으로 예선 통과, 본선 진출 확정.",
-    who: "Team GoldenLink",
-    date: "8월 27일 (수)",
-    metric: { label: "진출", value: "본선" },
-  },
-  {
-    avatar: "하",
-    title: "온도 조건별 SOC 추정 하이브리드 모델 초안 논문 작성",
-    tag: "개인",
-    desc: "신경망+칼만필터 결합 구조 설명 및 실험 셋업 섹션까지 초안 작성 완료.",
-    who: "이하늘",
-    file: "초안_v2.docx",
-    date: "8월 27일 (수)",
-  },
-  {
-    avatar: "준",
-    title: "IDEC 2026 색상 식별기 아날로그 회로 1차 설계",
-    tag: "개인",
-    desc: "MCU 없이 비교기 기반으로 RGB 판별 회로 브레드보드 테스트 완료, 오차 범위 내 동작 확인.",
-    who: "박준서",
-    date: "8월 26일 (화)",
-  },
-  {
-    avatar: "민",
-    team: true,
-    title: "창업팀 협업 플랫폼 요구사항 정의서 확정",
-    tag: "팀",
-    desc: "11개 기능 확정 및 페이지별 상세 스펙 정리, 다음 단계로 와이어프레임 착수.",
-    who: "정민재 외 2명",
-    file: "요구사항정의서_v0.2.docx",
-    date: "8월 25일 (월)",
-  },
-  {
-    avatar: "도",
-    title: "배터리 시뮬레이션 챌린지용 TGL 모델 검증",
-    tag: "개인",
-    desc: "ANSYS 열-전기 결합 시뮬레이션 결과와 실측 데이터 오차 3% 이내로 확인.",
-    who: "최도윤",
-    date: "8월 25일 (월)",
-    metric: { label: "오차", value: "2.8%" },
-  },
-];
+type ResultListProps = {
+  results: Result[];
+};
 
 /**
  * playground-design/results.html의 .list-card 전체(헤더 + .res-row 목록).
  * 원본 <script>가 건드리지 않는 정적 영역이라 Server Component로 유지한다.
+ * TASK-026: 하드코딩 7건 대신 실제 achievements를 page.tsx에서 조회해
+ * props로 받는다. `tag`("개인"/"팀")는 `team`에서 파생해 렌더링 시 계산한다.
  */
-export function ResultList() {
+export function ResultList({ results }: ResultListProps) {
+  const personalCount = results.filter((r) => !r.team).length;
+  const teamCount = results.filter((r) => r.team).length;
+
   return (
     <div className="overflow-hidden rounded-card border border-border bg-bg-panel">
       <div className="flex items-center justify-between border-b border-border px-[22px] py-[18px]">
         <h3 className="m-0 text-[14.5px] font-semibold">이번 주 실적</h3>
-        <span className="font-mono text-[11.5px] text-silk-faint">7건 등록 · 개인 4 / 팀 3</span>
+        <span className="font-mono text-[11.5px] text-silk-faint">
+          {results.length}건 등록 · 개인 {personalCount} / 팀 {teamCount}
+        </span>
       </div>
 
-      {RESULTS.map((r, i) => (
+      {results.map((r) => (
         <div
-          key={i}
+          key={r.id}
           className="grid grid-cols-[40px_1fr_auto] items-start gap-[14px] border-b border-border px-[22px] py-[17px] last:border-b-0 hover:bg-[rgba(231,239,236,0.02)] max-[640px]:grid-cols-[34px_1fr]"
         >
           <div
@@ -115,7 +53,7 @@ export function ResultList() {
                   r.team ? "bg-amber-dim text-amber" : "bg-[rgba(72,217,176,0.14)] text-teal"
                 }`}
               >
-                {r.tag}
+                {r.team ? "팀" : "개인"}
               </span>
             </div>
             <p className="m-0 mb-2 max-w-[64ch] text-[12.5px] leading-[1.55] text-silk-dim">{r.desc}</p>

@@ -74,7 +74,7 @@
 }
 .b3dBlockText {
   fill: rgba(180, 220, 210, 0.65);
-  font-family: "IBM Plex Mono", monospace;
+  font-family: var(--font-mono), monospace;
   letter-spacing: 1px;
 }
 .b3dPin {
@@ -181,7 +181,7 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  font-family: "IBM Plex Mono", monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 11px;
   letter-spacing: 0.08em;
   color: var(--teal);
@@ -189,6 +189,7 @@
   border: 1px solid var(--teal-dim);
   border-radius: 999px;
   padding: 6px 13px 6px 10px;
+  -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
   transition:
     color 0.2s ease,
@@ -230,9 +231,10 @@
   border-radius: 10px;
   background: rgba(10, 22, 18, 0.72);
   border: 1px solid var(--border);
+  -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
-  font-family: "IBM Plex Mono", monospace;
+  font-family: var(--font-mono), monospace;
 }
 .b3dHud p {
   margin: 0;

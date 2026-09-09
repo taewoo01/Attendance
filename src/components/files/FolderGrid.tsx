@@ -1,23 +1,24 @@
-type Folder = { name: string; meta: string; isNew?: boolean };
+export type Folder = { name: string; meta: string; isNew?: boolean };
 
-const FOLDERS: Folder[] = [
-  { name: "GoldenLink", meta: "파일 14개 · 82MB" },
-  { name: "KEPCO 과제", meta: "파일 9개 · 41MB" },
-  { name: "SOC 논문", meta: "파일 6개 · 18MB" },
-  { name: "IDEC 2026", meta: "파일 5개 · 27MB" },
-  { name: "협업 플랫폼", meta: "파일 3개 · 6MB" },
-  { name: "새 폴더", meta: "폴더 만들기", isNew: true },
-];
+const NEW_FOLDER_CARD: Folder = { name: "새 폴더", meta: "폴더 만들기", isNew: true };
+
+type FolderGridProps = {
+  folders: Folder[];
+};
 
 /**
  * playground-design/files.html의 .folder-grid.
  * files.html에는 <script> 자체가 없어 .folder-card 클릭 리스너가 존재하지
  * 않으므로(hover border-color transition만 있음) 정적 Server Component로 유지한다.
+ * TASK-029: 하드코딩 5개 폴더 대신 page.tsx가 실제 files의 folder 컬럼을 집계한
+ * 결과를 props로 받는다. 업로드 시 폴더를 지정하는 UI가 아직 없어(폴더 생성
+ * 기능 자체도 미구현) 실제로는 항상 빈 목록이다 — "새 폴더" 카드만 원본처럼
+ * 장식용으로 고정 표시한다.
  */
-export function FolderGrid() {
+export function FolderGrid({ folders }: FolderGridProps) {
   return (
     <div className="mb-7 grid grid-cols-3 gap-[14px] max-[700px]:grid-cols-2">
-      {FOLDERS.map((folder) => (
+      {[...folders, NEW_FOLDER_CARD].map((folder) => (
         <div
           key={folder.name}
           className="cursor-pointer rounded-panel border border-border bg-bg-panel px-4 pt-4 pb-[14px] transition-colors duration-150 hover:border-teal-dim"

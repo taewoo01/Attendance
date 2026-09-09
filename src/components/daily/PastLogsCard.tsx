@@ -1,66 +1,39 @@
 "use client";
 
-type PastLog = {
+export type PastLog = {
   date: string;
   dow: string;
-  tag?: string;
   desc: string;
   check: string;
   pct: number;
   dataDate: string;
 };
 
+type PastLogsCardProps = {
+  pastLogs: PastLog[];
+  onSelectDate: (date: string) => void;
+};
+
 /**
  * playground-design/daily.html의 두 번째 .list-card("지난 기록").
- * 원본 script가 이 4건 자체를 재렌더링하지 않고 클릭 시 위쪽 팀 기록 카드의
- * feedIndex만 바꾸므로, 이 목록은 완전히 정적인 local constant로 유지한다.
+ * 원본 script가 이 목록 자체를 재렌더링하지 않고 클릭 시 위쪽 팀 기록 카드의
+ * feedIndex만 바꾸므로, 클릭 동작은 그대로 유지한다.
+ * TASK-025: 하드코딩 4건 대신 로그인한 사용자 본인의 실제 daily_logs 중
+ * 오늘을 제외한 항목을 page.tsx에서 계산해 props로 받는다. `tag`("실적
+ * 연동")는 실적(achievements) 기능이 아직 없어 derive할 데이터가 없으므로
+ * 제거했다(가짜 값을 채우지 않음).
  */
-const PAST_LOGS: PastLog[] = [
-  {
-    date: "8월 29일",
-    dow: "금",
-    tag: "실적 연동",
-    desc: "SOH continual learning 실험 셋업 완료, 기존 배치 모델과 비교 실험 시작. 저녁에 실적 관리에 등록.",
-    check: "3/3 완료",
-    pct: 100,
-    dataDate: "0829",
-  },
-  {
-    date: "8월 28일",
-    dow: "목",
-    tag: "실적 연동",
-    desc: "KEPCO 과제 중간보고서 초안 작성, PPO 학습 진행상황 정리해서 팀 채널에 공유.",
-    check: "2/3 완료",
-    pct: 66,
-    dataDate: "0828",
-  },
-  {
-    date: "8월 27일",
-    dow: "수",
-    desc: "온도 조건별 SOC 추정 하이브리드 모델 논문 초안 리뷰, 이하늘과 실험 셋업 섹션 논의.",
-    check: "2/2 완료",
-    pct: 100,
-    dataDate: "0827",
-  },
-  {
-    date: "8월 26일",
-    dow: "화",
-    desc: "IDEC 2026 색상 식별기 브레드보드 테스트, 오차 범위 확인 후 회로도 수정.",
-    check: "1/2 완료",
-    pct: 50,
-    dataDate: "0826",
-  },
-];
-
-export function PastLogsCard({ onSelectDate }: { onSelectDate: (date: string) => void }) {
+export function PastLogsCard({ pastLogs, onSelectDate }: PastLogsCardProps) {
   return (
     <div className="overflow-hidden rounded-card border border-border bg-bg-panel">
       <div className="flex items-center justify-between border-b border-border px-[22px] py-[18px]">
         <h3 className="m-0 text-[14.5px] font-semibold">지난 기록</h3>
-        <span className="font-mono text-[11.5px] text-silk-faint">이번 주 4건 · 클릭하면 그날 팀 기록 보기</span>
+        <span className="font-mono text-[11.5px] text-silk-faint">
+          이번 주 {pastLogs.length}건 · 클릭하면 그날 팀 기록 보기
+        </span>
       </div>
 
-      {PAST_LOGS.map((log) => (
+      {pastLogs.map((log) => (
         <div
           key={log.dataDate}
           onClick={() => onSelectDate(log.dataDate)}
@@ -71,13 +44,6 @@ export function PastLogsCard({ onSelectDate }: { onSelectDate: (date: string) =>
               {log.date}
               <span className="ml-1.5 font-mono text-[11px] font-medium text-silk-faint">{log.dow}</span>
             </span>
-            <div className="flex gap-[6px]">
-              {log.tag && (
-                <span className="rounded-badge bg-amber-dim px-[7px] py-0.5 font-mono text-[9.5px] font-bold text-amber">
-                  {log.tag}
-                </span>
-              )}
-            </div>
           </div>
           <p className="m-0 mb-2 max-w-[66ch] text-[12.5px] leading-[1.6] text-silk-dim">{log.desc}</p>
           <div className="flex items-center gap-[6px] font-mono text-[11px] text-silk-faint">

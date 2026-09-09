@@ -52,7 +52,7 @@
   display: flex;
   align-items: center;
   gap: 9px;
-  font-family: "IBM Plex Mono", monospace;
+  font-family: var(--font-mono), monospace;
   font-weight: 700;
   font-size: 16px;
 }
@@ -65,7 +65,7 @@
   color: var(--teal);
 }
 .brandTop .kicker {
-  font-family: "IBM Plex Mono", monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 11px;
   letter-spacing: 0.14em;
   color: var(--silk-faint);
@@ -124,7 +124,7 @@
   align-items: center;
   justify-content: center;
   gap: 9px;
-  font-family: "IBM Plex Mono", monospace;
+  font-family: var(--font-mono), monospace;
   font-weight: 700;
   font-size: 16px;
   margin-bottom: 30px;
@@ -144,7 +144,7 @@
 }
 
 .cardKicker {
-  font-family: "IBM Plex Mono", monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 11px;
   letter-spacing: 0.1em;
   color: var(--silk-faint);
@@ -156,7 +156,7 @@
   margin: 0 0 8px;
 }
 .demoHint {
-  font-family: "IBM Plex Mono", monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 11px;
   color: var(--silk-faint);
   margin: 0 0 22px;
