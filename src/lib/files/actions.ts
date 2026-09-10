@@ -6,7 +6,14 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { db } from "@/lib/db/client";
 import { files } from "@/db/schema";
 import { getFileById } from "@/lib/db/files";
-import { ALLOWED_EXTENSIONS, BUCKET, MAX_SIZE_BYTES, extensionOf, sanitizeFileName } from "@/lib/files/upload-shared";
+import {
+  ALLOWED_EXTENSIONS,
+  BUCKET,
+  MAX_SIZE_BYTES,
+  contentTypeFor,
+  extensionOf,
+  sanitizeFileName,
+} from "@/lib/files/upload-shared";
 
 export type UploadFileState = { error?: string; success?: boolean };
 
@@ -41,10 +48,11 @@ export async function uploadFile(formData: FormData): Promise<UploadFileState> {
   const { error: uploadError } = await supabaseAdmin.storage
     .from(BUCKET)
     .upload(storagePath, await file.arrayBuffer(), {
-      contentType: file.type || "application/octet-stream",
+      contentType: contentTypeFor(file.name, file.type),
     });
 
   if (uploadError) {
+    console.error("[uploadFile] file upload failed", safeName, uploadError);
     return { error: "업로드 중 오류가 발생했습니다." };
   }
 
