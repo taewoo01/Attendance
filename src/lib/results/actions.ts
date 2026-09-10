@@ -1,13 +1,52 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { db } from "@/lib/db/client";
 import { achievementFiles, achievements } from "@/db/schema";
-import { getAchievementFileById, listAchievementFilesFor } from "@/lib/db/achievements";
-import { ALLOWED_EXTENSIONS, BUCKET, MAX_SIZE_BYTES, extensionOf, sanitizeFileName } from "@/lib/files/upload-shared";
+import { getAchievementById, getAchievementFileById, listAchievementFilesFor } from "@/lib/db/achievements";
+import {
+  ALLOWED_EXTENSIONS,
+  BUCKET,
+  MAX_SIZE_BYTES,
+  contentTypeFor,
+  extensionOf,
+  sanitizeFileName,
+} from "@/lib/files/upload-shared";
+
+const CATEGORIES = ["", "논문", "공모전", "프로젝트", "창업"] as const;
+// 저장 가능한 값("논문"이 아닐 때는 "")과 별개로, category === "논문"일 때 실제로
+// 요구하는 값은 이 둘뿐이다 — REQUIRED_PAPER_TYPES에 ""를 넣으면 "선택 안 함" 상태로도
+// 검증을 통과해버려 에러 메시지("논문 구분을 선택해 주세요")가 무의미해진다.
+const REQUIRED_PAPER_TYPES = ["KCI", "SCI"] as const;
+
+/**
+ * createAchievement/updateAchievement가 공유하는 카테고리 필드 파싱+검증.
+ * category가 폼 select 값 그대로 넘어오므로 whitelist 밖 값(임의 문자열)이면
+ * 막는다. `paperType`은 category가 "논문"일 때만, `awarded`/`awardName`은
+ * "공모전"일 때만 의미가 있어 그 외에는 서버에서 강제로 빈 값/false로 되돌린다
+ * (클라이언트가 숨겨진 필드를 조작해 보내도 무시되게).
+ */
+function parseCategoryFields(
+  formData: FormData,
+): { category: string; paperType: string; awarded: boolean; awardName: string } | { error: string } {
+  const category = String(formData.get("category") ?? "").trim();
+  if (!(CATEGORIES as readonly string[]).includes(category)) {
+    return { error: "카테고리 값이 올바르지 않습니다." };
+  }
+
+  const paperType = category === "논문" ? String(formData.get("paperType") ?? "").trim() : "";
+  if (category === "논문" && !(REQUIRED_PAPER_TYPES as readonly string[]).includes(paperType)) {
+    return { error: "논문 구분(KCI/SCI)을 선택해 주세요." };
+  }
+
+  const awarded = category === "공모전" && formData.get("awarded") === "true";
+  const awardName = awarded ? String(formData.get("awardName") ?? "").trim() : "";
+
+  return { category, paperType, awarded, awardName };
+}
 
 export type CreateAchievementState = { error?: string; success?: boolean };
 
@@ -42,7 +81,10 @@ export async function createAchievement(formData: FormData): Promise<CreateAchie
   const resultDateInput = String(formData.get("resultDate") ?? "").trim();
   const metricLabel = String(formData.get("metricLabel") ?? "").trim();
   const metricValue = String(formData.get("metricValue") ?? "").trim();
-  const link = String(formData.get("link") ?? "").trim();
+  const links = formData
+    .getAll("links")
+    .map((v) => String(v).trim())
+    .filter(Boolean);
   // 구분이 "팀"일 때만 의미가 있다 — 폼도 team일 때만 이 필드를 보여주지만,
   // 서버에서도 개인 실적에 팀원 목록이 섞여 들어가지 않게 한 번 더 막는다.
   const teamMembers = team
@@ -52,6 +94,7 @@ export async function createAchievement(formData: FormData): Promise<CreateAchie
         .filter(Boolean)
     : [];
   const files = formData.getAll("files").filter((f): f is File => f instanceof File && f.size > 0);
+  const categoryFields = parseCategoryFields(formData);
 
   if (!title) {
     return { error: "제목을 입력해 주세요." };
@@ -64,8 +107,11 @@ export async function createAchievement(formData: FormData): Promise<CreateAchie
   }
   // <a href>로 그대로 렌더링되므로(ResultList.tsx/results/[id]/page.tsx) javascript:/data:
   // 같은 스킴을 막아야 한다 — type="url" input은 문법만 검증하고 스킴은 안 가린다.
-  if (link && !/^https?:\/\//i.test(link)) {
+  if (links.some((l) => !/^https?:\/\//i.test(l))) {
     return { error: "참고 링크는 http:// 또는 https:// 로 시작해야 합니다." };
+  }
+  if ("error" in categoryFields) {
+    return { error: categoryFields.error };
   }
   for (const file of files) {
     if (!ALLOWED_EXTENSIONS.has(extensionOf(file.name))) {
@@ -88,14 +134,20 @@ export async function createAchievement(formData: FormData): Promise<CreateAchie
       const storagePath = `achievements/${achievementId}/${crypto.randomUUID()}-${safeName}`;
       const { error: uploadError } = await supabaseAdmin.storage
         .from(BUCKET)
-        .upload(storagePath, await file.arrayBuffer(), { contentType: file.type || "application/octet-stream" });
+        .upload(storagePath, await file.arrayBuffer(), { contentType: contentTypeFor(file.name, file.type) });
       return { error: uploadError, storagePath, name: safeName, sizeBytes: file.size };
     }),
   );
 
   const succeeded = uploadResults.filter((r) => !r.error);
-  const hasFailure = uploadResults.some((r) => r.error);
-  if (hasFailure) {
+  const failed = uploadResults.filter((r) => r.error);
+  if (failed.length > 0) {
+    // uploadError는 클라이언트에 그대로 노출하지 않지만(Supabase 내부 메시지), 서버
+    // 로그에는 남겨야 재발 시 원인(용량/버킷 mime 정책/네트워크 등)을 알 수 있다 —
+    // 이전에는 이 에러를 그냥 버려서 실패 원인을 전혀 알 수 없었다.
+    for (const f of failed) {
+      console.error("[createAchievement] achievement file upload failed", f.name, f.error);
+    }
     if (succeeded.length > 0) {
       await supabaseAdmin.storage.from(BUCKET).remove(succeeded.map((r) => r.storagePath));
     }
@@ -113,10 +165,11 @@ export async function createAchievement(formData: FormData): Promise<CreateAchie
     title,
     desc,
     who,
-    link,
+    links,
     resultDate: resultDateInput,
     metricLabel,
     metricValue,
+    ...categoryFields,
   });
 
   if (uploaded.length > 0) {
@@ -132,6 +185,149 @@ export async function createAchievement(formData: FormData): Promise<CreateAchie
   }
 
   revalidatePath("/results");
+  revalidatePath("/");
+  return { success: true };
+}
+
+export type UpdateAchievementState = { error?: string; success?: boolean };
+
+/**
+ * 실적 수정 Server Action. createAchievement와 동일한 검증(제목/담당자/날짜/링크
+ * 스킴/새 첨부파일 확장자·용량)을 거친 뒤 본인 소유 실적만 갱신한다. 첨부파일은
+ * "추가"(files)와 "기존 제거"(removeFileIds)를 한 번에 받는다 — 새 파일 업로드가
+ * 실패하면 기존 파일 삭제/DB update 자체를 진행하지 않아(createAchievement와 동일한
+ * "반쯤 성공 상태 방지" 원칙) 실패 시 아무것도 바뀌지 않는다. removeFileIds는
+ * listAchievementFilesFor(id)로 다시 조회해 이 실적 소유가 맞는 파일인지 서버에서
+ * 한 번 더 확인한다(다른 실적의 fileId를 넘겨 지우는 걸 막는다).
+ */
+export async function updateAchievement(id: string, formData: FormData): Promise<UpdateAchievementState> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { error: "로그인이 필요합니다." };
+  }
+
+  const existing = await getAchievementById(id);
+  if (!existing || existing.userId !== user.id) {
+    return { error: "수정할 실적을 찾을 수 없습니다(본인이 등록한 실적만 수정할 수 있어요)." };
+  }
+
+  const title = String(formData.get("title") ?? "").trim();
+  const team = formData.get("kind") === "team";
+  const desc = String(formData.get("desc") ?? "").trim();
+  const who = String(formData.get("who") ?? "").trim();
+  const resultDateInput = String(formData.get("resultDate") ?? "").trim();
+  const metricLabel = String(formData.get("metricLabel") ?? "").trim();
+  const metricValue = String(formData.get("metricValue") ?? "").trim();
+  const links = formData
+    .getAll("links")
+    .map((v) => String(v).trim())
+    .filter(Boolean);
+  const teamMembers = team
+    ? formData
+        .getAll("teamMembers")
+        .map((v) => String(v).trim())
+        .filter(Boolean)
+    : [];
+  const newFiles = formData.getAll("files").filter((f): f is File => f instanceof File && f.size > 0);
+  const removeFileIds = formData
+    .getAll("removeFileIds")
+    .map((v) => String(v).trim())
+    .filter(Boolean);
+  const categoryFields = parseCategoryFields(formData);
+
+  if (!title) {
+    return { error: "제목을 입력해 주세요." };
+  }
+  if (!who) {
+    return { error: "담당자를 선택해 주세요." };
+  }
+  if (!resultDateInput) {
+    return { error: "날짜를 선택해 주세요." };
+  }
+  if (links.some((l) => !/^https?:\/\//i.test(l))) {
+    return { error: "참고 링크는 http:// 또는 https:// 로 시작해야 합니다." };
+  }
+  if ("error" in categoryFields) {
+    return { error: categoryFields.error };
+  }
+  for (const file of newFiles) {
+    if (!ALLOWED_EXTENSIONS.has(extensionOf(file.name))) {
+      return { error: `허용되지 않는 파일 형식입니다: ${file.name}` };
+    }
+    if (file.size > MAX_SIZE_BYTES) {
+      return { error: `파일 용량이 20MB를 초과합니다: ${file.name}` };
+    }
+  }
+
+  const supabaseAdmin = createAdminClient();
+
+  const uploadResults = await Promise.all(
+    newFiles.map(async (file) => {
+      const safeName = sanitizeFileName(file.name);
+      const storagePath = `achievements/${id}/${crypto.randomUUID()}-${safeName}`;
+      const { error: uploadError } = await supabaseAdmin.storage
+        .from(BUCKET)
+        .upload(storagePath, await file.arrayBuffer(), { contentType: contentTypeFor(file.name, file.type) });
+      return { error: uploadError, storagePath, name: safeName, sizeBytes: file.size };
+    }),
+  );
+
+  const succeeded = uploadResults.filter((r) => !r.error);
+  const failed = uploadResults.filter((r) => r.error);
+  if (failed.length > 0) {
+    for (const f of failed) {
+      console.error("[updateAchievement] achievement file upload failed", f.name, f.error);
+    }
+    if (succeeded.length > 0) {
+      await supabaseAdmin.storage.from(BUCKET).remove(succeeded.map((r) => r.storagePath));
+    }
+    return { error: "첨부파일 업로드 중 오류가 발생했습니다." };
+  }
+
+  let removedFiles: { id: string; storagePath: string }[] = [];
+  if (removeFileIds.length > 0) {
+    const attached = await listAchievementFilesFor(id);
+    removedFiles = attached.filter((f) => removeFileIds.includes(f.id));
+  }
+
+  await db
+    .update(achievements)
+    .set({
+      avatar: who.charAt(0) || "?",
+      team,
+      teamMembers,
+      title,
+      desc,
+      who,
+      links,
+      resultDate: resultDateInput,
+      metricLabel,
+      metricValue,
+      ...categoryFields,
+    })
+    .where(and(eq(achievements.id, id), eq(achievements.userId, user.id)));
+
+  if (succeeded.length > 0) {
+    await db.insert(achievementFiles).values(
+      succeeded.map((f) => ({
+        achievementId: id,
+        userId: user.id,
+        storagePath: f.storagePath,
+        name: f.name,
+        sizeBytes: f.sizeBytes,
+      })),
+    );
+  }
+
+  if (removedFiles.length > 0) {
+    await db
+      .delete(achievementFiles)
+      .where(and(eq(achievementFiles.achievementId, id), inArray(achievementFiles.id, removedFiles.map((f) => f.id))));
+    await supabaseAdmin.storage.from(BUCKET).remove(removedFiles.map((f) => f.storagePath));
+  }
+
+  revalidatePath("/results");
+  revalidatePath(`/results/${id}`);
   revalidatePath("/");
   return { success: true };
 }

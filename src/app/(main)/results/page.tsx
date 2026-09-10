@@ -39,10 +39,14 @@ export default async function ResultsPage() {
     teamMembers: row.teamMembers.length > 0 ? row.teamMembers : undefined,
     file: row.file,
     files: filesByAchievement.get(row.id),
-    link: row.link || undefined,
+    links: row.links.length > 0 ? row.links : undefined,
     date: formatKoreanDateLabel(row.resultDate),
     dateKey: row.resultDate,
     metric: row.metricLabel ? { label: row.metricLabel, value: row.metricValue } : undefined,
+    category: row.category,
+    paperType: row.paperType,
+    awarded: row.awarded,
+    awardName: row.awardName,
   }));
 
   const todayKey = seoulDateKey(new Date());
@@ -52,7 +56,7 @@ export default async function ResultsPage() {
       <RegisterResultModal members={members} />
 
       <div className="mx-auto grid max-w-[1220px] grid-cols-[1fr_300px] items-start gap-[22px] px-7 pt-[22px] pb-[90px] max-[960px]:grid-cols-1">
-        <ResultsBoard results={results} currentUserId={user?.id} todayKey={todayKey} />
+        <ResultsBoard results={results} currentUserId={user?.id} todayKey={todayKey} members={members} />
         <ResultsSidebar results={results} members={members} />
       </div>
     </>

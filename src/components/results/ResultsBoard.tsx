@@ -9,6 +9,7 @@ type ResultsBoardProps = {
   results: Result[];
   currentUserId?: string;
   todayKey: string;
+  members: { userId: string; name: string }[];
 };
 
 /**
@@ -20,7 +21,7 @@ type ResultsBoardProps = {
  * 갖고 ‹ › 버튼에 onClick조차 없어서 "이번 주 실적" 목록이 항상 전체 결과를
  * 그대로 보여줬다.
  */
-export function ResultsBoard({ results, currentUserId, todayKey }: ResultsBoardProps) {
+export function ResultsBoard({ results, currentUserId, todayKey, members }: ResultsBoardProps) {
   const [view, setView] = useState<"week" | "month">("week");
   const [mondayKey, setMondayKey] = useState(() => mondayKeyOf(todayKey));
   const [monthKey, setMonthKey] = useState(() => monthKeyOf(todayKey));
@@ -49,7 +50,12 @@ export function ResultsBoard({ results, currentUserId, todayKey }: ResultsBoardP
   return (
     <div>
       <ResultsToolbar view={view} onViewChange={setView} rangeLabel={rangeLabel} onPrev={handlePrev} onNext={handleNext} />
-      <ResultList results={visibleResults} currentUserId={currentUserId} heading={view === "week" ? "주간 실적" : "월간 실적"} />
+      <ResultList
+        results={visibleResults}
+        currentUserId={currentUserId}
+        heading={view === "week" ? "주간 실적" : "월간 실적"}
+        members={members}
+      />
     </div>
   );
 }

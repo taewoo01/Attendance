@@ -182,6 +182,16 @@ export const dailyLogTemplates = pgTable("daily_log_templates", {
  * (구분이 "팀"일 때 참여자 목록, ideas.tags와 동일한 text[] 컨벤션). `file`(단일
  * 첨부파일 텍스트)은 기존 데이터 호환을 위해 그대로 두고, 여러 첨부파일은 별도
  * achievementFiles 테이블(1:N)로 관리한다(files 테이블의 Storage 업로드 패턴 재사용).
+ * 참고링크 여러 개 등록: `link`(단일 text)는 기존 데이터 호환을 위해 그대로 두고
+ * (더 이상 쓰지 않는다 — `file`과 동일한 legacy 취급), 여러 개는 `teamMembers`와
+ * 동일한 text[] 컨벤션으로 `links`에 저장한다.
+ * 실적 카테고리(논문/공모전/프로젝트/창업): `category`는 값 종류가 4개뿐이라
+ * pgEnum도 고려했지만, 이 프로젝트 전반이 "구분"류 필드를 전부 자유 text +
+ * 서버 측 whitelist 검증으로 다뤄서(team처럼 boolean화할 이유가 없는 경우) 그
+ * 컨벤션을 따른다. `paperType`(KCI/SCI)은 category가 "논문"일 때만, `awarded`/
+ * `awardName`(수상 여부/수상명)은 category가 "공모전"일 때만 의미 있고 나머지
+ * 값들은 항상 빈 문자열/false로 둔다(다른 선택 필드와 동일하게 검증은
+ * actions.ts에서 category별로 담당).
  */
 export const achievements = pgTable("achievements", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -194,6 +204,7 @@ export const achievements = pgTable("achievements", {
   desc: text("desc").notNull().default(""),
   who: text("who").notNull().default(""),
   link: text("link").notNull().default(""),
+  links: text("links").array().notNull().default([]),
   file: text("file").notNull().default(""),
   /** ISO 날짜("YYYY-MM-DD", personal_events.eventDate와 동일 컨벤션) — 실적 페이지의
    * 주간/월간 기간 필터링에 실제 날짜 연산이 필요해 자유 텍스트 대신 이 형식으로 저장한다.
@@ -201,6 +212,14 @@ export const achievements = pgTable("achievements", {
   resultDate: text("result_date").notNull().default(""),
   metricLabel: text("metric_label").notNull().default(""),
   metricValue: text("metric_value").notNull().default(""),
+  /** "" | "논문" | "공모전" | "프로젝트" | "창업" — actions.ts가 whitelist로 검증한다. */
+  category: text("category").notNull().default(""),
+  /** category === "논문"일 때만 의미 있음. "" | "KCI" | "SCI". */
+  paperType: text("paper_type").notNull().default(""),
+  /** category === "공모전"일 때만 의미 있음(수상 여부). */
+  awarded: boolean("awarded").notNull().default(false),
+  /** awarded === true일 때만 의미 있음(수상명). */
+  awardName: text("award_name").notNull().default(""),
 });
 
 /**

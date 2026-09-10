@@ -1,10 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AchievementFileLink } from "@/components/results/AchievementFileLink";
+import { AchievementImagePreview } from "@/components/results/AchievementImagePreview";
 import { ResultDeleteButton } from "@/components/results/ResultDeleteButton";
+import { ResultEditButton } from "@/components/results/ResultEditButton";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { getAchievementById, listAchievementFilesFor } from "@/lib/db/achievements";
+import { listProfiles } from "@/lib/db/profiles";
 import { formatKoreanDateLabel } from "@/lib/date";
+import { isImageExtension } from "@/lib/files/upload-shared";
+import { formatCategoryLabel } from "@/lib/results/category";
 
 // 목록과 동일하게 매 요청마다 렌더링한다(TASK-026 dynamic 설정과 동일 원칙).
 export const dynamic = "force-dynamic";
@@ -39,6 +44,11 @@ export default async function ResultDetailPage({ params }: { params: Promise<{ i
   }
 
   const isOwner = !!user && achievement.userId === user.id;
+  // members는 ResultEditButton(수정 모달의 담당자/팀원 선택지)에만 쓰이고 그 버튼도
+  // isOwner일 때만 렌더링되므로, 대부분인 비소유자 조회에서는 이 쿼리를 아예 건너뛴다.
+  const members = isOwner ? await listProfiles() : [];
+  const imageFiles = files.filter((f) => isImageExtension(f.name));
+  const categoryLabel = formatCategoryLabel(achievement);
 
   return (
     <div className="mx-auto max-w-[720px] px-7 pt-[30px] pb-[90px]">
@@ -60,8 +70,37 @@ export default async function ResultDetailPage({ params }: { params: Promise<{ i
             >
               {achievement.team ? "팀" : "개인"}
             </span>
+            {categoryLabel && (
+              <span className="rounded-badge border border-border bg-bg-raised px-1.5 py-0.5 font-mono text-[9.5px] font-bold tracking-[0.03em] text-silk-dim">
+                {categoryLabel}
+              </span>
+            )}
           </div>
-          {isOwner && <ResultDeleteButton id={achievement.id} redirectTo="/results" />}
+          {isOwner && (
+            <span className="flex shrink-0 items-center gap-2.5">
+              <ResultEditButton
+                achievement={{
+                  id: achievement.id,
+                  team: achievement.team,
+                  title: achievement.title,
+                  desc: achievement.desc,
+                  who: achievement.who,
+                  teamMembers: achievement.teamMembers,
+                  resultDate: achievement.resultDate,
+                  metricLabel: achievement.metricLabel,
+                  metricValue: achievement.metricValue,
+                  links: achievement.links,
+                  files: files.map((f) => ({ id: f.id, name: f.name })),
+                  category: achievement.category,
+                  paperType: achievement.paperType,
+                  awarded: achievement.awarded,
+                  awardName: achievement.awardName,
+                }}
+                members={members}
+              />
+              <ResultDeleteButton id={achievement.id} redirectTo="/results" />
+            </span>
+          )}
         </div>
 
         <div className="px-[22px] py-5">
@@ -92,17 +131,22 @@ export default async function ResultDetailPage({ params }: { params: Promise<{ i
                 <p className="m-0 font-mono text-[15px] font-bold text-teal">{achievement.metricValue}</p>
               </div>
             )}
-            {achievement.link && (
-              <div>
+            {achievement.links.length > 0 && (
+              <div className="col-span-2">
                 <p className="m-0 mb-1 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">참고 링크</p>
-                <a
-                  href={achievement.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="break-all text-[13px] text-teal hover:underline"
-                >
-                  {achievement.link}
-                </a>
+                <div className="flex flex-col gap-1">
+                  {achievement.links.map((link, i) => (
+                    <a
+                      key={link + i}
+                      href={link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="break-all text-[13px] text-teal hover:underline"
+                    >
+                      {link}
+                    </a>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -110,6 +154,13 @@ export default async function ResultDetailPage({ params }: { params: Promise<{ i
           {(files.length > 0 || achievement.file) && (
             <div className="mt-4 border-t border-border pt-4">
               <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">첨부파일</p>
+              {imageFiles.length > 0 && (
+                <div className="mb-3 flex flex-col gap-3">
+                  {imageFiles.map((f) => (
+                    <AchievementImagePreview key={f.id} fileId={f.id} name={f.name} />
+                  ))}
+                </div>
+              )}
               <div className="flex flex-col gap-1.5">
                 {achievement.file && (
                   <span className="inline-flex items-center gap-[5px] font-mono text-[12px] text-silk-faint">

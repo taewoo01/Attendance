@@ -2,7 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
+import { CategoryFields } from "@/components/results/CategoryFields";
 import { createAchievement } from "@/lib/results/actions";
+import type { AchievementCategory, PaperType } from "@/lib/results/category";
 
 /**
  * playground-design/results.html의 .page-head(제목+실적 등록 버튼)와
@@ -25,15 +27,38 @@ import { createAchievement } from "@/lib/results/actions";
  * 선택 목록에서 개별로 빼고(×) 다시 추가할 수 있어야 해서, 네이티브 input의
  * FileList를 그대로 쓰지 않고 배열로 직접 관리한다(그래서 이 input엔 `name`이
  * 없다 — 제출은 `files` state를 handleSubmit에서 FormData에 직접 append한다).
+ * 참고링크 여러 개 등록: `links` state(문자열 배열, 항상 최소 한 칸 `[""]`로
+ * 시작)로 입력칸 자체를 여러 개 렌더링한다 — "+" 버튼으로 칸을 추가하고, 각 칸
+ * 옆의 ×로 뺄 수 있다(첨부파일 목록의 개별 제거 패턴과 동일). 빈 칸은 제출 시
+ * actions.ts에서 걸러내므로 여기서는 입력 그대로 두고, 마지막 칸까지 지우면
+ * 다시 빈 칸 하나를 유지해 "+"만으로도 첫 링크를 추가할 수 있게 한다.
+ * 카테고리(논문/공모전/프로젝트/창업): select로 고르고, 선택값에 따라 하위 필드가
+ * 나타난다 — "논문"이면 KCI/SCI 토글(구분 토글과 동일한 버튼 스타일, hidden input에
+ * 값을 담아 제출), "공모전"이면 수상 여부 토글 + 수상 시에만 나타나는 수상명
+ * 입력칸. 카테고리를 바꾸면 이전에 골랐던 하위 값(KCI/SCI, 수상 여부/명)은 의미가
+ * 없어지므로 함께 초기화한다(서버도 category 불일치 시 무시하지만, 폼에 남아있는
+ * 값이 다음 제출에 실수로 섞여 들어가는 걸 막기 위해 클라이언트에서도 리셋).
  */
 export function RegisterResultModal({ members: allMembers }: { members: { userId: string; name: string }[] }) {
   const members = allMembers.filter((m) => m.name);
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<"personal" | "team">("personal");
+  const [category, setCategory] = useState<AchievementCategory>("");
+  const [paperType, setPaperType] = useState<PaperType>("KCI");
+  const [awarded, setAwarded] = useState(false);
+  const [awardName, setAwardName] = useState("");
+  const [links, setLinks] = useState<string[]>([""]);
   const [files, setFiles] = useState<File[]>([]);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  function handleCategoryChange(value: AchievementCategory) {
+    setCategory(value);
+    setPaperType("KCI");
+    setAwarded(false);
+    setAwardName("");
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -47,8 +72,25 @@ export function RegisterResultModal({ members: allMembers }: { members: { userId
   function closeModal() {
     setOpen(false);
     setType("personal");
+    handleCategoryChange("");
+    setLinks([""]);
     setFiles([]);
     setError(null);
+  }
+
+  function addLink() {
+    setLinks((prev) => [...prev, ""]);
+  }
+
+  function updateLink(index: number, value: string) {
+    setLinks((prev) => prev.map((v, i) => (i === index ? value : v)));
+  }
+
+  function removeLink(index: number) {
+    setLinks((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      return next.length > 0 ? next : [""];
+    });
   }
 
   function addFiles(picked: File[]) {
@@ -160,6 +202,17 @@ export function RegisterResultModal({ members: allMembers }: { members: { userId
                 </div>
               </div>
 
+              <CategoryFields
+                category={category}
+                onCategoryChange={handleCategoryChange}
+                paperType={paperType}
+                onPaperTypeChange={setPaperType}
+                awarded={awarded}
+                onAwardedChange={setAwarded}
+                awardName={awardName}
+                onAwardNameChange={setAwardName}
+              />
+
               {type === "team" && (
                 <div className="mb-[18px]">
                   <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">팀원</p>
@@ -235,13 +288,41 @@ export function RegisterResultModal({ members: allMembers }: { members: { userId
               </div>
 
               <div className="mb-[18px]">
-                <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">참고 링크 (선택)</p>
-                <input
-                  name="link"
-                  type="url"
-                  placeholder="예: https://github.com/team/repo/pull/12"
-                  className="w-full rounded-input border border-border bg-bg-raised px-[14px] py-[11px] font-sans text-[13.5px] text-silk focus:border-teal-dim focus:outline-none"
-                />
+                <div className="mb-2 flex items-center justify-between">
+                  <p className="m-0 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">참고 링크 (선택)</p>
+                  <button
+                    type="button"
+                    onClick={addLink}
+                    className="cursor-pointer rounded-button border border-border bg-transparent px-2 py-0.5 text-[13px] leading-none text-silk-dim hover:border-teal-dim hover:text-silk"
+                    aria-label="참고 링크 칸 추가"
+                  >
+                    +
+                  </button>
+                </div>
+                <div className="flex flex-col gap-2">
+                  {links.map((value, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <input
+                        name="links"
+                        type="url"
+                        value={value}
+                        onChange={(e) => updateLink(i, e.target.value)}
+                        placeholder="예: https://github.com/team/repo/pull/12"
+                        className="w-full rounded-input border border-border bg-bg-raised px-[14px] py-[11px] font-sans text-[13.5px] text-silk focus:border-teal-dim focus:outline-none"
+                      />
+                      {links.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeLink(i)}
+                          aria-label="참고 링크 칸 제거"
+                          className="shrink-0 cursor-pointer border-none bg-transparent px-1 text-lg leading-none text-silk-faint hover:text-[#e2543f]"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div>

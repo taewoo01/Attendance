@@ -5,11 +5,6 @@ type ResultsSidebarProps = {
   members: { userId: string; name: string }[];
 };
 
-/** "8월 29일 (금)" 같은 원본 date 표기에서 괄호 안 요일 한 글자만 뽑아낸다. */
-function extractWeekday(dateText: string): string {
-  return dateText.match(/\(([가-힣])\)/)?.[1] ?? "";
-}
-
 /**
  * playground-design/results.html의 <aside> 격 3개 .side-card
  * (이번 주 요약 / 팀원별 등록 현황 / 최근 등록). 원본 <script>가 전혀 건드리지
@@ -19,22 +14,26 @@ function extractWeekday(dateText: string): string {
  * TASK-026: "이번 주 요약"의 건수/개인·팀 실적과 "최근 등록"(최신순 3건)은
  * 실제 results props에서 계산한다. "지난주 대비" 증감은 resultDate가 실제
  * date 컬럼이 아니라 자유 텍스트 표기라 주간 범위 비교가 어려워 하드코딩을 유지한다.
- * "팀원별 등록 현황"(실적 페이지 상세화 후속)은 achievements.userId(실적 페이지
- * 상세화 1단계에서 추가)로 실제 등록 건수를 집계한다 — "등록 현황"이라 팀 실적의
- * teamMembers(참여자)가 아니라 "누가 실제로 등록했는지"(userId)만 센다.
+ * "팀원별 등록 현황"은 achievements.who(담당자)로 집계한다 — userId(실제로 폼을
+ * 제출/업로드한 사람)로 세면 "팀원 A가 팀원 B 몫까지 대신 등록"한 경우 A 앞으로
+ * 잡혀서 담당자 본인의 실적으로 보이지 않는 문제가 있었다. teamMembers(팀 실적의
+ * 참여자 목록)도 아니다 — 어디까지나 "담당자" 한 명 기준.
+ * "최근 등록"의 왼쪽 칩은 원래 등록일 요일 한 글자였는데, 담당자(who)를 한눈에
+ * 구분하는 용도로 바꿔서 이제 이름 첫 글자(r.avatar — TeamGrid/등록 모달과 동일한
+ * "이름 첫 글자" 컨벤션)를 보여준다.
  */
 export function ResultsSidebar({ results, members }: ResultsSidebarProps) {
   const personalCount = results.filter((r) => !r.team).length;
   const teamCount = results.filter((r) => r.team).length;
-  const quickItems = results.slice(0, 3).map((r) => ({ day: extractWeekday(r.date), title: r.title }));
+  const quickItems = results.slice(0, 3).map((r) => ({ initial: r.avatar, title: r.title }));
 
-  const countByUserId = new Map<string, number>();
+  const countByWho = new Map<string, number>();
   for (const r of results) {
-    if (!r.userId) continue;
-    countByUserId.set(r.userId, (countByUserId.get(r.userId) ?? 0) + 1);
+    if (!r.who) continue;
+    countByWho.set(r.who, (countByWho.get(r.who) ?? 0) + 1);
   }
   const memberBars = members
-    .map((m) => ({ name: m.name, count: countByUserId.get(m.userId) ?? 0 }))
+    .map((m) => ({ name: m.name, count: countByWho.get(m.name) ?? 0 }))
     .sort((a, b) => b.count - a.count);
   const maxCount = Math.max(1, ...memberBars.map((m) => m.count));
 
@@ -81,7 +80,7 @@ export function ResultsSidebar({ results, members }: ResultsSidebarProps) {
             key={i}
             className="flex items-baseline gap-[9px] border-b border-border py-[7px] last:border-b-0 last:pb-0"
           >
-            <span className="w-[34px] shrink-0 font-mono text-[10.5px] text-teal">{item.day}</span>
+            <span className="w-[34px] shrink-0 font-mono text-[10.5px] text-teal">{item.initial}</span>
             <span className="flex-1 text-xs text-silk">{item.title}</span>
           </div>
         ))}
