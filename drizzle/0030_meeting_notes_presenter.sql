@@ -1,0 +1,1 @@
+ALTER TABLE "meeting_notes" ADD COLUMN "presenter" text DEFAULT '' NOT NULL;

@@ -60,3 +60,13 @@ export function formatKoreanDateLabel(dateKey: string): string {
   const [, m, d] = dateKey.split("-").map(Number);
   return `${m}월 ${d}일 (${DOW_KO[weekdayIndex(dateKey)]})`;
 }
+
+/**
+ * dateKey("YYYY-MM-DD") + time("HH:MM", 선택) → "M월 D일 (요일) HH:MM".
+ * 회의록의 날짜/시간 피커(meetingDateKey/meetingTime)를 저장용 표시 문자열로
+ * 합칠 때 쓴다 — time이 없으면 날짜만 반환한다.
+ */
+export function formatKoreanDateTimeLabel(dateKey: string, time: string): string {
+  const dateLabel = formatKoreanDateLabel(dateKey);
+  return time ? `${dateLabel} ${time}` : dateLabel;
+}

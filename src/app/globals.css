@@ -16,7 +16,8 @@
   --amber-dim: rgba(226, 168, 63, 0.16);
   --silk: #e7efec;
   --silk-dim: #86a199;
-  --silk-faint: #45594f;
+  /* 원래 값(#45594f)은 배경 대비 ~2.2:1로 WCAG AA(4.5:1) 미달이라 밝게 조정(대비 ~6.9:1). */
+  --silk-faint: #96aba3;
   --trace: rgba(231, 239, 236, 0.028);
   --border: rgba(231, 239, 236, 0.1);
 }

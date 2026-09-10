@@ -1,6 +1,6 @@
 "use client";
 
-export const FILTERS = ["전체", "미완료 액션아이템", "이번 달"] as const;
+export const FILTERS = ["전체", "미완료 할 일", "이번 달"] as const;
 export type FilterOption = (typeof FILTERS)[number];
 
 type SearchFilterBarProps = {

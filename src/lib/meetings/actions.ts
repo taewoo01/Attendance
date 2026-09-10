@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { db } from "@/lib/db/client";
 import { meetingNotes, type MeetingActionRow } from "@/db/schema";
+import { formatKoreanDateTimeLabel } from "@/lib/date";
 
 /**
  * meeting_notes는 personal_events/fixed_schedules와 달리 user_id가 없는 팀
@@ -15,18 +16,50 @@ import { meetingNotes, type MeetingActionRow } from "@/db/schema";
  * 공유 문서에 가깝다(다른 팀원이 쓴 회의록도 수정/삭제할 수 있음, TASK-033).
  */
 
-function parseLines(raw: FormDataEntryValue | null): string[] {
-  return String(raw ?? "")
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
-}
-
 function parseCommaList(raw: FormDataEntryValue | null): string[] {
   return String(raw ?? "")
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+/** 행 편집기(안건 · 결정 사항)에서 보낸 짝 목록. decision은 비어있을 수 있다(아직 결정 안 된 안건). */
+function parseAgendaRowsJson(raw: FormDataEntryValue | null): { agenda: string; decision: string }[] {
+  if (!raw) return [];
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(String(raw));
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(parsed)) return [];
+  return parsed
+    .filter((item): item is Record<string, unknown> => typeof item === "object" && item !== null)
+    .map((item) => ({ agenda: String(item.agenda ?? "").trim(), decision: String(item.decision ?? "").trim() }))
+    .filter((row) => row.agenda.length > 0);
+}
+
+/**
+ * agenda/decisions를 폼의 notesFormat에 따라 파싱한다.
+ * - "text"(자유 텍스트): 줄바꿈을 보존한 원문 그대로 배열에 1개 원소로 담는다(있으면).
+ * - 그 외("rows", 행 편집기): agendaRowsJson을 그대로 두 배열로 풀어 인덱스가
+ *   1:1로 짝지어지게 한다 — decisions[i]가 비어있어도 자리(빈 문자열)를 유지한다.
+ */
+function parseAgendaAndDecisions(formData: FormData): { notesFormat: string; agenda: string[]; decisions: string[] } {
+  const notesFormat = formData.get("notesFormat") === "text" ? "text" : "rows";
+
+  if (notesFormat === "text") {
+    const agendaText = String(formData.get("agenda") ?? "").trim();
+    const decisionsText = String(formData.get("decisions") ?? "").trim();
+    return {
+      notesFormat,
+      agenda: agendaText ? [agendaText] : [],
+      decisions: decisionsText ? [decisionsText] : [],
+    };
+  }
+
+  const rows = parseAgendaRowsJson(formData.get("agendaRowsJson"));
+  return { notesFormat, agenda: rows.map((r) => r.agenda), decisions: rows.map((r) => r.decision) };
 }
 
 function toDueVariant(value: unknown): "soon" | "late" | undefined {
@@ -58,14 +91,27 @@ function parseActionsJson(raw: FormDataEntryValue | null): MeetingActionRow[] {
     .filter((item) => item.text.length > 0);
 }
 
+/**
+ * 날짜(type="date")/시간(type="time") 피커 값을 받아 기존 표시용 텍스트 컬럼
+ * (meetingDate)과 새 구조화 컬럼(meetingDateKey/meetingTime)을 함께 채운다.
+ * 날짜를 아예 선택하지 않은 경우(회의록 날짜는 필수가 아니다) 셋 다 빈 문자열.
+ */
 function meetingValuesFromForm(formData: FormData) {
+  const meetingDateKey = String(formData.get("meetingDateKey") ?? "").trim();
+  const meetingTime = String(formData.get("meetingTime") ?? "").trim();
+  const { notesFormat, agenda, decisions } = parseAgendaAndDecisions(formData);
+
   return {
     title: String(formData.get("title") ?? "").trim(),
-    meetingDate: String(formData.get("meetingDate") ?? "").trim(),
+    meetingDate: meetingDateKey ? formatKoreanDateTimeLabel(meetingDateKey, meetingTime) : "",
+    meetingDateKey,
+    meetingTime,
     place: String(formData.get("place") ?? "").trim(),
     attendees: parseCommaList(formData.get("attendees")),
-    agenda: parseLines(formData.get("agenda")),
-    decisions: parseLines(formData.get("decisions")),
+    presenter: String(formData.get("presenter") ?? "").trim(),
+    notesFormat,
+    agenda,
+    decisions,
     actions: parseActionsJson(formData.get("actionsJson")),
     tag: String(formData.get("tag") ?? "").trim(),
     recorder: String(formData.get("recorder") ?? "").trim(),
@@ -150,7 +196,7 @@ export async function toggleMeetingAction(meetingId: string, actionIndex: number
 
   const [meeting] = await db.select({ actions: meetingNotes.actions }).from(meetingNotes).where(eq(meetingNotes.id, meetingId));
   if (!meeting || !meeting.actions[actionIndex]) {
-    return { error: "액션 아이템을 찾을 수 없습니다." };
+    return { error: "할 일을 찾을 수 없습니다." };
   }
 
   const nextActions = meeting.actions.map((action, i) => (i === actionIndex ? { ...action, done: !action.done } : action));

@@ -46,13 +46,35 @@ export type MeetingActionRow = {
  * TASK-023 최소 스키마. playground-design/meetings.html의 .mtg-card 필드를
  * 그대로 반영한다(date/place 등은 원본처럼 사람이 읽는 텍스트로 저장하고
  * 별도 포맷팅 로직을 새로 만들지 않는다).
+ * 날짜/시간 피커 도입: `meetingDate`는 자유 텍스트라 등록 폼이 그냥 <input type="text">
+ * 였다(예시 placeholder만 있고 형식 강제가 없었음) — achievements.resultDate와 동일한
+ * 이유로 실제 달력/시간 피커로 바꾼다. 다만 여기서는 기존 컬럼을 대체하지 않고
+ * `meetingDateKey`(ISO "YYYY-MM-DD")/`meetingTime`("HH:MM", 선택)을 추가만 한다 —
+ * `meetingDate`는 계속 채워서(서버가 두 값으로 조합해 저장) 화면 표시(MeetingCard)를
+ * 그대로 두고, MeetingsBoard의 "이번 달" 필터만 새 필드가 있으면 그걸 쓰고 없으면
+ * (마이그레이션 이전 자유 텍스트 데이터) 기존 접두어 비교로 폴백한다.
  */
 export const meetingNotes = pgTable("meeting_notes", {
   id: uuid("id").primaryKey().defaultRandom(),
   title: text("title").notNull().default(""),
   meetingDate: text("meeting_date").notNull().default(""),
+  meetingDateKey: text("meeting_date_key").notNull().default(""),
+  meetingTime: text("meeting_time").notNull().default(""),
   place: text("place").notNull().default(""),
   attendees: text("attendees").array().notNull().default([]),
+  /** 발표자. attendees와 달리 선택 사항이라 빈 문자열이면 "미지정"으로 취급한다. */
+  presenter: text("presenter").notNull().default(""),
+  /**
+   * agenda/decisions를 등록 모달에서 어떤 방식으로 입력했는지("rows" | "text").
+   * "rows"는 안건과 결정 사항이 인덱스로 1:1 짝지어진 것(decisions[i]가 agenda[i]의
+   * 결정 사항, 비어있을 수 있음). "text"는 자유 텍스트로 입력한 것 — 줄바꿈을 보존한
+   * 원문 그대로 배열에 1개 원소로 저장한다(안건/결정 사항 각각 최대 1개 원소).
+   * 이 기능 이전에 저장된 기존 회의록은 빈 문자열("")로, 지금까지 해온 대로
+   * (줄 단위로 쪼개진 독립적인 안건/결정 사항 목록) 그대로 표시한다 — 과거 데이터는
+   * agenda[i]/decisions[i]가 서로 짝지어졌다는 보장이 없어 "rows"로 되짚어
+   * 표시하면 안건과 무관한 결정 사항이 잘못 묶여 보일 수 있다.
+   */
+  notesFormat: text("notes_format").notNull().default(""),
   agenda: text("agenda").array().notNull().default([]),
   decisions: text("decisions").array().notNull().default([]),
   actions: jsonb("actions").$type<MeetingActionRow[]>().notNull().default([]),

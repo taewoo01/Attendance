@@ -32,7 +32,7 @@ export function OpenActionsCard({ items }: { items: OpenActionItem[] }) {
 
   return (
     <div className="mb-4 rounded-panel border border-border bg-bg-panel px-[18px] pt-[18px] pb-4">
-      <h4 className="m-0 mb-[14px] text-[13.5px] font-semibold">미완료 액션아이템</h4>
+      <h4 className="m-0 mb-[14px] text-[13.5px] font-semibold">미완료 할 일</h4>
       {items.map((item) => {
         const key = `${item.meetingId}-${item.actionIndex}`;
         return (
@@ -41,7 +41,7 @@ export function OpenActionsCard({ items }: { items: OpenActionItem[] }) {
               type="checkbox"
               disabled={togglingKey === key}
               onChange={() => handleToggle(item)}
-              aria-label="액션 아이템 완료 토글"
+              aria-label="할 일 완료 토글"
               className="mt-0.5 h-[14px] w-[14px] shrink-0 cursor-pointer rounded-[4px] disabled:cursor-not-allowed"
             />
             <div className="flex-1">

@@ -8,12 +8,27 @@ import type { MeetingActionRow } from "@/db/schema";
 
 export type MeetingAction = MeetingActionRow;
 
+/** 참석자 뱃지를 이 수까지만 펼쳐 보여주고, 나머지는 "+N명" 뱃지로 접는다. */
+const ATTENDEES_VISIBLE_LIMIT = 5;
+
 export type Meeting = {
   id: string;
   title: string;
   meetingDate: string;
+  /** ISO 날짜("YYYY-MM-DD", 선택) — EditMeetingModal의 type="date" defaultValue로 쓴다. */
+  meetingDateKey: string;
+  /** "HH:MM"(선택) — EditMeetingModal의 type="time" defaultValue로 쓴다. */
+  meetingTime: string;
   place: string;
   attendees: string[];
+  /** 선택 사항 — 미지정이면 빈 문자열. */
+  presenter: string;
+  /**
+   * "rows"면 agenda[i]/decisions[i]가 짝지어진 것(decisions[i]가 빈 문자열일 수 있음).
+   * "text"면 agenda[0]/decisions[0]에 줄바꿈이 보존된 원문이 통째로 들어있다.
+   * 그 외(과거 데이터, "")는 각각 독립된 줄 단위 목록으로 취급한다.
+   */
+  notesFormat: string;
   agenda: string[];
   decisions: string[];
   actions: MeetingAction[];
@@ -64,54 +79,103 @@ export function MeetingCard({ meeting }: { meeting: Meeting }) {
       <div className="mb-[14px] flex flex-wrap items-start justify-between gap-[14px] border-b border-border pb-[14px]">
         <div>
           <h4 className="m-0 mb-1.5 text-[15.5px] font-semibold text-silk">{meeting.title}</h4>
-          <div className="flex flex-wrap items-center gap-3 font-mono text-[11.5px] text-silk-faint">
+          <div className="flex flex-wrap items-center gap-3 font-mono text-[12.5px] text-silk-faint">
             <span className="text-teal">{meeting.meetingDate}</span>
             <span>·</span>
             <span>{meeting.place}</span>
+            {meeting.presenter && (
+              <>
+                <span>·</span>
+                <span>발표: {meeting.presenter}</span>
+              </>
+            )}
           </div>
         </div>
-        <div className="flex items-center">
-          {meeting.attendees.map((av, i) => (
+        <div className="flex flex-wrap items-center gap-1.5">
+          {meeting.attendees.slice(0, ATTENDEES_VISIBLE_LIMIT).map((av, i) => (
             <div
               key={i}
-              className={`flex h-[22px] w-[22px] items-center justify-center rounded-full border-2 border-bg-panel bg-[rgba(72,217,176,0.18)] font-mono text-[9px] font-bold text-teal ${
-                i === 0 ? "ml-0" : "-ml-1.5"
-              }`}
+              className="flex h-[22px] shrink-0 items-center justify-center whitespace-nowrap rounded-pill border border-teal-dim bg-[rgba(72,217,176,0.18)] px-2 font-mono text-[10px] font-bold text-teal"
             >
               {av}
             </div>
           ))}
+          {meeting.attendees.length > ATTENDEES_VISIBLE_LIMIT && (
+            <div
+              title={meeting.attendees.slice(ATTENDEES_VISIBLE_LIMIT).join(", ")}
+              className="flex h-[22px] shrink-0 cursor-default items-center justify-center whitespace-nowrap rounded-pill border border-border bg-bg-raised px-2 font-mono text-[10px] font-bold text-silk-faint"
+            >
+              +{meeting.attendees.length - ATTENDEES_VISIBLE_LIMIT}명
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="mb-[14px]">
-        <p className="m-0 mb-2 font-mono text-[10px] tracking-[0.1em] text-silk-faint">안건</p>
-        <ul className="m-0 list-none p-0">
+      {meeting.notesFormat === "rows" ? (
+        <div className="mb-[14px]">
+          <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">안건 · 결정 사항</p>
           {meeting.agenda.map((item, i) => (
-            <li
-              key={i}
-              className="relative mb-[5px] pl-[14px] text-[12.8px] leading-[1.6] text-silk-dim last:mb-0 before:absolute before:left-0 before:content-['—'] before:text-silk-faint"
-            >
-              {item}
-            </li>
+            <div key={i} className="mb-2.5 last:mb-0">
+              <div className="relative pl-[14px] text-[12.8px] leading-[1.6] text-silk-dim before:absolute before:left-0 before:content-['—'] before:text-silk-faint">
+                {item}
+              </div>
+              {meeting.decisions[i] && (
+                <div className="mt-1.5 rounded-[6px] border-l-[3px] border-teal bg-teal-dim px-[13px] py-2.5 text-[12.8px] leading-[1.6] text-silk">
+                  {meeting.decisions[i]}
+                </div>
+              )}
+            </div>
           ))}
-        </ul>
-      </div>
-
-      <div className="mb-[14px]">
-        <p className="m-0 mb-2 font-mono text-[10px] tracking-[0.1em] text-silk-faint">결정 사항</p>
-        {meeting.decisions.map((decision, i) => (
-          <div
-            key={i}
-            className="mb-1.5 rounded-[6px] border-l-[3px] border-teal bg-teal-dim px-[13px] py-2.5 text-[12.8px] leading-[1.6] text-silk last:mb-0"
-          >
-            {decision}
+        </div>
+      ) : meeting.notesFormat === "text" ? (
+        <>
+          <div className="mb-[14px]">
+            <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">안건</p>
+            {meeting.agenda[0] && (
+              <p className="m-0 whitespace-pre-wrap text-[12.8px] leading-[1.6] text-silk-dim">{meeting.agenda[0]}</p>
+            )}
           </div>
-        ))}
-      </div>
+          <div className="mb-[14px]">
+            <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">결정 사항</p>
+            {meeting.decisions[0] && (
+              <div className="rounded-[6px] border-l-[3px] border-teal bg-teal-dim px-[13px] py-2.5 whitespace-pre-wrap text-[12.8px] leading-[1.6] text-silk">
+                {meeting.decisions[0]}
+              </div>
+            )}
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="mb-[14px]">
+            <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">안건</p>
+            <ul className="m-0 list-none p-0">
+              {meeting.agenda.map((item, i) => (
+                <li
+                  key={i}
+                  className="relative mb-[5px] pl-[14px] text-[12.8px] leading-[1.6] text-silk-dim last:mb-0 before:absolute before:left-0 before:content-['—'] before:text-silk-faint"
+                >
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="mb-[14px]">
+            <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">결정 사항</p>
+            {meeting.decisions.map((decision, i) => (
+              <div
+                key={i}
+                className="mb-1.5 rounded-[6px] border-l-[3px] border-teal bg-teal-dim px-[13px] py-2.5 text-[12.8px] leading-[1.6] text-silk last:mb-0"
+              >
+                {decision}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       <div>
-        <p className="m-0 mb-2 font-mono text-[10px] tracking-[0.1em] text-silk-faint">액션 아이템</p>
+        <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">할 일</p>
         {meeting.actions.map((action, i) => (
           <div
             key={i}
@@ -122,7 +186,7 @@ export function MeetingCard({ meeting }: { meeting: Meeting }) {
               checked={action.done ?? false}
               disabled={togglingIndex === i}
               onChange={() => handleToggle(i)}
-              aria-label="액션 아이템 완료 토글"
+              aria-label="할 일 완료 토글"
               className="h-[14px] w-[14px] cursor-pointer disabled:cursor-not-allowed"
             />
             <div className={`text-[12.8px] ${action.done ? "text-silk-faint line-through" : "text-silk"}`}>
@@ -135,7 +199,7 @@ export function MeetingCard({ meeting }: { meeting: Meeting }) {
               {action.who}
             </div>
             <div
-              className={`whitespace-nowrap rounded-[5px] px-2 py-[3px] font-mono text-[10.5px] ${
+              className={`whitespace-nowrap rounded-[5px] px-2 py-[3px] font-mono text-[11.5px] ${
                 action.dueVariant === "soon"
                   ? "bg-amber-dim text-amber"
                   : action.dueVariant === "late"
@@ -151,7 +215,7 @@ export function MeetingCard({ meeting }: { meeting: Meeting }) {
 
       {error && <p className="m-0 mt-3 font-mono text-[11px] text-[#e2543f]">{error}</p>}
 
-      <div className="mt-[14px] flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3 font-mono text-[11px] text-silk-faint">
+      <div className="mt-[14px] flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3 font-mono text-[12px] text-silk-faint">
         <span className="rounded-[5px] bg-bg-raised px-2 py-[3px]">{meeting.tag}</span>
         <div className="flex items-center gap-3">
           <span>기록: {meeting.recorder}</span>

@@ -20,7 +20,7 @@ export function MeetingsSidebar({ meetings }: MeetingsSidebarProps) {
   const allActions = meetings.flatMap((meeting) => meeting.actions);
   const monthSummary = [
     { n: String(meetings.length), l: "회의록" },
-    { n: String(allActions.length), l: "액션아이템" },
+    { n: String(allActions.length), l: "할 일" },
     { n: String(allActions.filter((action) => action.dueVariant === "late").length), l: "지연" },
   ];
   const openActions = meetings.flatMap((meeting) =>

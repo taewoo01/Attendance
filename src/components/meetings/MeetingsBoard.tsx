@@ -3,11 +3,24 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { MeetingCard, type Meeting } from "@/components/meetings/MeetingCard";
 import { SearchFilterBar, type FilterOption } from "@/components/meetings/SearchFilterBar";
+import { monthKeyOf, seoulDateKey } from "@/lib/date";
 
-/** Asia/Seoul 기준 이번 달을 원본 표기("9월")로. meetingDate가 이 접두어로 시작하는지만 본다. */
+/** Asia/Seoul 기준 이번 달을 원본 표기("9월")로. 날짜 피커 도입 전 자유 텍스트로 등록된 회의록(meetingDateKey 없음)에만 쓰는 폴백. */
 function currentMonthPrefixKo(): string {
   const month = Number(new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Seoul", month: "numeric" }).format(new Date()));
   return `${month}월`;
+}
+
+/**
+ * 회의록의 날짜가 이번 달인지 판단한다. meetingDateKey(ISO)가 있으면 실제 월
+ * 비교로 정확하게 판단하고, 날짜 피커 도입 전 자유 텍스트로만 등록된 옛 회의록
+ * (meetingDateKey === "")은 기존처럼 "9월" 같은 접두어 비교로 폴백한다.
+ */
+function isThisMonth(meeting: Meeting, todayKey: string, monthPrefix: string): boolean {
+  if (meeting.meetingDateKey) {
+    return monthKeyOf(meeting.meetingDateKey) === monthKeyOf(todayKey);
+  }
+  return meeting.meetingDate.startsWith(monthPrefix);
 }
 
 /**
@@ -27,13 +40,14 @@ export function MeetingsBoard({ meetings, sidebar }: { meetings: Meeting[]; side
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     const monthPrefix = currentMonthPrefixKo();
+    const todayKey = seoulDateKey(new Date());
     return meetings.filter((meeting) => {
       if (q) {
         const haystack = [meeting.title, ...meeting.agenda, ...meeting.attendees].join(" ").toLowerCase();
         if (!haystack.includes(q)) return false;
       }
-      if (filter === "미완료 액션아이템" && !meeting.actions.some((action) => !action.done)) return false;
-      if (filter === "이번 달" && !meeting.meetingDate.startsWith(monthPrefix)) return false;
+      if (filter === "미완료 할 일" && !meeting.actions.some((action) => !action.done)) return false;
+      if (filter === "이번 달" && !isThisMonth(meeting, todayKey, monthPrefix)) return false;
       return true;
     });
   }, [meetings, query, filter]);
