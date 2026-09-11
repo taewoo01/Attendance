@@ -32,6 +32,14 @@ export const ALLOWED_EXTENSIONS = new Set([
 // 버킷 생성 시 file_size_limit(20MB)과 동일한 값. 서버 측에서도 별도로 확인한다.
 export const MAX_SIZE_BYTES = 20 * 1024 * 1024;
 
+/**
+ * 팀소개 페이지 수정: 프로필 사진 업로드 용량 제한. 일반 첨부파일(20MB)보다
+ * 훨씬 작은 이미지 한 장이라 더 낮게 둔다 — 새 버킷/allowlist 없이 기존
+ * "files" 버킷과 ALLOWED_EXTENSIONS를 그대로 재사용하되(위 주석과 동일 원칙),
+ * 용량만 avatars/<userId>/... 경로 업로드에서 별도로 검증한다.
+ */
+export const AVATAR_MAX_SIZE_BYTES = 5 * 1024 * 1024;
+
 export function extensionOf(name: string): string {
   const dot = name.lastIndexOf(".");
   return dot === -1 ? "" : name.slice(dot + 1).toLowerCase();

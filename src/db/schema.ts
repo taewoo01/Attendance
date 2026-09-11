@@ -27,6 +27,19 @@ export const profiles = pgTable("profiles", {
   role: text("role").notNull().default(""),
   contact: text("contact").notNull().default(""),
   canInvite: boolean("can_invite").notNull().default(false),
+  /**
+   * 팀소개 페이지 수정: 프로필 사진. Storage에 올린 원본 파일 경로만 저장하고
+   * (files/achievement_files와 동일한 컨벤션 — 이 avatarPath는 새 버킷을 만들지
+   * 않고 기존 "files" private 버킷을 `avatars/<userId>/...` 경로로 재사용한다),
+   * 실제 표시 URL은 매 요청마다 서버가 발급하는 signed URL이다(AGENTS.md 11.4절,
+   * 클라이언트가 Storage 경로를 직접 조합하지 않는다). 사진이 없으면 기존처럼
+   * 이름 첫 글자 아바타로 폴백한다.
+   */
+  avatarPath: text("avatar_path").notNull().default(""),
+  /** 팀소개 페이지 수정: 전공 분야/세부 분야. role("BMS · 연구" 등 소속/직무)과
+   * 별개로 자유 텍스트로 둔다 — 값 종류를 미리 정해둘 근거가 없어 다른 자유
+   * 텍스트 필드(role/contact)와 동일한 컨벤션을 따른다. */
+  specialty: text("specialty").notNull().default(""),
 });
 
 /**

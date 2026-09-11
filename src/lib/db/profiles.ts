@@ -17,7 +17,9 @@ export const getProfileByUserId = cache(async (userId: string) => {
 
 /**
  * Team 페이지(TASK-022)용 목록 조회. can_invite는 Team UI에 필요하지 않으므로
- * 컬럼을 명시적으로 select해 제외한다.
+ * 컬럼을 명시적으로 select해 제외한다. 팀소개 페이지 수정: avatarPath/specialty
+ * 추가 — avatarPath는 원본 Storage 경로일 뿐이라 화면에 쓰려면 호출부가
+ * withAvatarUrls(src/lib/team/avatars.ts)로 signed URL을 따로 발급해야 한다.
  */
 export async function listProfiles() {
   return db
@@ -26,6 +28,8 @@ export async function listProfiles() {
       name: profiles.name,
       role: profiles.role,
       contact: profiles.contact,
+      specialty: profiles.specialty,
+      avatarPath: profiles.avatarPath,
     })
     .from(profiles);
 }
