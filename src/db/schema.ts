@@ -56,6 +56,14 @@ export type MeetingActionRow = {
  */
 export const meetingNotes = pgTable("meeting_notes", {
   id: uuid("id").primaryKey().defaultRandom(),
+  /**
+   * 등록 시각. 목록 정렬 전용 — 이 컬럼 이전에는 ORDER BY 없이 그냥 SELECT했는데,
+   * Postgres는 UPDATE(예: 액션 아이템 체크 토글)마다 MVCC로 새 튜플을 다른 물리
+   * 위치에 쓸 수 있어서 순서 보장이 전혀 없었다(체크박스 토글할 때마다 카드 순서가
+   * 위/아래로 튀던 원인). createdAt은 update로 바뀌지 않으니 이걸로 정렬하면
+   * "등록한 순서" 정렬도 되고, 체크 토글로 순서가 흔들리는 것도 같이 해결된다.
+   */
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   title: text("title").notNull().default(""),
   meetingDate: text("meeting_date").notNull().default(""),
   meetingDateKey: text("meeting_date_key").notNull().default(""),
