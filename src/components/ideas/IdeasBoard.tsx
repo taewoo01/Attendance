@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { FeedToolbar, type FeedSort, type FeedTab } from "@/components/ideas/FeedToolbar";
 import { IdeaCard, type Idea } from "@/components/ideas/IdeaCard";
 import { IdeaComposer } from "@/components/ideas/IdeaComposer";
@@ -13,12 +13,15 @@ function totalReactions(idea: Idea): number {
 
 /**
  * page.tsx가 서버에서 계산한 ideas/recentActivity를 받아 페이지 전체(헤더의
- * "+ 아이디어 작성" 버튼, 컴포저, 피드 탭/정렬, 태그 필터, 사이드바)를 함께
- * 관리한다. 탭(전체/내 아이디어/인기순)·정렬(최신순/리액션순/댓글순)·태그
- * 필터가 서로 다른 컴포넌트(FeedToolbar/IdeasSidebar)에 걸쳐 있어야 해서
- * MeetingsBoard와 동일한 이유로 상태를 여기서 관리한다.
+ * "+ 아이디어 작성" 버튼, 피드 탭/정렬, 태그 필터, 사이드바)를 함께 관리한다.
+ * 탭(전체/내 아이디어/인기순)·정렬(최신순/리액션순/댓글순)·태그 필터가 서로
+ * 다른 컴포넌트(FeedToolbar/IdeasSidebar)에 걸쳐 있어야 해서 MeetingsBoard와
+ * 동일한 이유로 상태를 여기서 관리한다.
  * "이번 주 새 아이디어" 사이드바 요약은 이 필터와 무관하게 항상 전체
  * 아이디어 기준으로 남긴다(ScheduleCalendar owner 필터와 동일한 원칙).
+ * 아이디어 페이지 상세화: 아이디어 작성 박스가 피드 맨 위에 항상 떠 있던 걸
+ * 없애고, 헤더의 "+ 아이디어 작성" 버튼으로 여는 모달(IdeaComposer)로 바꿨다
+ * — EditIdeaModal과 동일하게 `composerOpen`일 때만 마운트한다.
  */
 export function IdeasBoard({
   ideas,
@@ -32,7 +35,7 @@ export function IdeasBoard({
   const [tab, setTab] = useState<FeedTab>("전체");
   const [sort, setSort] = useState<FeedSort>("최신순");
   const [activeTag, setActiveTag] = useState<string | null>(null);
-  const composerRef = useRef<HTMLTextAreaElement | null>(null);
+  const [composerOpen, setComposerOpen] = useState(false);
 
   const visibleIdeas = useMemo(() => {
     let list = ideas;
@@ -66,7 +69,7 @@ export function IdeasBoard({
         </div>
         <button
           type="button"
-          onClick={() => composerRef.current?.focus()}
+          onClick={() => setComposerOpen(true)}
           className="inline-flex cursor-pointer items-center justify-center gap-[7px] rounded-button border border-teal bg-teal px-4 py-2.5 text-[13px] font-semibold text-[#04231b]"
         >
           + 아이디어 작성
@@ -75,7 +78,6 @@ export function IdeasBoard({
 
       <div className="mx-auto grid max-w-[1220px] grid-cols-[1fr_300px] items-start gap-[22px] px-7 pt-[22px] pb-[90px] max-[960px]:grid-cols-1">
         <div>
-          <IdeaComposer textareaRef={composerRef} />
           <FeedToolbar activeTab={tab} onTabChange={setTab} sort={sort} onSortChange={setSort} />
           {visibleIdeas.length === 0 ? (
             <p className="m-0 rounded-card border border-border bg-bg-panel px-5 py-9 text-center text-[13px] text-silk-faint">
@@ -87,6 +89,8 @@ export function IdeasBoard({
         </div>
         <IdeasSidebar ideas={ideas} activeTag={activeTag} onTagClick={setActiveTag} recentActivity={recentActivity} />
       </div>
+
+      {composerOpen && <IdeaComposer onClose={() => setComposerOpen(false)} />}
     </>
   );
 }

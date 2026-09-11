@@ -94,8 +94,16 @@ export const meetingNotes = pgTable("meeting_notes", {
  * playground-design/ideas.html의 .idea-card 댓글 1건. `postedAt`은 TASK-034에서
  * 댓글 작성 기능과 함께 추가했다(jsonb라 컬럼 마이그레이션은 필요 없다) — 기존에
  * 저장된 댓글(시딩 데이터 등)에는 이 필드가 없을 수 있어 optional로 둔다.
+ * 아이디어 페이지 상세화: 댓글 작성자 본인이 수정/삭제할 수 있게 하려면 어떤
+ * 댓글을 가리키는지(배열 index는 동시 추가/삭제 시 불안정하다)와 누가 썼는지가
+ * 필요해 `id`(생성 시 crypto.randomUUID())/`userId`를 추가했다 — 마찬가지로
+ * jsonb라 컬럼 마이그레이션은 필요 없다. 기존 댓글엔 둘 다 없을 수 있어
+ * optional로 둔다(그런 댓글은 userId가 없어 자연히 본인 소유로 판정되지 않고
+ * 수정/삭제 버튼도 뜨지 않는다 — ideas.userId 레거시 처리와 동일 원칙).
  */
 export type IdeaCommentRow = {
+  id?: string;
+  userId?: string | null;
   avatar: string;
   who: string;
   text: string;
@@ -123,6 +131,11 @@ export type IdeaReactionRow = {
  * `user_id` FK를 쓰는 것과 일관되게 맞춘다. 계정이 삭제돼도 팀 콘텐츠 자체는
  * 남아야 하므로(meeting_notes의 recorder와 같은 원칙) `onDelete: "set null"`로
  * 작성자만 익명화한다(행 자체는 삭제하지 않음).
+ * 아이디어 페이지 상세화: 작성 폼의 "이미지 첨부"/"링크 첨부" 버튼이 장식만
+ * 있고 실제 동작이 없었다(IdeaComposer.tsx 원래 주석) — achievements의 첨부
+ * 패턴(참고 링크는 text[] 컬럼, 첨부파일은 1:N 테이블 + Storage)을 그대로
+ * 재사용한다. `links`는 achievements.links와 동일한 컨벤션이고, 파일은 아래
+ * ideaFiles 테이블(achievementFiles와 동일 구조)로 관리한다.
  */
 export const ideas = pgTable("ideas", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -133,8 +146,22 @@ export const ideas = pgTable("ideas", {
   title: text("title").notNull().default(""),
   body: text("body").notNull().default(""),
   tags: text("tags").array().notNull().default([]),
+  links: text("links").array().notNull().default([]),
   reactions: jsonb("reactions").$type<IdeaReactionRow[]>().notNull().default([]),
   comments: jsonb("comments").$type<IdeaCommentRow[]>().notNull().default([]),
+});
+
+/** ideas 첨부파일(1:N). achievementFiles와 동일 구조 — files 버킷의 `ideas/<id>/...` 경로로 구분한다. */
+export const ideaFiles = pgTable("idea_files", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  ideaId: uuid("idea_id")
+    .notNull()
+    .references(() => ideas.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").references(() => authUsers.id, { onDelete: "set null" }),
+  storagePath: text("storage_path").notNull(),
+  name: text("name").notNull().default(""),
+  sizeBytes: integer("size_bytes").notNull().default(0),
+  uploadedAt: timestamp("uploaded_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 /**

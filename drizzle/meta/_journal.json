@@ -232,6 +232,20 @@
       "when": 1789054798802,
       "tag": "0032_meeting_notes_created_at",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1789130697170,
+      "tag": "0033_ideas_links_and_files",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1789130697670,
+      "tag": "0034_idea_files_rls",
+      "breakpoints": true
     }
   ]
 }

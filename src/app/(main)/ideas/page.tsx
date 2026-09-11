@@ -2,7 +2,7 @@ import { IdeasBoard } from "@/components/ideas/IdeasBoard";
 import type { Idea, IdeaReaction } from "@/components/ideas/IdeaCard";
 import type { RecentActivityItem } from "@/components/ideas/IdeasSidebar";
 import { getCurrentUser } from "@/lib/auth/get-user";
-import { listIdeaReactions, listIdeas } from "@/lib/db/ideas";
+import { listIdeaFiles, listIdeaReactions, listIdeas } from "@/lib/db/ideas";
 import { ideaTimestampMs } from "@/lib/ideas/format";
 
 // TASK-024: DB 조회가 build 시점에 고정되지 않도록 매 요청마다 렌더링한다.
@@ -11,7 +11,22 @@ export const dynamic = "force-dynamic";
 const RECENT_ACTIVITY_LIMIT = 6;
 
 export default async function IdeasPage() {
-  const [rows, reactionRows, user] = await Promise.all([listIdeas(), listIdeaReactions(), getCurrentUser()]);
+  const [rows, reactionRows, fileRows, user] = await Promise.all([
+    listIdeas(),
+    listIdeaReactions(),
+    listIdeaFiles(),
+    getCurrentUser(),
+  ]);
+
+  const filesByIdea = new Map<string, { id: string; name: string }[]>();
+  for (const f of fileRows) {
+    const list = filesByIdea.get(f.ideaId);
+    if (list) {
+      list.push({ id: f.id, name: f.name });
+    } else {
+      filesByIdea.set(f.ideaId, [{ id: f.id, name: f.name }]);
+    }
+  }
 
   const ideas: Idea[] = rows.map((row) => {
     const myReactions = reactionRows.filter((r) => r.ideaId === row.id);
@@ -29,6 +44,8 @@ export default async function IdeasPage() {
       title: row.title,
       body: row.body,
       tags: row.tags,
+      links: row.links,
+      files: filesByIdea.get(row.id) ?? [],
       reactions,
       comments: row.comments,
     };

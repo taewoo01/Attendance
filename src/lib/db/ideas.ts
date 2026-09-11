@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
-import { ideaReactions, ideas, profiles } from "@/db/schema";
+import { ideaFiles, ideaReactions, ideas, profiles } from "@/db/schema";
 
 /**
  * ideas Repository. 이 모듈은 서버 전용(src/lib/db/client.ts 의존)이다.
@@ -19,9 +19,25 @@ export async function listIdeas() {
       title: ideas.title,
       body: ideas.body,
       tags: ideas.tags,
+      links: ideas.links,
       comments: ideas.comments,
     })
     .from(ideas);
+}
+
+/** 아이디어 페이지 상세화: 아이디어 하나당 여러 첨부파일(achievements.listAchievementFiles와 동일 패턴). */
+export async function listIdeaFiles() {
+  return db.select().from(ideaFiles);
+}
+
+export async function getIdeaFileById(id: string) {
+  const [row] = await db.select().from(ideaFiles).where(eq(ideaFiles.id, id)).limit(1);
+  return row ?? null;
+}
+
+/** 아이디어 삭제/수정 시 Storage 정리 및 소유 확인용 — 특정 아이디어에 달린 첨부파일 목록. */
+export async function listIdeaFilesFor(ideaId: string) {
+  return db.select().from(ideaFiles).where(eq(ideaFiles.ideaId, ideaId));
 }
 
 /**
