@@ -89,7 +89,24 @@ export default async function DailyPage() {
     }
   }
 
-  const dateKeys = Array.from(new Set([todayKey, ...byDate.keys()])).sort((a, b) => (a < b ? 1 : -1));
+  // 팀 기록의 날짜 이동(‹/›)이 "기록이 있는 날짜"만 골라 건너뛰면 대부분의
+  // 날(기록 없는 날)이 아예 이동 대상에서 빠져 하루 이동이 통째로 스킵되거나
+  // 화살표가 반응 없는 것처럼 느껴진다 — 기록 없는 날도 빈 상태로 하루씩
+  // 연속으로 넘어가게 한다. 팀 전체에 기록이 하나도 없는 과거까지 갈 필요는
+  // 없으니 가장 오래된 기록 날짜(없으면 오늘)를 하한으로 삼되, 최대
+  // MAX_FEED_DAYS_BACK일까지만 되돌아간다.
+  const MAX_FEED_DAYS_BACK = 60;
+  const loggedDateKeys = Array.from(byDate.keys());
+  const earliestLoggedKey =
+    loggedDateKeys.length > 0 ? loggedDateKeys.reduce((min, key) => (key < min ? key : min)) : todayKey;
+  const cutoffKey = addDays(todayKey, -MAX_FEED_DAYS_BACK);
+  const earliestBoundKey = earliestLoggedKey < cutoffKey ? cutoffKey : earliestLoggedKey;
+  const earliestKey = earliestBoundKey > todayKey ? todayKey : earliestBoundKey;
+
+  const dateKeys: string[] = [];
+  for (let cursor = todayKey; cursor >= earliestKey; cursor = addDays(cursor, -1)) {
+    dateKeys.push(cursor);
+  }
 
   const feedDays: FeedDay[] = dateKeys.map((dateKey) => {
     const dayRows = byDate.get(dateKey) ?? [];

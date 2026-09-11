@@ -62,7 +62,11 @@ export function TeamFeedCard({
           <select
             value={selectedUserId}
             onChange={(e) => onSelectUser(e.target.value)}
-            className="cursor-pointer rounded-chip border border-border bg-bg-panel px-2.5 py-[5px] font-mono text-[11px] text-silk-dim"
+            className={`cursor-pointer rounded-chip border px-2.5 py-[5px] font-mono text-[11.5px] transition-colors ${
+              selectedUserId === "all"
+                ? "border-border bg-bg-panel text-silk-dim hover:border-teal-dim hover:text-teal"
+                : "border-teal-dim bg-teal-dim text-teal"
+            }`}
           >
             <option value="all">전체</option>
             {roster.map((member) => (
@@ -127,12 +131,14 @@ export function TeamFeedCard({
                   <div
                     key={i}
                     onClick={e.mine ? () => onToggleItem(i) : undefined}
-                    className={`flex items-center gap-[8px] text-[12px] ${e.mine ? "cursor-pointer" : ""}`}
+                    className={`group flex w-fit items-center gap-[8px] rounded-md text-[12px] ${
+                      e.mine ? "cursor-pointer" : ""
+                    }`}
                   >
                     <span
-                      className={`flex h-[15px] w-[15px] shrink-0 items-center justify-center rounded-[4px] border border-border ${
-                        item.done ? "border-teal bg-teal" : ""
-                      }`}
+                      className={`flex h-[17px] w-[17px] shrink-0 items-center justify-center rounded-[4px] border transition-colors ${
+                        item.done ? "border-teal bg-teal" : "border-border"
+                      } ${e.mine ? "group-hover:border-teal-dim group-hover:bg-[rgba(72,217,176,0.08)]" : ""}`}
                     >
                       {item.done && (
                         <svg viewBox="0 0 24 24" fill="none" strokeWidth="3" className="h-2 w-2 stroke-[#04231b]">
@@ -140,7 +146,13 @@ export function TeamFeedCard({
                         </svg>
                       )}
                     </span>
-                    <span className={item.done ? "text-silk-faint line-through" : "text-silk-dim"}>{item.text}</span>
+                    <span
+                      className={`${item.done ? "text-silk-faint line-through" : "text-silk-dim"} ${
+                        e.mine ? "group-hover:text-silk" : ""
+                      }`}
+                    >
+                      {item.text}
+                    </span>
                   </div>
                 ))}
               </div>

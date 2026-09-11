@@ -57,7 +57,11 @@ export function DailyBoard({
   const selectedName = roster.find((m) => m.userId === selectedUserId)?.name;
   const noun = data.dateKey === todayKey ? "오늘" : "이날";
   const displayEmptyNote =
-    selectedUserId !== "all" && visibleEntries.length === 0 ? `${selectedName ?? ""}님은 아직 ${noun} 기록을 작성하지 않았어요.` : data.emptyNote;
+    selectedUserId === "all"
+      ? data.emptyNote
+      : visibleEntries.length === 0
+        ? `${selectedName ?? ""}님은 아직 ${noun} 기록을 작성하지 않았어요.`
+        : "";
 
   async function handleToggleItem(index: number) {
     const result = await toggleDailyLogChecklistItem(data.dateKey, index);
