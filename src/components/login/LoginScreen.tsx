@@ -29,7 +29,6 @@ export function LoginScreen() {
   const [loginBtnDisabled, setLoginBtnDisabled] = useState(false);
   const [loginBtnLabel, setLoginBtnLabel] = useState("로그인");
   const [loginErrorVisible, setLoginErrorVisible] = useState(false);
-  const [goHomeVisible, setGoHomeVisible] = useState(false);
 
   const timeoutIds = useRef<number[]>([]);
   const rafId = useRef<number | null>(null);
@@ -72,10 +71,17 @@ export function LoginScreen() {
     BOTTOM_UP_DOM_INDEX.forEach((domIndex, i) => {
       scheduleTimeout(() => setCellFilled(domIndex, true), i * STEP_MS);
     });
-    animateSoc(0, 82, BOTTOM_UP_DOM_INDEX.length * STEP_MS, () => {
+    animateSoc(0, 100, BOTTOM_UP_DOM_INDEX.length * STEP_MS, () => {
       setPill({ label: "CHARGED", error: false });
       setLoginBtnLabel("✓ 로그인 완료");
-      setGoHomeVisible(true);
+      // router.push(소프트 내비게이션)는 프로덕션 빌드에서 라우터 캐시 때문에
+      // 로그인 직후 세션 쿠키를 미들웨어가 못 읽는 경우가 있었다 — 완전한 페이지
+      // 이동(location.href)으로 미들웨어가 최신 쿠키로 다시 평가되게 한다.
+      // 100% 애니메이션이 눈에 보일 시간만 준 뒤 자동으로 넘어간다.
+      scheduleTimeout(() => {
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+        window.location.href = "/";
+      }, 500);
     });
   }
 
@@ -129,17 +135,7 @@ export function LoginScreen() {
         loginErrorVisible={loginErrorVisible}
         loginBtnDisabled={loginBtnDisabled}
         loginBtnLabel={loginBtnLabel}
-        goHomeVisible={goHomeVisible}
         onSubmit={handleSubmit}
-        onGoHome={() => {
-          // router.push(소프트 내비게이션)는 프로덕션 빌드에서 라우터 캐시 때문에
-          // 로그인 직후 세션 쿠키를 미들웨어가 못 읽는 경우가 있었다(원본도
-          // location.href='index.html'로 완전한 페이지 이동이었다 — 그 방식대로
-          // 되돌린다). 로그인 성공 → 인증 상태로의 전환은 미들웨어가 최신 쿠키로
-          // 다시 평가되는 게 더 중요해서 의도적으로 완전 새로고침을 쓴다.
-          // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-          window.location.href = "/";
-        }}
       />
     </div>
   );

@@ -8,9 +8,7 @@ interface LoginFormProps {
   loginErrorVisible: boolean;
   loginBtnDisabled: boolean;
   loginBtnLabel: string;
-  goHomeVisible: boolean;
   onSubmit: (email: string, password: string) => void;
-  onGoHome: () => void;
 }
 
 /**
@@ -23,9 +21,7 @@ export function LoginForm({
   loginErrorVisible,
   loginBtnDisabled,
   loginBtnLabel,
-  goHomeVisible,
   onSubmit,
-  onGoHome,
 }: LoginFormProps) {
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
@@ -106,15 +102,6 @@ export function LoginForm({
             <span className={styles.btnLabel}>{loginBtnLabel}</span>
           </button>
         </form>
-
-        <button
-          type="button"
-          className={`${styles.btn} ${styles.btnPrimary}`}
-          style={{ display: goHomeVisible ? "inline-flex" : "none", marginTop: "10px" }}
-          onClick={onGoHome}
-        >
-          홈으로 이동 →
-        </button>
 
         <div className={styles.divider}>또는</div>
         <button
