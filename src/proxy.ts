@@ -19,8 +19,18 @@ export async function proxy(request: NextRequest) {
   // /auth/*(예: /auth/callback)는 초대 수락/비밀번호 재설정 이메일 링크의 착지점이라
   // 로그인 전 상태에서도 반드시 통과해야 한다 — 여기서 자체적으로 세션을 만든다.
   const isAuthCallback = request.nextUrl.pathname.startsWith("/auth/");
+  // QR 출석(AGENTS.md 11.3절)의 공용 경로들: 연구실 입구에 상시 띄워두는 디스플레이
+  // (/attendance-display)와 그 화면이 폴링하는 토큰 발급(/api/attendance/qr-token)은
+  // 로그인 세션이 없는 공용 기기에서 동작해야 한다. /attendance/checkin(QR 스캔 착지)도
+  // 자체적으로 getCurrentUser()를 확인해 미로그인 시 "unauthenticated" 배너를 보여주므로,
+  // 여기서 먼저 /login으로 가로채면 그 안내가 아예 뜨지 못한다 — 통과시키고 라우트 핸들러에
+  // 맡긴다.
+  const isPublicAttendanceRoute =
+    request.nextUrl.pathname === "/attendance-display" ||
+    request.nextUrl.pathname === "/api/attendance/qr-token" ||
+    request.nextUrl.pathname === "/attendance/checkin";
 
-  if (isAuthCallback) {
+  if (isAuthCallback || isPublicAttendanceRoute) {
     return getResponse();
   }
 

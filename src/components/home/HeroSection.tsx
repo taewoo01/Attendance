@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import type { AttendanceMember } from "@/components/attendance/AttendanceList";
+import { useRotatingCheckinQr } from "@/lib/attendance/useRotatingQr";
 
 type HeroSectionProps = {
   children: ReactNode;
@@ -17,12 +18,13 @@ type HeroSectionProps = {
  * children으로 전달받아 Server Component로 남긴다(불필요한 use client 확대 방지).
  * 원본 DOM 순서(왼쪽 컬럼 → QR 모달 → 출석현황 모달 → scope-frame)를 그대로 유지한다.
  * TASK-030: 인사말/출석현황 모달을 page.tsx가 조회한 실제 profiles/attendance로
- * 채운다. "체크인 완료" 버튼은 /attendance와 동일하게 실제 체크인 로직(QR 토큰
- * 검증)은 구현하지 않아 클릭해도 실제로 저장되지 않는다 — 다만 모달을 열었을 때
- * 보여주는 초기 상태(오늘 이미 체크인했는지)는 이제 실제 DB 값을 반영한다.
+ * 채운다. QR 모달은 CheckinCard와 동일하게 useRotatingCheckinQr(AGENTS.md 11.3절)로
+ * 실제 스캔 가능한 회전 QR을 보여준다 — 수동으로 "완료" 처리하는 버튼은 정적 QR
+ * 우회가 되므로 두지 않는다. checkedIn(오늘 이미 체크인했는지)은 page.tsx가 조회한
+ * 실제 DB 값(initialCheckedIn)을 그대로 쓴다.
  */
 export function HeroSection({ children, myName, initialCheckedIn, attendance }: HeroSectionProps) {
-  const [checkedIn, setCheckedIn] = useState(initialCheckedIn);
+  const checkedIn = initialCheckedIn;
   const [qrOpen, setQrOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
 
@@ -84,251 +86,7 @@ export function HeroSection({ children, myName, initialCheckedIn, attendance }: 
               ✕
             </button>
           </div>
-          <div className="mx-auto mb-4 flex h-[184px] w-[184px] items-center justify-center rounded-input border border-border bg-bg-raised shadow-[0_0_0_1px_rgba(72,217,176,0.06)]">
-            <svg viewBox="0 0 168 168" className="h-[168px] w-[168px]">
-              <g>
-                <rect x="0" y="0" width="8" height="8" />
-                <rect x="8" y="0" width="8" height="8" />
-                <rect x="16" y="0" width="8" height="8" />
-                <rect x="24" y="0" width="8" height="8" />
-                <rect x="32" y="0" width="8" height="8" />
-                <rect x="40" y="0" width="8" height="8" />
-                <rect x="48" y="0" width="8" height="8" />
-                <rect x="56" y="0" width="8" height="8" />
-                <rect x="64" y="0" width="8" height="8" />
-                <rect x="80" y="0" width="8" height="8" />
-                <rect x="96" y="0" width="8" height="8" />
-                <rect x="104" y="0" width="8" height="8" />
-                <rect x="112" y="0" width="8" height="8" />
-                <rect x="120" y="0" width="8" height="8" />
-                <rect x="128" y="0" width="8" height="8" />
-                <rect x="136" y="0" width="8" height="8" />
-                <rect x="144" y="0" width="8" height="8" />
-                <rect x="152" y="0" width="8" height="8" />
-                <rect x="160" y="0" width="8" height="8" />
-                <rect x="0" y="8" width="8" height="8" />
-                <rect x="48" y="8" width="8" height="8" />
-                <rect x="64" y="8" width="8" height="8" />
-                <rect x="80" y="8" width="8" height="8" />
-                <rect x="88" y="8" width="8" height="8" />
-                <rect x="112" y="8" width="8" height="8" />
-                <rect x="160" y="8" width="8" height="8" />
-                <rect x="0" y="16" width="8" height="8" />
-                <rect x="16" y="16" width="8" height="8" />
-                <rect x="24" y="16" width="8" height="8" />
-                <rect x="32" y="16" width="8" height="8" />
-                <rect x="48" y="16" width="8" height="8" />
-                <rect x="56" y="16" width="8" height="8" />
-                <rect x="64" y="16" width="8" height="8" />
-                <rect x="96" y="16" width="8" height="8" />
-                <rect x="112" y="16" width="8" height="8" />
-                <rect x="128" y="16" width="8" height="8" />
-                <rect x="136" y="16" width="8" height="8" />
-                <rect x="144" y="16" width="8" height="8" />
-                <rect x="160" y="16" width="8" height="8" />
-                <rect x="0" y="24" width="8" height="8" />
-                <rect x="16" y="24" width="8" height="8" />
-                <rect x="24" y="24" width="8" height="8" />
-                <rect x="32" y="24" width="8" height="8" />
-                <rect x="48" y="24" width="8" height="8" />
-                <rect x="56" y="24" width="8" height="8" />
-                <rect x="72" y="24" width="8" height="8" />
-                <rect x="80" y="24" width="8" height="8" />
-                <rect x="88" y="24" width="8" height="8" />
-                <rect x="96" y="24" width="8" height="8" />
-                <rect x="112" y="24" width="8" height="8" />
-                <rect x="128" y="24" width="8" height="8" />
-                <rect x="136" y="24" width="8" height="8" />
-                <rect x="144" y="24" width="8" height="8" />
-                <rect x="160" y="24" width="8" height="8" />
-                <rect x="0" y="32" width="8" height="8" />
-                <rect x="16" y="32" width="8" height="8" />
-                <rect x="24" y="32" width="8" height="8" />
-                <rect x="32" y="32" width="8" height="8" />
-                <rect x="48" y="32" width="8" height="8" />
-                <rect x="56" y="32" width="8" height="8" />
-                <rect x="80" y="32" width="8" height="8" />
-                <rect x="96" y="32" width="8" height="8" />
-                <rect x="104" y="32" width="8" height="8" />
-                <rect x="112" y="32" width="8" height="8" />
-                <rect x="128" y="32" width="8" height="8" />
-                <rect x="136" y="32" width="8" height="8" />
-                <rect x="144" y="32" width="8" height="8" />
-                <rect x="160" y="32" width="8" height="8" />
-                <rect x="0" y="40" width="8" height="8" />
-                <rect x="48" y="40" width="8" height="8" />
-                <rect x="56" y="40" width="8" height="8" />
-                <rect x="80" y="40" width="8" height="8" />
-                <rect x="104" y="40" width="8" height="8" />
-                <rect x="112" y="40" width="8" height="8" />
-                <rect x="160" y="40" width="8" height="8" />
-                <rect x="0" y="48" width="8" height="8" />
-                <rect x="8" y="48" width="8" height="8" />
-                <rect x="16" y="48" width="8" height="8" />
-                <rect x="24" y="48" width="8" height="8" />
-                <rect x="32" y="48" width="8" height="8" />
-                <rect x="40" y="48" width="8" height="8" />
-                <rect x="48" y="48" width="8" height="8" />
-                <rect x="72" y="48" width="8" height="8" />
-                <rect x="112" y="48" width="8" height="8" />
-                <rect x="120" y="48" width="8" height="8" />
-                <rect x="128" y="48" width="8" height="8" />
-                <rect x="136" y="48" width="8" height="8" />
-                <rect x="144" y="48" width="8" height="8" />
-                <rect x="152" y="48" width="8" height="8" />
-                <rect x="160" y="48" width="8" height="8" />
-                <rect x="0" y="56" width="8" height="8" />
-                <rect x="16" y="56" width="8" height="8" />
-                <rect x="24" y="56" width="8" height="8" />
-                <rect x="40" y="56" width="8" height="8" />
-                <rect x="56" y="56" width="8" height="8" />
-                <rect x="96" y="56" width="8" height="8" />
-                <rect x="0" y="64" width="8" height="8" />
-                <rect x="40" y="64" width="8" height="8" />
-                <rect x="48" y="64" width="8" height="8" />
-                <rect x="64" y="64" width="8" height="8" />
-                <rect x="80" y="64" width="8" height="8" />
-                <rect x="88" y="64" width="8" height="8" />
-                <rect x="96" y="64" width="8" height="8" />
-                <rect x="112" y="64" width="8" height="8" />
-                <rect x="120" y="64" width="8" height="8" />
-                <rect x="128" y="64" width="8" height="8" />
-                <rect x="144" y="64" width="8" height="8" />
-                <rect x="24" y="72" width="8" height="8" />
-                <rect x="32" y="72" width="8" height="8" />
-                <rect x="40" y="72" width="8" height="8" />
-                <rect x="64" y="72" width="8" height="8" />
-                <rect x="72" y="72" width="8" height="8" />
-                <rect x="80" y="72" width="8" height="8" />
-                <rect x="88" y="72" width="8" height="8" />
-                <rect x="112" y="72" width="8" height="8" />
-                <rect x="120" y="72" width="8" height="8" />
-                <rect x="128" y="72" width="8" height="8" />
-                <rect x="136" y="72" width="8" height="8" />
-                <rect x="24" y="80" width="8" height="8" />
-                <rect x="64" y="80" width="8" height="8" />
-                <rect x="72" y="80" width="8" height="8" />
-                <rect x="80" y="80" width="8" height="8" />
-                <rect x="96" y="80" width="8" height="8" />
-                <rect x="104" y="80" width="8" height="8" />
-                <rect x="112" y="80" width="8" height="8" />
-                <rect x="120" y="80" width="8" height="8" />
-                <rect x="128" y="80" width="8" height="8" />
-                <rect x="136" y="80" width="8" height="8" />
-                <rect x="144" y="80" width="8" height="8" />
-                <rect x="152" y="80" width="8" height="8" />
-                <rect x="160" y="80" width="8" height="8" />
-                <rect x="0" y="88" width="8" height="8" />
-                <rect x="8" y="88" width="8" height="8" />
-                <rect x="32" y="88" width="8" height="8" />
-                <rect x="40" y="88" width="8" height="8" />
-                <rect x="48" y="88" width="8" height="8" />
-                <rect x="56" y="88" width="8" height="8" />
-                <rect x="64" y="88" width="8" height="8" />
-                <rect x="104" y="88" width="8" height="8" />
-                <rect x="112" y="88" width="8" height="8" />
-                <rect x="120" y="88" width="8" height="8" />
-                <rect x="128" y="88" width="8" height="8" />
-                <rect x="144" y="88" width="8" height="8" />
-                <rect x="152" y="88" width="8" height="8" />
-                <rect x="8" y="96" width="8" height="8" />
-                <rect x="24" y="96" width="8" height="8" />
-                <rect x="64" y="96" width="8" height="8" />
-                <rect x="72" y="96" width="8" height="8" />
-                <rect x="80" y="96" width="8" height="8" />
-                <rect x="112" y="96" width="8" height="8" />
-                <rect x="120" y="96" width="8" height="8" />
-                <rect x="8" y="104" width="8" height="8" />
-                <rect x="24" y="104" width="8" height="8" />
-                <rect x="32" y="104" width="8" height="8" />
-                <rect x="40" y="104" width="8" height="8" />
-                <rect x="48" y="104" width="8" height="8" />
-                <rect x="56" y="104" width="8" height="8" />
-                <rect x="112" y="104" width="8" height="8" />
-                <rect x="120" y="104" width="8" height="8" />
-                <rect x="128" y="104" width="8" height="8" />
-                <rect x="136" y="104" width="8" height="8" />
-                <rect x="144" y="104" width="8" height="8" />
-                <rect x="0" y="112" width="8" height="8" />
-                <rect x="8" y="112" width="8" height="8" />
-                <rect x="16" y="112" width="8" height="8" />
-                <rect x="24" y="112" width="8" height="8" />
-                <rect x="32" y="112" width="8" height="8" />
-                <rect x="40" y="112" width="8" height="8" />
-                <rect x="48" y="112" width="8" height="8" />
-                <rect x="88" y="112" width="8" height="8" />
-                <rect x="136" y="112" width="8" height="8" />
-                <rect x="152" y="112" width="8" height="8" />
-                <rect x="0" y="120" width="8" height="8" />
-                <rect x="48" y="120" width="8" height="8" />
-                <rect x="64" y="120" width="8" height="8" />
-                <rect x="72" y="120" width="8" height="8" />
-                <rect x="96" y="120" width="8" height="8" />
-                <rect x="104" y="120" width="8" height="8" />
-                <rect x="112" y="120" width="8" height="8" />
-                <rect x="136" y="120" width="8" height="8" />
-                <rect x="0" y="128" width="8" height="8" />
-                <rect x="16" y="128" width="8" height="8" />
-                <rect x="24" y="128" width="8" height="8" />
-                <rect x="32" y="128" width="8" height="8" />
-                <rect x="48" y="128" width="8" height="8" />
-                <rect x="56" y="128" width="8" height="8" />
-                <rect x="72" y="128" width="8" height="8" />
-                <rect x="80" y="128" width="8" height="8" />
-                <rect x="144" y="128" width="8" height="8" />
-                <rect x="152" y="128" width="8" height="8" />
-                <rect x="160" y="128" width="8" height="8" />
-                <rect x="0" y="136" width="8" height="8" />
-                <rect x="16" y="136" width="8" height="8" />
-                <rect x="24" y="136" width="8" height="8" />
-                <rect x="32" y="136" width="8" height="8" />
-                <rect x="48" y="136" width="8" height="8" />
-                <rect x="56" y="136" width="8" height="8" />
-                <rect x="72" y="136" width="8" height="8" />
-                <rect x="80" y="136" width="8" height="8" />
-                <rect x="88" y="136" width="8" height="8" />
-                <rect x="104" y="136" width="8" height="8" />
-                <rect x="0" y="144" width="8" height="8" />
-                <rect x="16" y="144" width="8" height="8" />
-                <rect x="24" y="144" width="8" height="8" />
-                <rect x="32" y="144" width="8" height="8" />
-                <rect x="48" y="144" width="8" height="8" />
-                <rect x="64" y="144" width="8" height="8" />
-                <rect x="80" y="144" width="8" height="8" />
-                <rect x="88" y="144" width="8" height="8" />
-                <rect x="104" y="144" width="8" height="8" />
-                <rect x="136" y="144" width="8" height="8" />
-                <rect x="0" y="152" width="8" height="8" />
-                <rect x="48" y="152" width="8" height="8" />
-                <rect x="56" y="152" width="8" height="8" />
-                <rect x="72" y="152" width="8" height="8" />
-                <rect x="80" y="152" width="8" height="8" />
-                <rect x="0" y="160" width="8" height="8" />
-                <rect x="8" y="160" width="8" height="8" />
-                <rect x="16" y="160" width="8" height="8" />
-                <rect x="24" y="160" width="8" height="8" />
-                <rect x="32" y="160" width="8" height="8" />
-                <rect x="40" y="160" width="8" height="8" />
-                <rect x="48" y="160" width="8" height="8" />
-                <rect x="112" y="160" width="8" height="8" />
-                <rect x="144" y="160" width="8" height="8" />
-                <rect x="152" y="160" width="8" height="8" />
-              </g>
-            </svg>
-          </div>
-          <p className="m-0 mb-4 text-center text-[12.5px] leading-[1.5] text-silk-dim">
-            연구실 입구 QR을 스캔하거나 아래 버튼으로 체크인하세요
-          </p>
-          <button
-            type="button"
-            onClick={() => {
-              setQrOpen(false);
-              setCheckedIn(true);
-            }}
-            className="inline-flex w-full cursor-pointer items-center justify-center gap-2 border border-teal bg-teal px-5 py-[13px] text-[13.5px] font-semibold text-[#04231b]"
-          >
-            ▸ 체크인 완료
-          </button>
+          {qrOpen && <HeroQrModalBody />}
         </div>
       </div>
 
@@ -395,5 +153,27 @@ export function HeroSection({ children, myName, initialCheckedIn, attendance }: 
 
       {children}
     </header>
+  );
+}
+
+function HeroQrModalBody() {
+  const { qrDataUrl, error } = useRotatingCheckinQr(184);
+
+  return (
+    <>
+      <div className="mx-auto mb-4 flex h-[184px] w-[184px] items-center justify-center rounded-input border border-border bg-bg-raised shadow-[0_0_0_1px_rgba(72,217,176,0.06)]">
+        {qrDataUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={qrDataUrl} alt="출석 체크인 QR 코드" className="h-full w-full" />
+        ) : (
+          <p className="font-mono text-xs text-silk-faint">
+            {error ? "QR을 불러오지 못했습니다. 재시도 중..." : "QR 생성 중..."}
+          </p>
+        )}
+      </div>
+      <p className="m-0 text-center text-[12.5px] leading-[1.5] text-silk-dim">
+        이 QR을 폰 카메라로 스캔하면 체크인됩니다 · QR은 주기적으로 갱신됩니다
+      </p>
+    </>
   );
 }

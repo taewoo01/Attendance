@@ -1,3 +1,8 @@
+"use client";
+
+import { useState } from "react";
+import { useRotatingCheckinQr } from "@/lib/attendance/useRotatingQr";
+
 export type CheckinBannerStatus = "ok" | "already" | "invalid_token" | "unauthenticated";
 
 const BANNER_TEXT: Record<CheckinBannerStatus, string> = {
@@ -25,18 +30,25 @@ type CheckinCardProps = {
 
 /**
  * playground-design/attendance.html의 .card(QR 체크인 카드).
- * 원본의 QR 그림은 실제로 스캔 가능한 QR이 아니라 장식용 픽셀 패턴이다 — 실제 회전형
- * QR(AGENTS.md 11.3절)은 별도 입구 디스플레이(/attendance-display)에 띄우고, 이 카드는
- * 본인 화면에서 "내가 오늘 체크인했는지"만 보여준다. 정적 QR 우회를 막기 위해 QR 없이
- * 바로 체크인되는 수동 버튼은 두지 않는다(체크아웃 버튼은 원본에서도 disabled 정적 상태 —
- * 이번 작업 범위 밖).
+ * 카드에 그려진 픽셀 그림은 실제로 스캔 가능한 QR이 아니라 장식용 패턴이다 — 탭하면
+ * 열리는 모달에서 실제 회전형 QR(AGENTS.md 11.3절, useRotatingCheckinQr)을 보여준다.
+ * 입구에 전용 디스플레이(/attendance-display)가 없을 때도 이 모달로 그 자리를 대신할
+ * 수 있다. 정적 QR 우회를 막기 위해 QR 없이 바로 체크인되는 수동 버튼은 두지 않는다
+ * (체크아웃 버튼은 원본에서도 disabled 정적 상태 — 이번 작업 범위 밖).
  */
 export function CheckinCard({ checkedInAt, bannerStatus }: CheckinCardProps) {
+  const [modalOpen, setModalOpen] = useState(false);
+
   return (
     <div className="rounded-card border border-border bg-bg-panel px-6 pt-[26px] pb-6">
       <p className="m-0 mb-[18px] font-mono text-[11px] tracking-[0.14em] text-silk-faint">QR CHECK-IN</p>
 
-      <div className="mx-auto mb-5 flex h-[184px] w-[184px] items-center justify-center rounded-input border border-border bg-bg-raised shadow-[0_0_0_1px_rgba(72,217,176,0.06),0_20px_40px_-18px_rgba(0,0,0,0.6)]">
+      <button
+        type="button"
+        onClick={() => setModalOpen(true)}
+        aria-label="실제 체크인 QR 크게 보기"
+        className="mx-auto mb-5 flex h-[184px] w-[184px] cursor-pointer items-center justify-center rounded-input border border-border bg-bg-raised shadow-[0_0_0_1px_rgba(72,217,176,0.06),0_20px_40px_-18px_rgba(0,0,0,0.6)]"
+      >
         <svg viewBox="0 0 168 168" className="h-[168px] w-[168px]">
           <g>
             <rect x="0" y="0" width="8" height="8" />
@@ -267,7 +279,7 @@ export function CheckinCard({ checkedInAt, bannerStatus }: CheckinCardProps) {
             <rect x="152" y="160" width="8" height="8" />
           </g>
         </svg>
-      </div>
+      </button>
 
       <div
         className={`mx-auto mb-[18px] flex w-fit items-center justify-center gap-2 rounded-pill border border-border bg-bg-raised px-[14px] py-2 font-mono text-[12.5px] ${
@@ -299,8 +311,53 @@ export function CheckinCard({ checkedInAt, bannerStatus }: CheckinCardProps) {
       </div>
 
       <p className="m-0 mt-4 text-center font-mono text-[11px] text-silk-faint">
-        연구실 입구 화면의 QR을 폰 카메라로 스캔해 체크인하세요
+        위 QR을 탭하면 실제 체크인 QR을 볼 수 있어요 · 폰 카메라로 스캔해 체크인하세요
       </p>
+
+      {modalOpen && <CheckinQrModal onClose={() => setModalOpen(false)} />}
+    </div>
+  );
+}
+
+function CheckinQrModal({ onClose }: { onClose: () => void }) {
+  const { qrDataUrl, error } = useRotatingCheckinQr(320);
+
+  return (
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-[rgba(4,10,8,0.65)] p-5"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="w-full max-w-[380px] rounded-card border border-border bg-bg-panel">
+        <div className="flex items-start justify-between gap-3 border-b border-border px-[22px] py-[18px]">
+          <h3 className="m-0 text-[14.5px] font-semibold">체크인 QR</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="닫기"
+            className="cursor-pointer border-none bg-transparent px-1 py-0.5 text-xl leading-none text-silk-faint hover:text-silk"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="flex flex-col items-center gap-4 px-[22px] pt-5 pb-[22px]">
+          <div className="flex h-[320px] w-[320px] items-center justify-center rounded-input border border-border bg-bg-raised p-4">
+            {qrDataUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={qrDataUrl} alt="출석 체크인 QR 코드" className="h-full w-full" />
+            ) : (
+              <p className="font-mono text-xs text-silk-faint">
+                {error ? "QR을 불러오지 못했습니다. 재시도 중..." : "QR 생성 중..."}
+              </p>
+            )}
+          </div>
+          <p className="m-0 text-center font-mono text-[11px] text-silk-faint">
+            다른 팀원이 폰 카메라로 이 QR을 스캔하면 체크인됩니다 · QR은 주기적으로 갱신됩니다
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
