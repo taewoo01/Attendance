@@ -1,0 +1,1 @@
+ALTER TABLE "personal_events" ADD COLUMN "team" boolean DEFAULT false NOT NULL;

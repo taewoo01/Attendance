@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { db } from "@/lib/db/client";
@@ -26,6 +26,7 @@ export async function createPersonalEvent(formData: FormData): Promise<CreatePer
   const eventDate = String(formData.get("eventDate") ?? "").trim();
   const eventTime = String(formData.get("eventTime") ?? "").trim();
   const eventEndTime = String(formData.get("eventEndTime") ?? "").trim();
+  const team = formData.get("team") === "true";
 
   if (!title) {
     return { error: "일정 제목을 입력해 주세요." };
@@ -40,6 +41,7 @@ export async function createPersonalEvent(formData: FormData): Promise<CreatePer
     eventTime,
     eventEndTime: eventEndTime || null,
     title,
+    team,
   });
 
   revalidatePath("/schedule");
@@ -50,9 +52,11 @@ export async function createPersonalEvent(formData: FormData): Promise<CreatePer
 export type UpdatePersonalEventState = { error?: string; success?: boolean };
 
 /**
- * 개인 일정 수정 Server Action. createPersonalEvent와 동일한 검증을 거치고,
- * deletePersonalEvent와 동일하게 WHERE 절에 userId를 포함해 본인 소유가 아니면
- * 수정되지 않게 한다(personal_events_update_own RLS와 같은 원칙).
+ * 개인/팀 일정 수정 Server Action. createPersonalEvent와 동일한 검증을 거치고,
+ * WHERE 절에서 본인 소유이거나 팀 일정(team = true)이면 수정을 허용한다
+ * (personal_events_update_own/update_team RLS와 같은 원칙 — 팀 일정은 등록자와
+ * 무관하게 팀원 누구나 수정할 수 있다). "구분" 자체(team 값)는 등록 이후
+ * 바꿀 수 없다 — 이 액션은 title/eventDate/eventTime/eventEndTime만 갱신한다.
  */
 export async function updatePersonalEvent(id: string, formData: FormData): Promise<UpdatePersonalEventState> {
   const user = await getCurrentUser();
@@ -75,7 +79,9 @@ export async function updatePersonalEvent(id: string, formData: FormData): Promi
   const updated = await db
     .update(personalEvents)
     .set({ title, eventDate, eventTime, eventEndTime: eventEndTime || null })
-    .where(and(eq(personalEvents.id, id), eq(personalEvents.userId, user.id)))
+    .where(
+      and(eq(personalEvents.id, id), or(eq(personalEvents.userId, user.id), eq(personalEvents.team, true))),
+    )
     .returning({ id: personalEvents.id });
 
   if (updated.length === 0) {
@@ -90,10 +96,10 @@ export async function updatePersonalEvent(id: string, formData: FormData): Promi
 export type DeletePersonalEventState = { error?: string; success?: boolean };
 
 /**
- * 개인 일정 삭제 Server Action. 본인 소유가 아니면 조용히 실패하지 않고
- * 명시적으로 거부한다 — WHERE 절에 userId를 포함해 DB 레벨에서도 다른
- * 사람의 일정을 삭제할 수 없게 한다(RLS의 personal_events_delete_own 정책과
- * 같은 원칙을 서버 DATABASE_URL 경로에도 동일하게 적용).
+ * 개인/팀 일정 삭제 Server Action. 본인 소유가 아니고 팀 일정도 아니면 조용히
+ * 실패하지 않고 명시적으로 거부한다 — updatePersonalEvent와 동일하게 팀 일정은
+ * 등록자와 무관하게 팀원 누구나 삭제할 수 있다(RLS의 personal_events_delete_own/
+ * delete_team 정책과 같은 원칙을 서버 DATABASE_URL 경로에도 동일하게 적용).
  */
 export async function deletePersonalEvent(id: string): Promise<DeletePersonalEventState> {
   const user = await getCurrentUser();
@@ -103,7 +109,9 @@ export async function deletePersonalEvent(id: string): Promise<DeletePersonalEve
 
   const deleted = await db
     .delete(personalEvents)
-    .where(and(eq(personalEvents.id, id), eq(personalEvents.userId, user.id)))
+    .where(
+      and(eq(personalEvents.id, id), or(eq(personalEvents.userId, user.id), eq(personalEvents.team, true))),
+    )
     .returning({ id: personalEvents.id });
 
   if (deleted.length === 0) {

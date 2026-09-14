@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { TEAM_CAP, formatTimeRange, type MonthCell, type OwnerFilter } from "@/lib/schedule/calendar";
+import { EVENT_TYPE_COLOR, TEAM_CAP, formatTimeRange, type MonthCell, type OwnerFilter } from "@/lib/schedule/calendar";
 
 const DOW_LABELS = ["월", "화", "수", "목", "금", "토", "일"];
 
@@ -76,7 +76,7 @@ export function MonthView({ cells, owner }: MonthViewProps) {
             {cell.dots && (
               <div className="mt-1 flex gap-[3px]">
                 {cell.dots.map((dot, j) => (
-                  <i key={j} className={`inline-block h-[5px] w-[5px] rounded-full ${dot === "personal" ? "bg-teal" : "bg-amber"}`} />
+                  <i key={j} className={`inline-block h-[5px] w-[5px] rounded-full ${EVENT_TYPE_COLOR[dot].dot}`} />
                 ))}
               </div>
             )}
@@ -88,7 +88,7 @@ export function MonthView({ cells, owner }: MonthViewProps) {
                     key={j}
                     className={`overflow-hidden rounded-badge px-[5px] py-1 text-[9px] leading-[1.3] border-l-2 ${
                       cell.muted ? "bg-[rgba(231,239,236,0.03)]" : "bg-bg-raised"
-                    } ${ev.type === "personal" ? "border-l-teal" : "border-l-amber"}`}
+                    } ${EVENT_TYPE_COLOR[ev.type].border}`}
                   >
                     <span className="block overflow-hidden text-ellipsis whitespace-nowrap">
                       {formatTimeRange(ev.time, ev.endTime)} {ev.label}

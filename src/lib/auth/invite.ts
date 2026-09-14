@@ -2,6 +2,7 @@
 
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { getCanInvite } from "@/lib/auth/can-invite";
+import { getRequestOrigin } from "@/lib/auth/request-origin";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export type InviteActionState = { error?: string; success?: boolean };
@@ -13,6 +14,8 @@ export type InviteActionState = { error?: string; success?: boolean };
  * 가져온다 — formData가 신뢰하는 값은 email 하나뿐이다.
  * can_invite=true로 seed된 사용자가 없는 한(초기 창업 멤버 4명, drizzle/sql/seed-founders.template.sql)
  * 모든 요청이 fail closed로 거부된다.
+ * redirectTo는 resetPasswordAction과 동일하게 요청 헤더(host/x-forwarded-proto)로
+ * 재구성한다 — /auth/callback이 초대 이메일 링크의 착지점이다.
  */
 export async function inviteTeamMember(
   _prevState: InviteActionState,
@@ -34,8 +37,11 @@ export async function inviteTeamMember(
     return { error: "이메일을 입력해 주세요." };
   }
 
+  const origin = await getRequestOrigin();
   const supabaseAdmin = createAdminClient();
-  const { error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email);
+  const { error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+    redirectTo: `${origin}/auth/callback`,
+  });
 
   if (error) {
     return { error: "초대 처리 중 오류가 발생했습니다." };

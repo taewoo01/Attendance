@@ -20,6 +20,8 @@ export type PersonalEventRow = {
   eventTime: string;
   eventEndTime: string | null;
   title: string;
+  /** true면 등록자와 무관하게 팀원 누구나 수정/삭제할 수 있는 "팀 일정"이다. */
+  team: boolean;
   name: string | null;
 };
 
@@ -33,15 +35,17 @@ export type FixedScheduleRow = {
   name: string | null;
 };
 
+export type EventType = "personal" | "team" | "fixed";
+
 export type WeekEvent = {
   id?: string;
   time: string;
-  /** personal 타입에만 존재 — 종료 시간을 입력하지 않았으면 undefined(시작 시간만 표시). */
+  /** personal/team 타입에만 존재 — 종료 시간을 입력하지 않았으면 undefined(시작 시간만 표시). */
   endTime?: string;
   label: string;
-  type: "personal" | "fixed";
+  type: EventType;
   owner: "me" | "team";
-  /** personal 타입 + owner "me"일 때만 존재 — 수정 모달을 채우는 데 쓴다. */
+  /** personal/team 타입 + owner "me"일 때만 존재 — 수정 모달을 채우는 데 쓴다. */
   eventDate?: string;
   title?: string;
 };
@@ -50,12 +54,12 @@ export type WeekDay = { dow: string; date: number; today?: boolean; events: Week
 export type MonthEvent = {
   id?: string;
   time: string;
-  /** personal 타입에만 존재 — 종료 시간을 입력하지 않았으면 undefined(시작 시간만 표시). */
+  /** personal/team 타입에만 존재 — 종료 시간을 입력하지 않았으면 undefined(시작 시간만 표시). */
   endTime?: string;
   label: string;
-  type: "personal" | "fixed";
+  type: EventType;
   owner: "me" | "team";
-  /** personal 타입 + owner "me"일 때만 존재 — 수정 모달을 채우는 데 쓴다. */
+  /** personal/team 타입 + owner "me"일 때만 존재 — 수정 모달을 채우는 데 쓴다. */
   eventDate?: string;
   title?: string;
 };
@@ -66,7 +70,7 @@ export type MonthCell = {
   muted?: boolean;
   today?: boolean;
   count?: string;
-  dots?: Array<"personal" | "fixed">;
+  dots?: EventType[];
   /** 해당 날짜의 전체 이벤트(자르지 않은 원본) — "팀 전체" 뷰에서 몇 개까지 보여줄지/
    * 펼쳤는지는 MonthView가 (week view와 동일하게) 렌더링 시점에 결정한다. */
   events?: MonthEvent[];
@@ -74,6 +78,13 @@ export type MonthCell = {
 
 /** "팀 전체" 뷰(owner !== "me")에서 하루에 보여줄 기본 이벤트 개수. week/month view가 공유한다. */
 export const TEAM_CAP = 2;
+
+/** week/month view가 공유하는 이벤트 타입별 색상(왼쪽 테두리/점). */
+export const EVENT_TYPE_COLOR: Record<EventType, { border: string; dot: string }> = {
+  personal: { border: "border-l-teal", dot: "bg-teal" },
+  team: { border: "border-l-[#4a9eff]", dot: "bg-[#4a9eff]" },
+  fixed: { border: "border-l-amber", dot: "bg-amber" },
+};
 
 /** 종료 시간이 있으면 "시작–종료", 없으면 시작 시간만. */
 export function formatTimeRange(time: string, endTime?: string): string {
@@ -102,7 +113,7 @@ export function buildWeekDays(
           time: e.eventTime,
           endTime: e.eventEndTime ?? undefined,
           label: `${e.name ?? ""} · ${e.title}`,
-          type: "personal" as const,
+          type: (e.team ? "team" : "personal") as EventType,
           owner: (userId && e.userId === userId ? "me" : "team") as "me" | "team",
           eventDate: dateKey,
           title: e.title,
@@ -174,7 +185,7 @@ export function buildMonthCells(
         time: e.eventTime,
         endTime: e.eventEndTime ?? undefined,
         label: `${e.name ?? ""}·${e.title}`,
-        type: "personal" as const,
+        type: (e.team ? "team" : "personal") as EventType,
         owner: (userId && e.userId === userId ? "me" : "team") as "me" | "team",
         eventDate: dateKey,
         title: e.title,
@@ -187,8 +198,9 @@ export function buildMonthCells(
       })),
     ];
 
-    const dots: Array<"personal" | "fixed"> = [
-      ...(dayPersonalEvents.length > 0 ? (["personal"] as const) : []),
+    const dots: EventType[] = [
+      ...(dayPersonalEvents.some((e) => !e.team) ? (["personal"] as const) : []),
+      ...(dayPersonalEvents.some((e) => e.team) ? (["team"] as const) : []),
       ...(dayFixedSchedules.length > 0 ? (["fixed"] as const) : []),
     ];
 

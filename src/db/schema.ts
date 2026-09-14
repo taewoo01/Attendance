@@ -344,6 +344,14 @@ export const personalEvents = pgTable("personal_events", {
   /** 종료 시간은 선택 입력이라 nullable — 없으면 시작 시간만 표시한다. */
   eventEndTime: text("event_end_time"),
   title: text("title").notNull().default(""),
+  /**
+   * 일정 페이지 "구분" 3분화: 개인 일정(false)과 달리 팀 일정(true)은 등록자와
+   * 무관하게 팀원 누구나 수정/삭제할 수 있다(achievements.team과 동일한
+   * boolean 컨벤션 재사용 — 새 테이블을 만들지 않고 personal_events를 그대로 쓴다).
+   * 권한 검증은 서버 액션(src/lib/schedule/actions.ts)의 WHERE 절이 담당하고,
+   * RLS도 personal_events_update_team/delete_team 정책으로 동일하게 반영한다.
+   */
+  team: boolean("team").notNull().default(false),
 });
 
 /**
@@ -384,3 +392,21 @@ export const files = pgTable("files", {
   sizeBytes: integer("size_bytes").notNull().default(0),
   uploadedAt: timestamp("uploaded_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * 자료실 "새 폴더" 기능. files.folder는 파일에 붙은 자유 텍스트 태그일 뿐이라
+ * 파일이 하나도 없는 폴더는 표현할 수 없었다("새 폴더" 카드가 클릭해도 아무
+ * 동작 없는 장식이었던 이유). 빈 폴더도 만들고 목록에 보이려면 폴더 자체를
+ * 별도로 저장해야 해서 신규 테이블로 추가한다. files.folder와 FK로 묶지 않고
+ * 이름으로만 매칭한다(폴더를 지워도 이미 태그된 파일이 깨지지 않게).
+ */
+export const folders = pgTable(
+  "folders",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").references(() => authUsers.id, { onDelete: "set null" }),
+    name: text("name").notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("folders_name_unique").on(table.name)],
+);

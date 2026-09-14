@@ -3,6 +3,7 @@ import { StatusBar } from "@/components/layout/StatusBar";
 import { Footer } from "@/components/layout/Footer";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { getProfileByUserId } from "@/lib/db/profiles";
+import { listRecentActivity } from "@/lib/notifications/activity";
 
 /**
  * 기존 10개 페이지(/,  /attendance, /schedule, /results, /daily, /ideas,
@@ -23,13 +24,13 @@ import { getProfileByUserId } from "@/lib/db/profiles";
  * defaultName으로 미리 채워서 다시 입력하지 않게 한다.
  */
 export default async function MainLayout({ children }: { children: React.ReactNode }) {
-  const user = await getCurrentUser();
+  const [user, notifications] = await Promise.all([getCurrentUser(), listRecentActivity()]);
   const profile = user ? await getProfileByUserId(user.id) : null;
   const needsProfile = !!user && (!profile?.name || !profile?.contact);
 
   return (
     <>
-      <StatusBar userName={profile?.name || undefined} />
+      <StatusBar userName={profile?.name || undefined} notifications={notifications} />
       <main className="flex-1">{children}</main>
       <Footer />
       {needsProfile && (

@@ -61,8 +61,11 @@ export default async function SchedulePage() {
         time: e.eventTime,
         endTime: e.eventEndTime ?? undefined,
         title: `${e.name ?? ""} · ${e.title}`,
-        sub: "개인 일정",
-        ...(user && e.userId === user.id ? { id: e.id, eventDate: e.eventDate, rawTitle: e.title } : {}),
+        sub: e.team ? "팀 일정" : "개인 일정",
+        // 본인 소유 개인 일정이거나 팀 일정(등록자 무관, 누구나 수정 가능)이면 수정 모달을 연결한다.
+        ...(user && (e.userId === user.id || e.team)
+          ? { id: e.id, eventDate: e.eventDate, rawTitle: e.title, isTeam: e.team }
+          : {}),
       })),
     ...fixedSchedules
       .filter((f) => f.dayOfWeek === DOW_KO[weekdayIndex(todayKey)])
@@ -96,7 +99,7 @@ export default async function SchedulePage() {
   }));
 
   const myPersonalEvents: PersonalEventItem[] = personalEvents
-    .filter((e) => user && e.userId === user.id)
+    .filter((e) => !e.team && user && e.userId === user.id)
     .sort((a, b) => `${a.eventDate}T${a.eventTime}`.localeCompare(`${b.eventDate}T${b.eventTime}`))
     .map((e) => {
       const [, m, d] = e.eventDate.split("-").map(Number);
@@ -108,6 +111,24 @@ export default async function SchedulePage() {
         eventDate: e.eventDate,
         eventTime: e.eventTime,
         eventEndTime: e.eventEndTime ?? undefined,
+      };
+    });
+
+  // 팀 일정은 본인 것만이 아니라 team=true 전체를 보여준다(등록자 무관, 팀원 누구나 수정/삭제 가능).
+  const teamEvents: PersonalEventItem[] = personalEvents
+    .filter((e) => e.team)
+    .sort((a, b) => `${a.eventDate}T${a.eventTime}`.localeCompare(`${b.eventDate}T${b.eventTime}`))
+    .map((e) => {
+      const [, m, d] = e.eventDate.split("-").map(Number);
+      return {
+        id: e.id,
+        dateLabel: `${m}/${d}`,
+        title: e.title,
+        time: formatTimeRange(e.eventTime, e.eventEndTime ?? undefined),
+        eventDate: e.eventDate,
+        eventTime: e.eventTime,
+        eventEndTime: e.eventEndTime ?? undefined,
+        name: e.name ?? undefined,
       };
     });
 
@@ -139,6 +160,7 @@ export default async function SchedulePage() {
           fixedSchedule={myFixedSchedule}
           allFixedSchedule={allFixedSchedule}
           personalEvents={myPersonalEvents}
+          teamEvents={teamEvents}
           userId={user?.id}
         />
       </div>

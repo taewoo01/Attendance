@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import {
+  EVENT_TYPE_COLOR,
   TEAM_CAP,
   addDays,
   addMonths,
@@ -170,9 +171,7 @@ export function ScheduleCalendar({ personalEvents, fixedSchedules, todayKey, use
                   {visible.map((ev, i) => (
                     <div
                       key={ev.id ?? i}
-                      className={`rounded-[5px] bg-bg-raised px-[6px] py-1 text-[10px] leading-[1.35] border-l-2 ${
-                        ev.type === "personal" ? "border-l-teal" : "border-l-amber"
-                      }`}
+                      className={`rounded-[5px] bg-bg-raised px-[6px] py-1 text-[10px] leading-[1.35] border-l-2 ${EVENT_TYPE_COLOR[ev.type].border}`}
                     >
                       <span className="block font-mono text-[9px] text-silk-faint">{formatTimeRange(ev.time, ev.endTime)}</span>
                       {ev.label}

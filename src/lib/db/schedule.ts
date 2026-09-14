@@ -17,6 +17,7 @@ export async function listPersonalEvents() {
       eventTime: personalEvents.eventTime,
       eventEndTime: personalEvents.eventEndTime,
       title: personalEvents.title,
+      team: personalEvents.team,
       name: profiles.name,
     })
     .from(personalEvents)

@@ -1,3 +1,4 @@
+import { DeleteFileButton } from "@/components/files/DeleteFileButton";
 import { DownloadButton } from "@/components/files/DownloadButton";
 import { type FileKind } from "@/lib/files/format";
 
@@ -8,6 +9,8 @@ export type FileEntry = {
   uploader: string;
   size: string;
   date: string;
+  /** 로그인한 본인이 올린 파일인지 — true일 때만 삭제 버튼을 보여준다. */
+  isOwner: boolean;
 };
 
 type FileListProps = {
@@ -74,7 +77,10 @@ export function FileList({ files }: FileListProps) {
           </div>
           <div className="font-mono text-[11.5px] text-silk-dim max-[640px]:hidden">{file.size}</div>
           <div className="font-mono text-[11.5px] text-silk-faint max-[640px]:hidden">{file.date}</div>
-          <DownloadButton fileId={file.id} />
+          <div className="ml-auto flex items-center gap-1.5">
+            <DownloadButton fileId={file.id} />
+            {file.isOwner && <DeleteFileButton fileId={file.id} />}
+          </div>
         </div>
       ))}
     </div>

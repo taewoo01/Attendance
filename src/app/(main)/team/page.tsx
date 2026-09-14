@@ -1,5 +1,7 @@
 import { EditProfileButton } from "@/components/team/EditProfileButton";
+import { InviteButton } from "@/components/team/InviteButton";
 import { TeamDirectory } from "@/components/team/TeamDirectory";
+import { getCanInvite } from "@/lib/auth/can-invite";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { listProfiles } from "@/lib/db/profiles";
 import { withAvatarUrls } from "@/lib/team/avatars";
@@ -9,6 +11,7 @@ export const dynamic = "force-dynamic";
 
 export default async function TeamPage() {
   const user = await getCurrentUser();
+  const canInvite = user ? await getCanInvite(user.id) : false;
   const fetchedMembers = await withAvatarUrls(await listProfiles());
   // listProfiles가 이미 본인 행도 포함하므로, 편집 버튼 기본값도 여기서 그대로
   // 찾아 쓴다(getProfileByUserId를 또 호출하지 않는다).
@@ -31,13 +34,16 @@ export default async function TeamPage() {
           <p className="m-0 mt-1 text-[13px] text-silk-dim">Team VAMOS · AI Solution Team Playground</p>
         </div>
         {user && (
-          <EditProfileButton
-            defaultName={myProfile?.name ?? ""}
-            defaultRole={myProfile?.role ?? ""}
-            defaultContact={myProfile?.contact || user.email || ""}
-            defaultSpecialty={myProfile?.specialty ?? ""}
-            defaultAvatarUrl={myProfile?.avatarUrl ?? null}
-          />
+          <div className="flex items-center gap-2">
+            {canInvite && <InviteButton />}
+            <EditProfileButton
+              defaultName={myProfile?.name ?? ""}
+              defaultRole={myProfile?.role ?? ""}
+              defaultContact={myProfile?.contact || user.email || ""}
+              defaultSpecialty={myProfile?.specialty ?? ""}
+              defaultAvatarUrl={myProfile?.avatarUrl ?? null}
+            />
+          </div>
         )}
       </div>
 

@@ -37,9 +37,9 @@
   --color-trace: var(--trace);
   --color-border: var(--border);
 
-  /* Font 토큰 — layout.tsx에서 next/font로 로드한 IBM Plex 변수를 연결 */
-  --font-sans: var(--font-ibm-plex-sans-kr);
-  --font-mono: var(--font-ibm-plex-mono);
+  /* Font 토큰 — layout.tsx에서 @fontsource(로컬 정적 파일)로 로드한 IBM Plex 폰트 */
+  --font-sans: "IBM Plex Sans KR", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
 }
 
 /*

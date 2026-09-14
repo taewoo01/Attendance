@@ -1,9 +1,37 @@
+export type CheckinBannerStatus = "ok" | "already" | "invalid_token" | "unauthenticated";
+
+const BANNER_TEXT: Record<CheckinBannerStatus, string> = {
+  ok: "체크인 완료되었습니다.",
+  already: "오늘 이미 체크인했습니다.",
+  invalid_token: "QR이 만료되었어요. 화면의 QR을 다시 스캔해 주세요.",
+  unauthenticated: "로그인 후 다시 QR을 스캔해 주세요.",
+};
+
+function seoulTime(date: Date): string {
+  return new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(date);
+}
+
+type CheckinCardProps = {
+  /** 로그인한 본인의 오늘 체크인 시각. 없으면 아직 체크인하지 않은 것. */
+  checkedInAt?: Date;
+  /** /attendance/checkin 리다이렉트 직후에만 존재하는 방금 시도한 체크인 결과. */
+  bannerStatus?: CheckinBannerStatus | null;
+};
+
 /**
  * playground-design/attendance.html의 .card(QR 체크인 카드).
- * 원본에 <script>가 전혀 없어 체크인/체크아웃 버튼에 실제 동작이 연결돼 있지 않다
- * (체크아웃 버튼은 원본에서도 disabled 정적 상태). 상태가 필요 없어 Server Component로 유지한다.
+ * 원본의 QR 그림은 실제로 스캔 가능한 QR이 아니라 장식용 픽셀 패턴이다 — 실제 회전형
+ * QR(AGENTS.md 11.3절)은 별도 입구 디스플레이(/attendance-display)에 띄우고, 이 카드는
+ * 본인 화면에서 "내가 오늘 체크인했는지"만 보여준다. 정적 QR 우회를 막기 위해 QR 없이
+ * 바로 체크인되는 수동 버튼은 두지 않는다(체크아웃 버튼은 원본에서도 disabled 정적 상태 —
+ * 이번 작업 범위 밖).
  */
-export function CheckinCard() {
+export function CheckinCard({ checkedInAt, bannerStatus }: CheckinCardProps) {
   return (
     <div className="rounded-card border border-border bg-bg-panel px-6 pt-[26px] pb-6">
       <p className="m-0 mb-[18px] font-mono text-[11px] tracking-[0.14em] text-silk-faint">QR CHECK-IN</p>
@@ -241,18 +269,26 @@ export function CheckinCard() {
         </svg>
       </div>
 
-      <div className="mx-auto mb-[18px] flex w-fit items-center justify-center gap-2 rounded-pill border border-border bg-bg-raised px-[14px] py-2 font-mono text-[12.5px] text-silk-dim">
-        <span className="h-1.5 w-1.5 rounded-full bg-silk-faint" />
-        아직 체크인하지 않았어요
+      <div
+        className={`mx-auto mb-[18px] flex w-fit items-center justify-center gap-2 rounded-pill border border-border bg-bg-raised px-[14px] py-2 font-mono text-[12.5px] ${
+          checkedInAt ? "text-teal" : "text-silk-dim"
+        }`}
+      >
+        <span className={`h-1.5 w-1.5 rounded-full ${checkedInAt ? "bg-teal" : "bg-silk-faint"}`} />
+        {checkedInAt ? `오늘 ${seoulTime(checkedInAt)} 체크인 완료` : "아직 체크인하지 않았어요"}
       </div>
 
-      <div className="flex flex-col gap-2.5">
-        <button
-          type="button"
-          className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-button border border-teal bg-teal px-[18px] py-[13px] text-sm font-semibold text-[#04231b]"
+      {bannerStatus && (
+        <p
+          className={`m-0 mb-[14px] rounded-input border px-[14px] py-2.5 text-center text-[12.5px] ${
+            bannerStatus === "ok" ? "border-teal/40 bg-teal/10 text-teal" : "border-border bg-bg-raised text-silk-dim"
+          }`}
         >
-          ▸ 체크인
-        </button>
+          {BANNER_TEXT[bannerStatus]}
+        </p>
+      )}
+
+      <div className="flex flex-col gap-2.5">
         <button
           type="button"
           disabled
@@ -263,7 +299,7 @@ export function CheckinCard() {
       </div>
 
       <p className="m-0 mt-4 text-center font-mono text-[11px] text-silk-faint">
-        연구실 입구 QR을 스캔하거나 버튼으로 체크인하세요
+        연구실 입구 화면의 QR을 폰 카메라로 스캔해 체크인하세요
       </p>
     </div>
   );

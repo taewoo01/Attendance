@@ -15,7 +15,7 @@ export default async function MeetingsPage() {
   return (
     <>
       <RegisterMeetingModal defaultRecorder={myProfile?.name ?? ""} />
-      <MeetingsBoard meetings={meetings} sidebar={<MeetingsSidebar meetings={meetings} />} />
+      <MeetingsBoard meetings={meetings} sidebar={<MeetingsSidebar meetings={meetings} myName={myProfile?.name} />} />
     </>
   );
 }

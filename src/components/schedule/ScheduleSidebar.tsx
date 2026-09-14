@@ -1,17 +1,20 @@
 import { AgendaCard } from "@/components/schedule/AgendaCard";
 import { FixedScheduleCard } from "@/components/schedule/FixedScheduleCard";
 import { PersonalEventCard } from "@/components/schedule/PersonalEventCard";
+import { TeamEventCard } from "@/components/schedule/TeamEventCard";
 
 export type AgendaItem = {
   time: string;
-  /** personal 타입에만 존재 — 종료 시간을 입력하지 않았으면 undefined(시작 시간만 표시). */
+  /** personal/team 타입에만 존재 — 종료 시간을 입력하지 않았으면 undefined(시작 시간만 표시). */
   endTime?: string;
   title: string;
   sub: string;
-  /** personal_events 항목 중 본인 소유일 때만 채워진다 — AgendaCard의 수정 모달용. */
+  /** personal_events 항목 중 수정 가능(본인 소유 또는 팀 일정)할 때만 채워진다 — AgendaCard의 수정 모달용. */
   id?: string;
   eventDate?: string;
   rawTitle?: string;
+  /** true면 팀 일정 — AgendaCard가 수정 모달 heading을 다르게("팀 일정 수정") 띄운다. */
+  isTeam?: boolean;
 };
 export type FixedScheduleItem = {
   id: string;
@@ -36,6 +39,8 @@ export type PersonalEventItem = {
   eventDate: string;
   eventTime: string;
   eventEndTime?: string;
+  /** "팀 일정" 카드에서만 쓴다 — 등록자 이름(FixedScheduleCard의 "전체" 탭과 동일한 표시). */
+  name?: string;
 };
 
 type ScheduleSidebarProps = {
@@ -44,6 +49,7 @@ type ScheduleSidebarProps = {
   fixedSchedule: FixedScheduleItem[];
   allFixedSchedule: FixedScheduleItem[];
   personalEvents: PersonalEventItem[];
+  teamEvents: PersonalEventItem[];
   userId?: string;
 };
 
@@ -66,12 +72,14 @@ export function ScheduleSidebar({
   fixedSchedule,
   allFixedSchedule,
   personalEvents,
+  teamEvents,
   userId,
 }: ScheduleSidebarProps) {
   return (
     <aside>
       <AgendaCard todayLabel={todayLabel} agenda={agenda} />
       <FixedScheduleCard items={fixedSchedule} allItems={allFixedSchedule} userId={userId} />
+      <TeamEventCard items={teamEvents} />
       <PersonalEventCard items={personalEvents} />
     </aside>
   );

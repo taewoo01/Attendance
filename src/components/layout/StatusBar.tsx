@@ -2,9 +2,10 @@
 
 import { usePathname } from "next/navigation";
 import { ShareChip } from "@/components/about/ShareChip";
-import { IconButton } from "@/components/ui/IconButton";
+import { NotificationBell } from "@/components/layout/NotificationBell";
 import { LogoutButton } from "@/components/ui/LogoutButton";
 import { UserChip } from "@/components/ui/UserChip";
+import type { ActivityItem } from "@/lib/notifications/activity";
 import { Navigation } from "./Navigation";
 
 /**
@@ -13,13 +14,17 @@ import { Navigation } from "./Navigation";
  * (docs/DESIGN-SYSTEM.md 12절 Component Patterns / Status Bar 참고), 이 한 곳을 위해
  * StatusBar 전체를 재설계하지 않고 pathname 기준 최소 분기만 추가한다.
  * 다른 8개 페이지의 렌더링 결과는 아래 기본 분기 그대로 변경 없이 유지된다.
- * 실제 알림/사용자 데이터는 연결하지 않고 원본 mockup 값을 그대로 표시한다.
+ * 상단바 알림/달력 아이콘 수정: 원본 mockup 값(알림 배지 "3" 등)을 그대로 보여주던
+ * 두 아이콘 중 눌러도 아무 반응이 없던 달력 아이콘은 없앴고(대응하는 실제 기능이
+ * 없어 장식으로만 남아 있었다), 알림 아이콘은 NotificationBell로 교체해 실제 최근
+ * 활동(layout.tsx가 listRecentActivity()로 조회)을 드롭다운으로 보여준다.
  */
 type StatusBarProps = {
   userName?: string;
+  notifications: ActivityItem[];
 };
 
-export function StatusBar({ userName }: StatusBarProps) {
+export function StatusBar({ userName, notifications }: StatusBarProps) {
   const pathname = usePathname();
   const isAbout = pathname === "/about";
 
@@ -65,27 +70,10 @@ export function StatusBar({ userName }: StatusBarProps) {
         {isAbout ? (
           <div className="flex items-center gap-3">
             <ShareChip />
-            <IconButton>
-              <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.8}>
-                <rect x="3" y="5" width="18" height="16" rx="2" />
-                <path d="M3 10h18M8 3v4M16 3v4" />
-              </svg>
-            </IconButton>
           </div>
         ) : (
           <div className="flex items-center gap-4">
-            <IconButton badge={3}>
-              <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.8}>
-                <path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
-                <path d="M13.7 21a2 2 0 01-3.4 0" />
-              </svg>
-            </IconButton>
-            <IconButton>
-              <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.8}>
-                <rect x="3" y="5" width="18" height="16" rx="2" />
-                <path d="M3 10h18M8 3v4M16 3v4" />
-              </svg>
-            </IconButton>
+            <NotificationBell items={notifications} />
             <UserChip name={userName} initial={userName?.charAt(0)} />
             <LogoutButton />
           </div>

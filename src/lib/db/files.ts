@@ -1,6 +1,6 @@
-import { desc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
-import { files, profiles } from "@/db/schema";
+import { files, folders, profiles } from "@/db/schema";
 
 /**
  * files Repository. 이 모듈은 서버 전용(src/lib/db/client.ts 의존)이다.
@@ -27,4 +27,12 @@ export async function listFiles() {
 export async function getFileById(id: string) {
   const [file] = await db.select().from(files).where(eq(files.id, id)).limit(1);
   return file ?? null;
+}
+
+/** 자료실 폴더 목록. 파일이 없는 빈 폴더도 여기서 조회된다. */
+export async function listFolders() {
+  return db
+    .select({ id: folders.id, userId: folders.userId, name: folders.name })
+    .from(folders)
+    .orderBy(asc(folders.name));
 }

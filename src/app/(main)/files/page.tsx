@@ -2,7 +2,8 @@ import { FileList, type FileEntry } from "@/components/files/FileList";
 import { FilesSidebar, type RecentFileItem } from "@/components/files/FilesSidebar";
 import { FolderGrid, type Folder } from "@/components/files/FolderGrid";
 import { UploadButton } from "@/components/files/UploadButton";
-import { listFiles } from "@/lib/db/files";
+import { getCurrentUser } from "@/lib/auth/get-user";
+import { listFiles, listFolders } from "@/lib/db/files";
 import { fileKindOf, formatBytes, formatRelative, formatShortDate } from "@/lib/files/format";
 
 // TASK-029: DB 조회가 build 시점에 고정되지 않도록 매 요청마다 렌더링한다.
@@ -13,7 +14,7 @@ export const dynamic = "force-dynamic";
 const ASSUMED_QUOTA_BYTES = 5 * 1024 * 1024 * 1024;
 
 export default async function FilesPage() {
-  const rows = await listFiles();
+  const [user, rows, allFolders] = await Promise.all([getCurrentUser(), listFiles(), listFolders()]);
   const now = new Date();
 
   const fileEntries: FileEntry[] = rows.map((row) => ({
@@ -23,19 +24,28 @@ export default async function FilesPage() {
     uploader: `${row.uploaderName ?? ""} 업로드`,
     size: formatBytes(row.sizeBytes),
     date: formatShortDate(row.uploadedAt),
+    isOwner: row.userId === user?.id,
   }));
 
-  const folderMap = new Map<string, { count: number; bytes: number }>();
+  // 폴더 목록은 folders 테이블(빈 폴더 포함)을 기준으로 하고, 파일 개수/용량만
+  // files.folder 태그를 집계해 덧붙인다(아직 업로드 시 폴더를 지정하는 UI가
+  // 없어 실제로는 항상 0건이다 — 폴더 생성과는 별개 후속 작업).
+  const folderMap = new Map<string, { id: string | null; userId: string | null; count: number; bytes: number }>();
+  for (const folder of allFolders) {
+    folderMap.set(folder.name, { id: folder.id, userId: folder.userId, count: 0, bytes: 0 });
+  }
   for (const row of rows) {
     if (!row.folder) continue;
-    const agg = folderMap.get(row.folder) ?? { count: 0, bytes: 0 };
+    const agg = folderMap.get(row.folder) ?? { id: null, userId: null, count: 0, bytes: 0 };
     agg.count += 1;
     agg.bytes += row.sizeBytes;
     folderMap.set(row.folder, agg);
   }
   const folders: Folder[] = Array.from(folderMap, ([name, agg]) => ({
+    id: agg.id,
     name,
     meta: `파일 ${agg.count}개 · ${formatBytes(agg.bytes)}`,
+    isOwner: agg.userId === user?.id,
   }));
 
   const totalBytes = rows.reduce((sum, row) => sum + row.sizeBytes, 0);

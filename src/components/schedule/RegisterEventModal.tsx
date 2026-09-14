@@ -19,11 +19,15 @@ const DAYS_OF_WEEK = ["월", "화", "수", "목", "금", "토", "일"];
  * 일정과 동일하게 시작/종료 time input으로 구조화했다.
  * 버튼 라벨은 "+ 개인 일정 등록"이었으나, 모달 안에서 "개인 일정"/"고정 시간표"를
  * 둘 다 고를 수 있어 이름과 실제 기능이 어긋나서 "+ 일정 등록"으로 바꿨다.
+ * 일정 페이지 "구분" 3분화: "팀 일정"을 추가했다 — personal_events 테이블을
+ * 그대로 쓰고 team 플래그만 다르므로(개인 일정과 입력 필드가 100% 동일) "개인"과
+ * "팀"은 같은 필드 블록을 공유하고 hidden team input으로만 구분해 createPersonalEvent에
+ * 넘긴다. 등록자와 무관하게 팀원 누구나 수정/삭제할 수 있다는 점만 개인 일정과 다르다.
  */
 export function RegisterEventModal() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [kind, setKind] = useState<"personal" | "fixed">("personal");
+  const [kind, setKind] = useState<"personal" | "team" | "fixed">("personal");
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +48,7 @@ export function RegisterEventModal() {
 
     setPending(true);
     const result =
-      kind === "personal" ? await createPersonalEvent(new FormData(form)) : await createFixedSchedule(new FormData(form));
+      kind === "fixed" ? await createFixedSchedule(new FormData(form)) : await createPersonalEvent(new FormData(form));
 
     setPending(false);
     if (result.error) {
@@ -85,7 +89,9 @@ export function RegisterEventModal() {
       >
         <div className="w-full max-w-[420px] overflow-y-auto rounded-card border border-border bg-bg-panel">
           <div className="flex items-center justify-between border-b border-border px-[22px] py-[18px]">
-            <h3 className="m-0 text-[14.5px] font-semibold">{kind === "personal" ? "개인 일정 등록" : "고정 시간표 등록"}</h3>
+            <h3 className="m-0 text-[14.5px] font-semibold">
+              {kind === "personal" ? "개인 일정 등록" : kind === "team" ? "팀 일정 등록" : "고정 시간표 등록"}
+            </h3>
             <button
               type="button"
               onClick={closeModal}
@@ -103,7 +109,7 @@ export function RegisterEventModal() {
                   <button
                     type="button"
                     onClick={() => setKind("personal")}
-                    className={`cursor-pointer border-none px-[18px] py-2 text-[12.5px] font-semibold ${
+                    className={`cursor-pointer border-none px-[14px] py-2 text-[12.5px] font-semibold ${
                       kind === "personal" ? "bg-teal text-[#04231b]" : "bg-transparent text-silk-dim"
                     }`}
                   >
@@ -111,8 +117,17 @@ export function RegisterEventModal() {
                   </button>
                   <button
                     type="button"
+                    onClick={() => setKind("team")}
+                    className={`cursor-pointer border-none px-[14px] py-2 text-[12.5px] font-semibold ${
+                      kind === "team" ? "bg-teal text-[#04231b]" : "bg-transparent text-silk-dim"
+                    }`}
+                  >
+                    팀 일정
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => setKind("fixed")}
-                    className={`cursor-pointer border-none px-[18px] py-2 text-[12.5px] font-semibold ${
+                    className={`cursor-pointer border-none px-[14px] py-2 text-[12.5px] font-semibold ${
                       kind === "fixed" ? "bg-teal text-[#04231b]" : "bg-transparent text-silk-dim"
                     }`}
                   >
@@ -132,8 +147,9 @@ export function RegisterEventModal() {
                 />
               </div>
 
-              {kind === "personal" ? (
+              {kind !== "fixed" ? (
                 <>
+                  <input type="hidden" name="team" value={kind === "team" ? "true" : "false"} />
                   <div className="mb-[18px]">
                     <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">날짜</p>
                     <input

@@ -253,6 +253,34 @@
       "when": 1789138451032,
       "tag": "0035_profiles_avatar_and_specialty",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1789279967328,
+      "tag": "0036_folders_init",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1789280000000,
+      "tag": "0037_folders_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1789281403707,
+      "tag": "0038_personal_events_team",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1789281450000,
+      "tag": "0039_personal_events_team_rls",
+      "breakpoints": true
     }
   ]
 }

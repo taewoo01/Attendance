@@ -16,7 +16,7 @@ export async function proxy(request: NextRequest) {
 
   const isAuthenticated = !!user;
   const isLoginPage = request.nextUrl.pathname === "/login";
-  // /auth/*(예: /auth/confirm)는 초대 수락/비밀번호 재설정 이메일 링크의 착지점이라
+  // /auth/*(예: /auth/callback)는 초대 수락/비밀번호 재설정 이메일 링크의 착지점이라
   // 로그인 전 상태에서도 반드시 통과해야 한다 — 여기서 자체적으로 세션을 만든다.
   const isAuthCallback = request.nextUrl.pathname.startsWith("/auth/");
 

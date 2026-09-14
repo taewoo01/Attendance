@@ -12,6 +12,7 @@ import type { AgendaItem } from "@/components/schedule/ScheduleSidebar";
  */
 export function AgendaCard({ todayLabel, agenda }: { todayLabel: string; agenda: AgendaItem[] }) {
   const [editingEvent, setEditingEvent] = useState<EditablePersonalEvent | null>(null);
+  const [editingIsTeam, setEditingIsTeam] = useState(false);
 
   return (
     <div className="mb-[14px] rounded-panel border border-border bg-bg-panel px-4 pt-[15px] pb-[14px]">
@@ -25,15 +26,16 @@ export function AgendaCard({ todayLabel, agenda }: { todayLabel: string; agenda:
               {editable ? (
                 <button
                   type="button"
-                  onClick={() =>
+                  onClick={() => {
+                    setEditingIsTeam(!!item.isTeam);
                     setEditingEvent({
                       id: item.id!,
                       title: item.rawTitle!,
                       eventDate: item.eventDate!,
                       eventTime: item.time,
                       eventEndTime: item.endTime,
-                    })
-                  }
+                    });
+                  }}
                   className="cursor-pointer border-none bg-transparent p-0 text-left text-xs text-silk hover:underline"
                 >
                   {item.title}
@@ -46,7 +48,11 @@ export function AgendaCard({ todayLabel, agenda }: { todayLabel: string; agenda:
           </div>
         );
       })}
-      <EditPersonalEventModal event={editingEvent} onClose={() => setEditingEvent(null)} />
+      <EditPersonalEventModal
+        event={editingEvent}
+        heading={editingIsTeam ? "팀 일정 수정" : "개인 일정 수정"}
+        onClose={() => setEditingEvent(null)}
+      />
     </div>
   );
 }

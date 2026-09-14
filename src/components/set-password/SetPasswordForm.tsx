@@ -8,7 +8,7 @@ import styles from "@/components/login/LoginScreen.module.css";
 
 /**
  * 초대 수락(최초 비밀번호 설정) / 비밀번호 재설정 공통 폼.
- * src/app/auth/confirm에서 verifyOtp()로 이미 세션이 만들어진 상태를 전제로,
+ * src/app/auth/callback에서 이미 세션이 만들어진 상태를 전제로,
  * 그 세션 기준으로 updateUser({ password })만 호출한다.
  * 로그인 관련 온보딩 gap: 초대 수락 흐름엔 이름/역할/이메일을 받는 곳이 전혀
  * 없어서 profiles가 항상 빈 문자열로 남았다 — `needsName`(page.tsx가

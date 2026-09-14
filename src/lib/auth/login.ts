@@ -1,7 +1,7 @@
 "use server";
 
-import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { getRequestOrigin } from "@/lib/auth/request-origin";
 
 /**
  * 로그인 화면(LoginScreen/LoginForm) 전용 Server Action.
@@ -25,19 +25,14 @@ export async function signInAction(
 /**
  * 비밀번호 재설정 요청. redirectTo는 클라이언트의 window.location.origin 대신
  * 서버에서 받은 요청 헤더(host/x-forwarded-proto)로 동일하게 재구성한다.
- * /auth/confirm → /set-password로 이어지는 기존 recovery 흐름은 변경하지 않는다.
+ * /auth/callback → /set-password로 이어지는 recovery 흐름(invite와 공유)으로 착지한다.
  */
 export async function resetPasswordAction(email: string): Promise<{ error: string | null }> {
   const supabase = await createClient();
-  const headersList = await headers();
-  const host = headersList.get("host");
-  const proto =
-    headersList.get("x-forwarded-proto") ??
-    (host?.startsWith("localhost") || host?.startsWith("127.0.0.1") ? "http" : "https");
-  const origin = host ? `${proto}://${host}` : "";
+  const origin = await getRequestOrigin();
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origin}/auth/confirm?next=/set-password`,
+    redirectTo: `${origin}/auth/callback`,
   });
 
   return { error: error ? error.message : null };

@@ -22,8 +22,18 @@ export type EditablePersonalEvent = {
  * PersonalEventCard(ScheduleSidebar) 두 곳으로만 삭제 경로를 모았다.
  * 편집 대상이 바뀔 때마다 컴포넌트를 새로 마운트해야 defaultValue가 갱신되므로,
  * 다른 모달들과 달리 열려 있지 않을 때는 아예 렌더링하지 않는다(부모가 event로 제어).
+ * 일정 페이지 "구분" 3분화: 팀 일정(TeamEventCard)도 필드가 100% 동일해 이 모달을
+ * 그대로 재사용한다 — heading만 호출부에서 다르게 넘긴다("개인 일정 수정"/"팀 일정 수정").
  */
-export function EditPersonalEventModal({ event, onClose }: { event: EditablePersonalEvent | null; onClose: () => void }) {
+export function EditPersonalEventModal({
+  event,
+  heading = "개인 일정 수정",
+  onClose,
+}: {
+  event: EditablePersonalEvent | null;
+  heading?: string;
+  onClose: () => void;
+}) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -71,7 +81,7 @@ export function EditPersonalEventModal({ event, onClose }: { event: EditablePers
     >
       <div className="w-full max-w-[420px] overflow-y-auto rounded-card border border-border bg-bg-panel">
         <div className="flex items-center justify-between border-b border-border px-[22px] py-[18px]">
-          <h3 className="m-0 text-[14.5px] font-semibold">개인 일정 수정</h3>
+          <h3 className="m-0 text-[14.5px] font-semibold">{heading}</h3>
           <button
             type="button"
             onClick={onClose}
