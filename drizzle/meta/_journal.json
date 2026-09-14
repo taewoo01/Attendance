@@ -281,6 +281,13 @@
       "when": 1789281450000,
       "tag": "0039_personal_events_team_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1789450000000,
+      "tag": "0040_attendance_realtime",
+      "breakpoints": true
     }
   ]
 }

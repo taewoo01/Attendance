@@ -2,6 +2,7 @@ import { Battery3D } from "@/components/home/Battery3D";
 import { ConsoleLog } from "@/components/home/ConsoleLog";
 import { FeatureList } from "@/components/home/FeatureList";
 import { HeroSection } from "@/components/home/HeroSection";
+import { AttendanceRealtimeRefresh } from "@/components/attendance/AttendanceRealtimeRefresh";
 import type { AttendanceMember } from "@/components/attendance/AttendanceList";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { listAttendance } from "@/lib/db/attendance";
@@ -59,6 +60,7 @@ export default async function Home() {
 
   return (
     <>
+      <AttendanceRealtimeRefresh />
       <HeroSection myName={myName} initialCheckedIn={initialCheckedIn} attendance={attendance}>
         <Battery3D />
       </HeroSection>
