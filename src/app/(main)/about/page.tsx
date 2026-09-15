@@ -6,8 +6,7 @@ import { VisionMission } from "@/components/about/VisionMission";
 /**
  * playground-design/about.html에는 <script> 태그가 없어 페이지 전체가
  * 순수 정적 마크업이다. 그대로 Server Component로 유지한다.
- * StatusBar 우측의 share-chip variant는 공유 StatusBar 컴포넌트에서
- * pathname 기반으로 처리한다(src/components/layout/StatusBar.tsx 참고).
+ * 상단바(StatusBar)는 다른 페이지와 동일하게 공유 컴포넌트를 그대로 사용한다.
  */
 export default function AboutPage() {
   return (

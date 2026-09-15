@@ -1,19 +1,15 @@
-"use client";
-
-import { usePathname } from "next/navigation";
-import { ShareChip } from "@/components/about/ShareChip";
 import { NotificationBell } from "@/components/layout/NotificationBell";
+import { RecordingControl } from "@/components/layout/RecordingControl";
 import { LogoutButton } from "@/components/ui/LogoutButton";
 import { UserChip } from "@/components/ui/UserChip";
 import type { ActivityItem } from "@/lib/notifications/activity";
 import { Navigation } from "./Navigation";
 
 /**
- * playground-design/ 9개 파일(about.html 제외)에서 반복되는 상단 statusbar.
- * about.html만 우측 영역이 share-chip(알림 배지/UserChip 없음, gap 12px)으로 다른데
- * (docs/DESIGN-SYSTEM.md 12절 Component Patterns / Status Bar 참고), 이 한 곳을 위해
- * StatusBar 전체를 재설계하지 않고 pathname 기준 최소 분기만 추가한다.
- * 다른 8개 페이지의 렌더링 결과는 아래 기본 분기 그대로 변경 없이 유지된다.
+ * playground-design/ 9개 파일에서 반복되는 상단 statusbar.
+ * 원본 about.html은 우측 영역이 share-chip(외부 공유 링크)만 있고 알림/프로필/
+ * 로그아웃이 없었으나, 로그인 사용자에게는 다른 8개 페이지와 동일하게 항상
+ * 알림/프로필/로그아웃을 보여주기로 해서 그 예외를 없앴다.
  * 상단바 알림/달력 아이콘 수정: 원본 mockup 값(알림 배지 "3" 등)을 그대로 보여주던
  * 두 아이콘 중 눌러도 아무 반응이 없던 달력 아이콘은 없앴고(대응하는 실제 기능이
  * 없어 장식으로만 남아 있었다), 알림 아이콘은 NotificationBell로 교체해 실제 최근
@@ -25,9 +21,6 @@ type StatusBarProps = {
 };
 
 export function StatusBar({ userName, notifications }: StatusBarProps) {
-  const pathname = usePathname();
-  const isAbout = pathname === "/about";
-
   return (
     <div className="border-b border-border bg-[rgba(8,21,18,0.7)]">
       <div className="mx-auto flex max-w-[1220px] items-center justify-between px-7 py-4 font-mono text-xs text-silk-dim">
@@ -67,17 +60,12 @@ export function StatusBar({ userName, notifications }: StatusBarProps) {
 
         <Navigation />
 
-        {isAbout ? (
-          <div className="flex items-center gap-3">
-            <ShareChip />
-          </div>
-        ) : (
-          <div className="flex items-center gap-4">
-            <NotificationBell items={notifications} />
-            <UserChip name={userName} initial={userName?.charAt(0)} />
-            <LogoutButton />
-          </div>
-        )}
+        <div className="flex items-center gap-4">
+          <RecordingControl />
+          <NotificationBell items={notifications} />
+          <UserChip name={userName} initial={userName?.charAt(0)} />
+          <LogoutButton />
+        </div>
       </div>
     </div>
   );
