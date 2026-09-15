@@ -20,8 +20,9 @@ export type UploadFileState = { error?: string; success?: boolean };
 
 /**
  * 파일 업로드 Server Action. 순서: Authentication → 확장자/용량 검증 →
- * Storage 업로드 → files 메타데이터 insert. 클라이언트는 file 하나만 보내고,
- * 폴더 배정 UI가 없어 folder는 항상 빈 문자열로 저장한다(TASK-029 범위).
+ * Storage 업로드 → files 메타데이터 insert. 폴더 상세 화면에서 업로드하면
+ * UploadButton이 formData에 folder를 함께 보낸다 — 전체 폴더 화면에서는 folder가
+ * 없어 기존처럼 빈 문자열로 저장된다.
  */
 export async function uploadFile(formData: FormData): Promise<UploadFileState> {
   const user = await getCurrentUser();
@@ -42,8 +43,13 @@ export async function uploadFile(formData: FormData): Promise<UploadFileState> {
     return { error: "파일 용량이 20MB를 초과합니다." };
   }
 
+  const folder = String(formData.get("folder") ?? "").trim().slice(0, 60);
+
   const safeName = sanitizeFileName(file.name);
-  const storagePath = `${user.id}/${crypto.randomUUID()}-${safeName}`;
+  // Storage 오브젝트 키는 한글 등 비-ASCII 문자가 섞이면 업로드가 실패해서
+  // UUID+확장자로만 구성한다(upload-shared.ts의 sanitizeFileName 주석 참고).
+  // 화면에 보여줄 원본 파일명은 DB의 name 컬럼(safeName)에만 저장한다.
+  const storagePath = `${user.id}/${crypto.randomUUID()}.${ext}`;
 
   const supabaseAdmin = createAdminClient();
   const { error: uploadError } = await supabaseAdmin.storage
@@ -61,6 +67,7 @@ export async function uploadFile(formData: FormData): Promise<UploadFileState> {
     userId: user.id,
     storagePath,
     name: safeName,
+    folder,
     sizeBytes: file.size,
   });
 

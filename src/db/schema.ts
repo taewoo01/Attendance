@@ -317,6 +317,9 @@ export const achievementFiles = pgTable("achievement_files", {
  * 출석 현황 목록이 쓰는 데이터만 저장한다. 실제 QR 토큰 발급/만료/중복사용
  * 검증(AGENTS.md 11.3절)은 이번 TASK 범위가 아니다 — 한 행은 "이 사용자가
  * 이 시각에 체크인했다"는 사실만 기록하고, 체크인 로직 자체는 구현하지 않는다.
+ * 퇴근(체크아웃) 기능 추가: 체크인과 달리 위치/QR 증빙 없이 홈 화면 버튼
+ * 한 번으로 처리하기로 해서(사용자 확인 완료) 새 토큰 검증 로직 없이 이
+ * 컬럼만 추가한다 — null이면 아직 퇴근 전이라는 뜻이다.
  */
 export const attendance = pgTable("attendance", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -324,7 +327,33 @@ export const attendance = pgTable("attendance", {
     .notNull()
     .references(() => authUsers.id, { onDelete: "cascade" }),
   checkedInAt: timestamp("checked_in_at", { withTimezone: true }).notNull().defaultNow(),
+  checkedOutAt: timestamp("checked_out_at", { withTimezone: true }),
 });
+
+/**
+ * 퇴근 직후 뜨는 "내일 상주 계획" 모달(AttendancePlanModal)에서 등록한다.
+ * 하루 전에 미리 등록하는 것이라 그 날짜의 attendance 행이 아직 없어 attendance와
+ * FK로 묶지 않고 독립 테이블로 둔다. 다음날 하루에만 적용되는 1회성 설정이라
+ * (퇴근할 때 한 번 정하면 끝 — 수정 UI 없음) updatedAt 컬럼도 두지 않는다.
+ * 하루에 퇴근은 한 번만 가능해서(attendance.checkedOutAt 가드) 사실상 (userId,
+ * planDate) 조합이 두 번 생길 일이 없지만, 데이터 정합성을 위해 unique 제약을 둔다.
+ */
+export const attendancePlans = pgTable(
+  "attendance_plans",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    planDate: date("plan_date").notNull(),
+    /** 배지 스타일 분기용("day"|"night"|"full"|"off"|"custom") — 앱 코드에서만 이 값들로 제한한다. */
+    kind: text("kind").notNull().default("custom"),
+    /** 실제로 배지에 보여줄 텍스트("주간"/"야간"/"종일"/"안 옴" 또는 최대 10자 직접 입력). */
+    label: text("label").notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("attendance_plans_user_date_unique").on(table.userId, table.planDate)],
+);
 
 /**
  * TASK-028 최소 스키마. playground-design/schedule.html의 주간 뷰/사이드바가
@@ -410,3 +439,21 @@ export const folders = pgTable(
   },
   (table) => [uniqueIndex("folders_name_unique").on(table.name)],
 );
+
+/**
+ * 상단바 녹음 버튼(어느 페이지에 있든 녹음 시작/종료 가능)으로 만든 녹음 파일.
+ * 녹음 종료 시점에 특정 회의록이 아직 정해지지 않았을 수 있어(다른 페이지로
+ * 이동해 딴 작업을 하다 종료할 수도 있음) meeting_notes와 FK로 묶지 않고
+ * 독립적으로 저장한다 — 회의록 페이지 사이드바에 최신순으로 나열해서
+ * 재생/다운로드한다. userId는 folders와 동일한 이유로 계정이 삭제돼도
+ * 녹음 자체는 남도록 `onDelete: "set null"`을 쓴다.
+ */
+export const meetingRecordings = pgTable("meeting_recordings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => authUsers.id, { onDelete: "set null" }),
+  storagePath: text("storage_path").notNull(),
+  name: text("name").notNull().default(""),
+  durationSeconds: integer("duration_seconds").notNull().default(0),
+  sizeBytes: integer("size_bytes").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});

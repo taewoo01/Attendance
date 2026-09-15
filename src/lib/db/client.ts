@@ -11,21 +11,26 @@ if (typeof window !== "undefined") {
   throw new Error("src/lib/db/client.ts는 서버 전용입니다. 브라우저에서 import할 수 없습니다.");
 }
 
-// max: 5 — 원래 1이었는데, 홈 화면(src/app/(main)/page.tsx)이 Promise.all로
-// listProfiles/listAttendance/listAchievements/listIdeas를 동시에 날리는 걸
-// max:1(커넥션 1개) 위에서 로컬로 재현해보니 achievements/ideas 두 쿼리가
-// 응답을 영영 못 받고 멈추는 실제 교착 상태였다(pgbouncer transaction pooler +
-// 커넥션 1개를 여러 동시 쿼리가 큐잉하는 조합의 문제) — Vercel 프로덕션에서
-// 홈 화면이 "흰 화면/무한 로딩"으로 300초 타임아웃까지 걸리던 원인이 이거였다.
-// max를 이 페이지의 동시 쿼리 수(4개)를 커버하도록 5로 올리니 매번 0.3초
-// 안에 전부 끝난다(5회 반복 재현으로 확인). Vercel 인스턴스 수 × 5가 Supabase
+// max: 5였던 걸 10으로 올렸다. 원래 1이었는데, 홈 화면(src/app/(main)/page.tsx)이
+// Promise.all로 listProfiles/listAttendance/listAchievements/listIdeas를 동시에
+// 날리는 걸 max:1(커넥션 1개) 위에서 로컬로 재현해보니 achievements/ideas 두
+// 쿼리가 응답을 영영 못 받고 멈추는 실제 교착 상태였다(pgbouncer transaction
+// pooler + 커넥션 1개를 여러 동시 쿼리가 큐잉하는 조합의 문제) — Vercel
+// 프로덕션에서 홈 화면이 "흰 화면/무한 로딩"으로 300초 타임아웃까지 걸리던
+// 원인이 이거였다. 그때 이 페이지의 동시 쿼리 수(4개)에 맞춰 5로 올렸는데,
+// 이후 퇴근 시 "내일 상주 계획" 기능(getAttendancePlansForDate)이 홈 화면과
+// 출석 인증 페이지 양쪽의 Promise.all에 쿼리를 하나씩 추가하면서 홈 화면 혼자
+// 5개 동시 쿼리를 쓰게 됐다 — 여유 없이 풀 전체를 다 쓰는 상태라 다른 요청과
+// 겹치면 같은 종류의 문제가 재발했다(이번엔 무한 대기 대신 커넥션이 얽혀
+// 응답이 깨지는 형태로 나타남). 앞으로 페이지에 동시 쿼리가 늘어날 걸 감안해
+// 이번엔 여유를 두고 10으로 올린다. Vercel 인스턴스 수 × 10이 Supabase
 // Transaction Pooler 한도를 넘지 않는지는 트래픽이 늘면 다시 점검해야 한다.
 // connect_timeout/idle_timeout은 별개로, 커넥션 하나가 멈췄을 때(네트워크
 // 블립, pooler 재시작 등) postgres.js가 이를 감지 못 하고 무한 대기하는 걸
 // 막기 위해 추가한 안전장치다.
 const client = postgres(process.env.DATABASE_URL!, {
   prepare: false,
-  max: 5,
+  max: 10,
   connect_timeout: 10,
   idle_timeout: 20,
   max_lifetime: 60 * 30,

@@ -15,6 +15,8 @@ export type FileEntry = {
 
 type FileListProps = {
   files: FileEntry[];
+  /** 폴더 필터링 중일 때 page.tsx가 폴더명을 넘긴다. 기본값은 "전체 파일". */
+  title?: string;
 };
 
 // playground-design/files.html의 .file-icon.pdf/.doc/.sheet/.img stroke 색상 그대로.
@@ -57,11 +59,11 @@ function FileIcon({ type }: { type: FileKind }) {
  * props로 받는다. `.file-dl` 다운로드 버튼은 `DownloadButton`(Client
  * Component)으로 교체해 실제 presigned URL 발급 기능을 연결했다.
  */
-export function FileList({ files }: FileListProps) {
+export function FileList({ files, title = "전체 파일" }: FileListProps) {
   return (
     <div className="overflow-hidden rounded-card border border-border bg-bg-panel">
       <div className="flex items-center justify-between border-b border-border px-[22px] py-[18px]">
-        <h3 className="m-0 text-[14.5px] font-semibold">전체 파일</h3>
+        <h3 className="m-0 text-[14.5px] font-semibold">{title}</h3>
         <span className="font-mono text-[11.5px] text-silk-faint">{files.length}개</span>
       </div>
 

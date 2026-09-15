@@ -88,7 +88,9 @@ export async function createIdea(formData: FormData): Promise<CreateIdeaState> {
   const uploadResults = await Promise.all(
     files.map(async (file) => {
       const safeName = sanitizeFileName(file.name);
-      const storagePath = `ideas/${ideaId}/${crypto.randomUUID()}-${safeName}`;
+      // Storage 키는 한글 등 비-ASCII 문자가 섞이면 업로드가 실패해서 UUID+확장자로만
+      // 구성한다(upload-shared.ts의 sanitizeFileName 주석 참고). 원본 파일명은 DB name에만 저장.
+      const storagePath = `ideas/${ideaId}/${crypto.randomUUID()}.${extensionOf(file.name)}`;
       const { error: uploadError } = await supabaseAdmin.storage
         .from(BUCKET)
         .upload(storagePath, await file.arrayBuffer(), { contentType: contentTypeFor(file.name, file.type) });
@@ -192,7 +194,7 @@ export async function updateIdea(id: string, formData: FormData): Promise<Update
   const uploadResults = await Promise.all(
     newFiles.map(async (file) => {
       const safeName = sanitizeFileName(file.name);
-      const storagePath = `ideas/${id}/${crypto.randomUUID()}-${safeName}`;
+      const storagePath = `ideas/${id}/${crypto.randomUUID()}.${extensionOf(file.name)}`;
       const { error: uploadError } = await supabaseAdmin.storage
         .from(BUCKET)
         .upload(storagePath, await file.arrayBuffer(), { contentType: contentTypeFor(file.name, file.type) });

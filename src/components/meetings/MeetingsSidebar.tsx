@@ -1,10 +1,13 @@
 import { OpenActionsCard } from "@/components/meetings/OpenActionsCard";
+import { RecordingsCard, type RecordingItem } from "@/components/meetings/RecordingsCard";
 import type { Meeting } from "@/components/meetings/MeetingCard";
 
 type MeetingsSidebarProps = {
   meetings: Meeting[];
   /** 로그인한 본인의 프로필 이름. "내 할 일" 집계에 action.who와 문자열로 비교한다. */
   myName?: string;
+  /** 상단바 녹음 버튼으로 저장된 녹음 목록(최신순). */
+  recordings: RecordingItem[];
 };
 
 /**
@@ -26,7 +29,7 @@ type MeetingsSidebarProps = {
  * 타일이 3~4개로 가변적이라 flex-1 한 줄 대신 2열 grid로 바꿔 좁은 사이드바
  * (300px)에서도 숫자가 눌리지 않게 했다.
  */
-export function MeetingsSidebar({ meetings, myName }: MeetingsSidebarProps) {
+export function MeetingsSidebar({ meetings, myName, recordings }: MeetingsSidebarProps) {
   const allActions = meetings.flatMap((meeting) => meeting.actions);
   const totalCount = allActions.length;
   const doneCount = allActions.filter((action) => action.done).length;
@@ -67,6 +70,8 @@ export function MeetingsSidebar({ meetings, myName }: MeetingsSidebarProps) {
           ))}
         </div>
       </div>
+
+      <RecordingsCard items={recordings} />
 
       <OpenActionsCard items={openActions} />
     </div>

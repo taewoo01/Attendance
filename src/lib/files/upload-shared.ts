@@ -80,7 +80,14 @@ export function contentTypeFor(name: string, browserType: string): string {
   return EXTENSION_MIME_TYPES[extensionOf(name)] ?? (browserType || "application/octet-stream");
 }
 
-/** 슬래시/백슬래시/공백/하이픈만 "_"로 바꾼다(Storage 경로에 안전하게) — 한글 파일명은 원본 그대로 유지한다. */
+/**
+ * DB의 `name`(화면 표시용) 컬럼에 저장할 값을 만든다. 슬래시/백슬래시/공백/하이픈만
+ * "_"로 바꾸고 한글 등 원본 파일명은 그대로 유지한다.
+ * 주의: 이 값을 Storage 오브젝트 키(storagePath)에 그대로 쓰면 안 된다 — Supabase
+ * Storage는 키에 한글 등 비-ASCII 문자가 섞이면 업로드가 실패한다. storagePath는
+ * `${crypto.randomUUID()}.${extensionOf(file.name)}`처럼 항상 ASCII로만 구성한다
+ * (team/actions.ts의 아바타 업로드 경로가 원래 이 방식이었다).
+ */
 export function sanitizeFileName(name: string): string {
   return name.replace(/[/\\ -]/g, "_");
 }

@@ -7,12 +7,16 @@ import { deleteFolder } from "@/lib/files/actions";
 /**
  * 본인이 만든 폴더에만 노출되는 삭제 버튼(FolderGrid가 folder.isOwner로 렌더 여부를
  * 결정). DeleteFileButton과 동일한 확인/삭제/새로고침 패턴이다.
+ * 폴더 카드 전체가 이제 Link로 감싸여 있어(FolderGrid.tsx) 클릭이 상위로
+ * 버블링되면 폴더 상세로 이동해버린다 — preventDefault/stopPropagation으로 막는다.
  */
 export function DeleteFolderButton({ folderId }: { folderId: string }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
 
-  async function handleClick() {
+  async function handleClick(event: React.MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    event.stopPropagation();
     if (!window.confirm("이 폴더를 삭제할까요?")) return;
     setPending(true);
     const result = await deleteFolder(folderId);

@@ -1,14 +1,19 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
-import type { AttendanceMember } from "@/components/attendance/AttendanceList";
+import { AttendancePlanModal } from "@/components/attendance/AttendancePlanModal";
+import { PlanBadge, type AttendanceMember } from "@/components/attendance/AttendanceList";
+import { checkOut } from "@/lib/attendance/checkout";
 import { useRotatingCheckinQr } from "@/lib/attendance/useRotatingQr";
 
 type HeroSectionProps = {
   children: ReactNode;
   myName: string;
   initialCheckedIn: boolean;
+  /** 오늘 이미 퇴근 처리했는지 — true면 "퇴근" 버튼 대신 완료 표시를 보여준다. */
+  initialCheckedOut: boolean;
   attendance: AttendanceMember[];
 };
 
@@ -23,10 +28,32 @@ type HeroSectionProps = {
  * 우회가 되므로 두지 않는다. checkedIn(오늘 이미 체크인했는지)은 page.tsx가 조회한
  * 실제 DB 값(initialCheckedIn)을 그대로 쓴다.
  */
-export function HeroSection({ children, myName, initialCheckedIn, attendance }: HeroSectionProps) {
+export function HeroSection({ children, myName, initialCheckedIn, initialCheckedOut, attendance }: HeroSectionProps) {
+  const router = useRouter();
   const checkedIn = initialCheckedIn;
+  const checkedOut = initialCheckedOut;
   const [qrOpen, setQrOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
+  const [checkingOut, setCheckingOut] = useState(false);
+  const [planModalOpen, setPlanModalOpen] = useState(false);
+
+  async function handleCheckOut() {
+    setCheckingOut(true);
+    const result = await checkOut();
+    setCheckingOut(false);
+    if (result.error) {
+      window.alert(result.error);
+      return;
+    }
+    // 퇴근 직후 "내일 상주 계획" 모달을 띄운다 — 모달을 닫을 때(등록/건너뛰기
+    // 모두) router.refresh()로 "퇴근 완료" 표시와 방금 등록한 계획 배지를 함께 반영한다.
+    setPlanModalOpen(true);
+  }
+
+  function closePlanModal() {
+    setPlanModalOpen(false);
+    router.refresh();
+  }
 
   return (
     <header className="mx-auto grid max-w-[1220px] grid-cols-[0.85fr_1fr] items-center gap-[50px] px-7 pt-[52px] pb-16 max-[900px]:grid-cols-1 max-[900px]:pt-10">
@@ -40,7 +67,7 @@ export function HeroSection({ children, myName, initialCheckedIn, attendance }: 
           <span className="text-teal">GROUND</span>
         </h1>
         <div className="mt-[26px] mb-8 h-[3px] w-16 bg-teal" />
-        <div className="flex gap-[14px]">
+        <div className="flex flex-wrap gap-[14px]">
           <button
             type="button"
             onClick={() => (checkedIn ? setStatusOpen(true) : setQrOpen(true))}
@@ -52,6 +79,21 @@ export function HeroSection({ children, myName, initialCheckedIn, attendance }: 
           >
             {checkedIn ? "✓ 오늘 출석 현황 보기" : "▸ 오늘 출석 체크"}
           </button>
+          {checkedIn &&
+            (checkedOut ? (
+              <span className="inline-flex items-center gap-2 border border-border bg-transparent px-5 py-[13px] text-[13.5px] font-semibold text-silk-faint">
+                ✓ 퇴근 완료
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={handleCheckOut}
+                disabled={checkingOut}
+                className="inline-flex cursor-pointer items-center gap-2 border border-border bg-transparent px-5 py-[13px] text-[13.5px] font-semibold text-silk disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {checkingOut ? "처리 중..." : "퇴근"}
+              </button>
+            ))}
           <Link
             href="/schedule"
             className="inline-flex items-center gap-2 border border-border bg-transparent px-5 py-[13px] text-[13.5px] font-semibold text-silk"
@@ -100,7 +142,7 @@ export function HeroSection({ children, myName, initialCheckedIn, attendance }: 
         }}
       >
         <div
-          className={`w-[440px] max-h-[80vh] overflow-y-auto rounded-card border border-border bg-bg-panel px-[22px] pt-[22px] pb-6 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.6)] [transition:transform_.18s_ease] max-[520px]:w-[92vw] ${
+          className={`w-[520px] max-h-[80vh] overflow-y-auto rounded-card border border-border bg-bg-panel px-[22px] pt-[22px] pb-6 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.6)] [transition:transform_.18s_ease] max-[560px]:w-[92vw] ${
             statusOpen ? "translate-y-0" : "translate-y-2"
           }`}
         >
@@ -119,31 +161,41 @@ export function HeroSection({ children, myName, initialCheckedIn, attendance }: 
             {attendance.map((member) => (
               <div
                 key={member.userId}
-                className="grid grid-cols-[36px_1fr_66px_78px] items-center gap-3 border-b border-border px-0.5 py-[11px] last:border-b-0 max-[520px]:grid-cols-[30px_1fr_60px]"
+                className="grid grid-cols-[36px_1fr_66px_150px] items-center gap-3 border-b border-border px-0.5 py-[11px] last:border-b-0 max-[560px]:grid-cols-[30px_1fr_60px]"
               >
                 <div
                   className={`flex h-[30px] w-[30px] items-center justify-center rounded-full font-mono text-[11px] font-bold ${
                     member.status === "on"
                       ? "bg-[rgba(72,217,176,0.14)] text-teal"
-                      : "bg-[rgba(231,239,236,0.06)] text-silk-faint"
+                      : member.status === "left"
+                        ? "bg-amber-dim text-amber"
+                        : "bg-[rgba(231,239,236,0.06)] text-silk-faint"
                   }`}
                 >
                   {member.avatar}
                 </div>
                 <div>
-                  <div className="text-[13px] font-medium">{member.name}</div>
+                  <div className="text-[13px] font-medium">
+                    {member.name}
+                    {member.planLabel && <PlanBadge label={member.planLabel} kind={member.planKind} />}
+                  </div>
                   <div className="mt-px text-[10.5px] text-silk-faint">{member.role}</div>
                 </div>
                 <div className="font-mono text-[11.5px] text-silk-dim">{member.time}</div>
                 <div
-                  className={`flex items-center justify-end gap-1.5 font-mono text-[10.5px] max-[520px]:hidden ${
-                    member.status === "on" ? "text-teal" : "text-silk-faint"
+                  className={`flex items-center justify-end gap-1.5 whitespace-nowrap font-mono text-[10.5px] max-[560px]:hidden ${
+                    member.status === "on" ? "text-teal" : member.status === "left" ? "text-amber" : "text-silk-faint"
                   }`}
                 >
                   <span
-                    className={`h-[5px] w-[5px] rounded-full ${member.status === "on" ? "bg-teal" : "bg-silk-faint"}`}
+                    className={`h-[5px] w-[5px] rounded-full ${
+                      member.status === "on" ? "bg-teal" : member.status === "left" ? "bg-amber" : "bg-silk-faint"
+                    }`}
                   />
-                  {member.status === "on" ? "체크인" : "미출근"}
+                  {member.status === "on" ? "체크인" : member.status === "left" ? "퇴근" : "미출근"}
+                  {member.status === "left" && member.nextPlanLabel && (
+                    <PlanBadge label={`내일 ${member.nextPlanLabel}`} kind={member.nextPlanKind} />
+                  )}
                 </div>
               </div>
             ))}
@@ -152,6 +204,8 @@ export function HeroSection({ children, myName, initialCheckedIn, attendance }: 
       </div>
 
       {children}
+
+      {planModalOpen && <AttendancePlanModal onClose={closePlanModal} />}
     </header>
   );
 }

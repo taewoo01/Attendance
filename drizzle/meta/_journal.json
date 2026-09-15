@@ -288,6 +288,41 @@
       "when": 1789450000000,
       "tag": "0040_attendance_realtime",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1789453659091,
+      "tag": "0041_meeting_recordings_init",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1789453700000,
+      "tag": "0042_meeting_recordings_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1789455939561,
+      "tag": "0043_attendance_checked_out_at",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1789459177648,
+      "tag": "0044_attendance_plans_init",
+      "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1789459200000,
+      "tag": "0045_attendance_plans_rls",
+      "breakpoints": true
     }
   ]
 }

@@ -131,7 +131,9 @@ export async function createAchievement(formData: FormData): Promise<CreateAchie
   const uploadResults = await Promise.all(
     files.map(async (file) => {
       const safeName = sanitizeFileName(file.name);
-      const storagePath = `achievements/${achievementId}/${crypto.randomUUID()}-${safeName}`;
+      // Storage 키는 한글 등 비-ASCII 문자가 섞이면 업로드가 실패해서 UUID+확장자로만
+      // 구성한다(upload-shared.ts의 sanitizeFileName 주석 참고). 원본 파일명은 DB name에만 저장.
+      const storagePath = `achievements/${achievementId}/${crypto.randomUUID()}.${extensionOf(file.name)}`;
       const { error: uploadError } = await supabaseAdmin.storage
         .from(BUCKET)
         .upload(storagePath, await file.arrayBuffer(), { contentType: contentTypeFor(file.name, file.type) });
@@ -264,7 +266,7 @@ export async function updateAchievement(id: string, formData: FormData): Promise
   const uploadResults = await Promise.all(
     newFiles.map(async (file) => {
       const safeName = sanitizeFileName(file.name);
-      const storagePath = `achievements/${id}/${crypto.randomUUID()}-${safeName}`;
+      const storagePath = `achievements/${id}/${crypto.randomUUID()}.${extensionOf(file.name)}`;
       const { error: uploadError } = await supabaseAdmin.storage
         .from(BUCKET)
         .upload(storagePath, await file.arrayBuffer(), { contentType: contentTypeFor(file.name, file.type) });

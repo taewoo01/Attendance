@@ -1,6 +1,9 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { AttendancePlanModal } from "@/components/attendance/AttendancePlanModal";
+import { checkOut } from "@/lib/attendance/checkout";
 import { useRotatingCheckinQr } from "@/lib/attendance/useRotatingQr";
 
 export type CheckinBannerStatus = "ok" | "already" | "invalid_token" | "unauthenticated";
@@ -24,6 +27,8 @@ function seoulTime(date: Date): string {
 type CheckinCardProps = {
   /** 로그인한 본인의 오늘 체크인 시각. 없으면 아직 체크인하지 않은 것. */
   checkedInAt?: Date;
+  /** 로그인한 본인의 오늘 퇴근 시각. 없으면 아직 퇴근 전(또는 체크인 자체를 안 함). */
+  checkedOutAt?: Date | null;
   /** /attendance/checkin 리다이렉트 직후에만 존재하는 방금 시도한 체크인 결과. */
   bannerStatus?: CheckinBannerStatus | null;
 };
@@ -33,11 +38,33 @@ type CheckinCardProps = {
  * 카드에 그려진 픽셀 그림은 실제로 스캔 가능한 QR이 아니라 장식용 패턴이다 — 탭하면
  * 열리는 모달에서 실제 회전형 QR(AGENTS.md 11.3절, useRotatingCheckinQr)을 보여준다.
  * 입구에 전용 디스플레이(/attendance-display)가 없을 때도 이 모달로 그 자리를 대신할
- * 수 있다. 정적 QR 우회를 막기 위해 QR 없이 바로 체크인되는 수동 버튼은 두지 않는다
- * (체크아웃 버튼은 원본에서도 disabled 정적 상태 — 이번 작업 범위 밖).
+ * 수 있다. 정적 QR 우회를 막기 위해 QR 없이 바로 체크인되는 수동 버튼은 두지 않는다.
+ * 체크아웃 버튼은 원본에서 disabled 정적 상태였으나(체크아웃 기능 자체가 없었음),
+ * 퇴근은 위치 증빙 없이 버튼 한 번으로 처리하기로 해서(HeroSection.tsx와 동일한
+ * checkOut() Server Action) 실제 동작으로 바꿨다.
  */
-export function CheckinCard({ checkedInAt, bannerStatus }: CheckinCardProps) {
+export function CheckinCard({ checkedInAt, checkedOutAt, bannerStatus }: CheckinCardProps) {
+  const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
+  const [checkingOut, setCheckingOut] = useState(false);
+  const [planModalOpen, setPlanModalOpen] = useState(false);
+
+  async function handleCheckOut() {
+    setCheckingOut(true);
+    const result = await checkOut();
+    setCheckingOut(false);
+    if (result.error) {
+      window.alert(result.error);
+      return;
+    }
+    // 퇴근 직후 "내일 상주 계획" 모달을 띄운다(HeroSection.tsx와 동일한 흐름).
+    setPlanModalOpen(true);
+  }
+
+  function closePlanModal() {
+    setPlanModalOpen(false);
+    router.refresh();
+  }
 
   return (
     <div className="rounded-card border border-border bg-bg-panel px-6 pt-[26px] pb-6">
@@ -287,7 +314,11 @@ export function CheckinCard({ checkedInAt, bannerStatus }: CheckinCardProps) {
         }`}
       >
         <span className={`h-1.5 w-1.5 rounded-full ${checkedInAt ? "bg-teal" : "bg-silk-faint"}`} />
-        {checkedInAt ? `오늘 ${seoulTime(checkedInAt)} 체크인 완료` : "아직 체크인하지 않았어요"}
+        {checkedOutAt
+          ? `오늘 ${seoulTime(checkedOutAt)} 퇴근 완료`
+          : checkedInAt
+            ? `오늘 ${seoulTime(checkedInAt)} 체크인 완료`
+            : "아직 체크인하지 않았어요"}
       </div>
 
       {bannerStatus && (
@@ -303,10 +334,11 @@ export function CheckinCard({ checkedInAt, bannerStatus }: CheckinCardProps) {
       <div className="flex flex-col gap-2.5">
         <button
           type="button"
-          disabled
-          className="inline-flex w-full items-center justify-center gap-2 rounded-button border border-border bg-transparent px-[18px] py-[13px] text-sm font-semibold text-silk disabled:cursor-not-allowed disabled:text-silk-faint"
+          onClick={handleCheckOut}
+          disabled={!checkedInAt || !!checkedOutAt || checkingOut}
+          className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-button border border-border bg-transparent px-[18px] py-[13px] text-sm font-semibold text-silk disabled:cursor-not-allowed disabled:text-silk-faint"
         >
-          체크아웃
+          {checkingOut ? "처리 중..." : checkedOutAt ? "퇴근 완료" : "체크아웃"}
         </button>
       </div>
 
@@ -315,6 +347,7 @@ export function CheckinCard({ checkedInAt, bannerStatus }: CheckinCardProps) {
       </p>
 
       {modalOpen && <CheckinQrModal onClose={() => setModalOpen(false)} />}
+      {planModalOpen && <AttendancePlanModal onClose={closePlanModal} />}
     </div>
   );
 }
