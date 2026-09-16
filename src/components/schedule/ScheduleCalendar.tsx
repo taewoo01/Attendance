@@ -123,12 +123,30 @@ export function ScheduleCalendar({ personalEvents, fixedSchedules, todayKey, use
           </button>
           <button
             type="button"
+            onClick={() => setOwner("team-only")}
+            className={`cursor-pointer border-none px-[12px] py-1.5 font-mono text-[11.5px] font-semibold ${
+              owner === "team-only" ? "bg-teal text-[#04231b]" : "bg-transparent text-silk-dim"
+            }`}
+          >
+            팀 일정
+          </button>
+          <button
+            type="button"
+            onClick={() => setOwner("fixed-only")}
+            className={`cursor-pointer border-none px-[12px] py-1.5 font-mono text-[11.5px] font-semibold ${
+              owner === "fixed-only" ? "bg-teal text-[#04231b]" : "bg-transparent text-silk-dim"
+            }`}
+          >
+            고정 일정
+          </button>
+          <button
+            type="button"
             onClick={() => setOwner("team-no-fixed")}
             className={`cursor-pointer border-none px-[12px] py-1.5 font-mono text-[11.5px] font-semibold ${
               owner === "team-no-fixed" ? "bg-teal text-[#04231b]" : "bg-transparent text-silk-dim"
             }`}
           >
-            팀 전체(고정 일정 X)
+            전체(고정 X)
           </button>
           <button
             type="button"
@@ -137,7 +155,7 @@ export function ScheduleCalendar({ personalEvents, fixedSchedules, todayKey, use
               owner === "team" ? "bg-teal text-[#04231b]" : "bg-transparent text-silk-dim"
             }`}
           >
-            팀 전체(고정 일정 O)
+            전체(고정 O)
           </button>
         </div>
         <span className="text-silk-faint">보기 기준</span>
@@ -153,7 +171,11 @@ export function ScheduleCalendar({ personalEvents, fixedSchedules, todayKey, use
                 ? day.events.filter((e) => e.owner === "me")
                 : owner === "team-no-fixed"
                   ? day.events.filter((e) => e.type !== "fixed")
-                  : day.events;
+                  : owner === "team-only"
+                    ? day.events.filter((e) => e.type === "team")
+                    : owner === "fixed-only"
+                      ? day.events.filter((e) => e.type === "fixed")
+                      : day.events;
             const visible = owner === "me" || isExpanded ? scopedEvents : scopedEvents.slice(0, TEAM_CAP);
             const moreCount = owner !== "me" && !isExpanded ? Math.max(0, scopedEvents.length - TEAM_CAP) : 0;
             return (

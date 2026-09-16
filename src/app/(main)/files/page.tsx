@@ -76,7 +76,18 @@ export default async function FilesPage({ searchParams }: PageProps<"/files">) {
         <UploadButton folders={folders.map((f) => f.name)} defaultFolder={selectedFolder ?? undefined} />
       </div>
 
-      <div className="mx-auto flex max-w-[1220px] items-center gap-2 px-7 pt-[18px] font-mono text-[12.5px] text-silk-faint">
+      <div className="mx-auto flex max-w-[1220px] items-center gap-3 px-7 pt-[18px] font-mono text-[12.5px] text-silk-faint">
+        {selectedFolder && (
+          <Link
+            href="/files"
+            className="flex items-center gap-1 rounded-button border border-border px-2.5 py-1 text-silk-dim hover:border-teal-dim hover:text-silk"
+          >
+            <svg viewBox="0 0 24 24" fill="none" strokeWidth={2} className="h-3 w-3 stroke-current">
+              <path d="M15 19l-7-7 7-7" />
+            </svg>
+            뒤로가기
+          </Link>
+        )}
         {selectedFolder ? (
           <>
             <Link href="/files" className="hover:text-silk">

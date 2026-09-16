@@ -17,10 +17,11 @@ import { Navigation } from "./Navigation";
  */
 type StatusBarProps = {
   userName?: string;
+  avatarUrl?: string | null;
   notifications: ActivityItem[];
 };
 
-export function StatusBar({ userName, notifications }: StatusBarProps) {
+export function StatusBar({ userName, avatarUrl, notifications }: StatusBarProps) {
   return (
     <div className="border-b border-border bg-[rgba(8,21,18,0.7)]">
       <div className="mx-auto flex max-w-[1220px] items-center justify-between px-7 py-4 font-mono text-xs text-silk-dim">
@@ -63,7 +64,7 @@ export function StatusBar({ userName, notifications }: StatusBarProps) {
         <div className="flex items-center gap-4">
           <RecordingControl />
           <NotificationBell items={notifications} />
-          <UserChip name={userName} initial={userName?.charAt(0)} />
+          <UserChip name={userName} initial={userName?.charAt(0)} avatarUrl={avatarUrl} />
           <LogoutButton />
         </div>
       </div>

@@ -9,9 +9,10 @@ import type { FixedScheduleItem } from "@/components/schedule/ScheduleSidebar";
 const DAY_ORDER = ["월", "화", "수", "목", "금", "토", "일"];
 
 /**
- * ScheduleSidebar의 "고정 시간표" 카드. "내 고정 시간표"(본인 것만)와 "전체 고정
- * 시간표"(팀 전체, 예: 다른 팀원의 알바 시간표)는 서로 다른 데이터라 하나로 합치지
- * 않고 탭으로 나눠 보여준다. "전체" 탭에서도 본인 소유 항목만 수정/삭제 가능하다
+ * ScheduleSidebar의 "고정 시간표" 카드. "내 고정 시간표"(본인 것만)와 "팀 고정
+ * 일정"(팀원 각자의 개인 고정 시간표를 모아서 보여줌, 예: 다른 팀원의 알바 시간표)은
+ * 서로 다른 데이터라 하나로 합치지 않고 탭으로 나눠 보여준다. "팀 고정 일정" 탭에서도
+ * 본인 소유 항목만 수정/삭제 가능하다
  * (다른 사람 것은 읽기 전용) — deleteFixedSchedule/updateFixedSchedule 자체가 서버에서
  * userId를 검사해 막아주지만, UI에서도 애초에 버튼을 보여주지 않는다.
  * 일정이 쌓이면 카드가 한없이 길어지는 문제가 있어, 요일별로 그룹을 나누고
@@ -82,7 +83,7 @@ export function FixedScheduleCard({
             tab === "all" ? "bg-teal text-[#04231b]" : "bg-transparent text-silk-dim"
           }`}
         >
-          전체 고정 시간표
+          팀 고정 일정
         </button>
       </div>
 

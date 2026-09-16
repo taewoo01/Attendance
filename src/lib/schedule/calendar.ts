@@ -6,12 +6,15 @@ import { DOW_EN, DOW_KO, addDays, daysInMonth, mondayKeyOf, monthKeyOf, weekdayI
 export { DOW_EN, DOW_KO, addDays, addMonths, mondayKeyOf, monthKeyOf, weekdayIndex, weekRangeLabelOf, monthRangeLabelOf } from "@/lib/date";
 
 /**
- * "내 일정" / "팀 전체(고정 일정 X)" / "팀 전체(고정 일정 O)" 3단 필터.
- * team-no-fixed는 개인 일정은 팀 전체와 동일하게 보여주되 fixed_schedules(반복
- * 고정 시간표)만 전부 제외한다 — 알바 등 고정 시간표가 개인 일정과 섞여 보기
- * 번거롭다는 피드백으로 추가했다.
+ * "내 일정" / "팀 일정" / "고정 일정" / "전체(고정 X)" / "전체(고정 O)" 5단 필터.
+ * - me: 로그인한 본인 소유 이벤트만(개인/팀/고정 무관).
+ * - team-only: type이 "team"(팀 일정)인 것만 — 등록자 무관, 개인/고정은 제외.
+ * - fixed-only: fixed_schedules(고정 시간표)만 — 팀 전체, 개인/팀 일정은 제외.
+ * - team-no-fixed: 개인+팀 일정은 팀 전체로 보여주되 고정 시간표만 전부 제외한다
+ *   (알바 등 고정 시간표가 개인/팀 일정과 섞여 보기 번거롭다는 피드백으로 추가).
+ * - team: 필터 없이 전부(개인/팀/고정 전체).
  */
-export type OwnerFilter = "me" | "team" | "team-no-fixed";
+export type OwnerFilter = "me" | "team" | "team-no-fixed" | "team-only" | "fixed-only";
 
 export type PersonalEventRow = {
   id: string;
@@ -140,13 +143,13 @@ export function buildWeekDays(
  * 주어진 달(monthKey="YYYY-MM")의 캘린더 그리드(월요일 시작, 5~6주 = 35~42칸)를
  * 계산한다. fixed_schedules는 요일 반복이라 그리드에 걸친 인접 달의 날짜(muted)에도
  * 동일하게 적용된다.
- * 일정 페이지 버그 수정: owner("내 일정"/"팀 전체(고정 O/X)") 필터를 week view와
- * 동일하게 여기서도 적용한다 — 예전에는 month view가 owner 토글과 무관하게 항상
- * 팀 전체를 보여줬다(원본 정적 목업이 month view는 필터링하지 않았던 것을 그대로
- * 따랐던 설계였으나, "내 일정"을 선택해도 다른 사람 일정이 보이는 문제로 이어졌다).
+ * 일정 페이지 버그 수정: owner(OwnerFilter 5단) 필터를 week view와 동일하게
+ * 여기서도 적용한다 — 예전에는 month view가 owner 토글과 무관하게 항상 팀 전체를
+ * 보여줬다(원본 정적 목업이 month view는 필터링하지 않았던 것을 그대로 따랐던
+ * 설계였으나, "내 일정"을 선택해도 다른 사람 일정이 보이는 문제로 이어졌다).
  * "내 일정"일 때는 week view처럼 개수 제한(TEAM_CAP) 없이 전부 보여준다.
- * "팀 전체(고정 일정 X)"는 fixed_schedules 자체를 아예 조회 대상에서 뺀다(dots도
- * "fixed" 점이 안 뜬다) — OwnerFilter 참고.
+ * "team-no-fixed"/"team-only"는 fixed_schedules 자체를 아예 조회 대상에서 뺀다
+ * (dots도 "fixed" 점이 안 뜬다) — OwnerFilter 참고.
  * 버그 수정: 예전에는 여기서 이벤트를 TEAM_CAP개로 미리 잘라서 내려보내고 moreCount만
  * 계산해뒀는데, MonthView의 "+N개 더보기"가 그 잘린 나머지를 펼쳐서 보여줄 방법이
  * 없었다(week view는 ScheduleCalendar가 전체 목록을 들고 렌더링 시점에 펼침 여부를
@@ -171,11 +174,15 @@ export function buildMonthCells(
   const cells: MonthCell[] = [];
   for (let dateKey = gridStart; dateKey <= gridEnd; dateKey = addDays(dateKey, 1)) {
     const dow = weekdayIndex(dateKey);
-    const dayPersonalEvents = personalEvents.filter(
-      (e) => e.eventDate === dateKey && (owner === "me" ? isMine(e.userId) : true),
-    );
+    const dayPersonalEvents = personalEvents.filter((e) => {
+      if (e.eventDate !== dateKey) return false;
+      if (owner === "me") return isMine(e.userId);
+      if (owner === "team-only") return e.team;
+      if (owner === "fixed-only") return false;
+      return true;
+    });
     const dayFixedSchedules =
-      owner === "team-no-fixed"
+      owner === "team-no-fixed" || owner === "team-only"
         ? []
         : fixedSchedules.filter((f) => f.dayOfWeek === DOW_KO[dow] && (owner === "me" ? isMine(f.userId) : true));
 

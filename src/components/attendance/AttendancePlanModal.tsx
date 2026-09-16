@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { checkOut } from "@/lib/attendance/checkout";
 import { setAttendancePlan } from "@/lib/attendance/plan";
 import { CUSTOM_LABEL_MAX_LENGTH, type PlanKind } from "@/lib/attendance/plan-shared";
 
@@ -12,20 +13,37 @@ const PRESETS: { kind: Exclude<PlanKind, "custom">; label: string }[] = [
 ];
 
 /**
- * 홈 화면(HeroSection)/출석 인증 페이지(CheckinCard) "퇴근" 처리 직후 뜨는 모달.
- * "내일 상주 계획"을 등록해두면 다음날 팀원 전체의 출석 현황(HeroSection 상태
- * 모달/AttendanceList)에 미리 배지로 보인다(체크인 여부와 무관하게). 다음날
- * 하루에만 적용되는 1회성 설정이라 건너뛰면(닫기) 아무것도 저장되지 않는다.
+ * 홈 화면(HeroSection)/출석 인증 페이지(CheckinCard)에서 "퇴근" 버튼을 누르면
+ * 뜨는 모달. 퇴근 자체를 이 모달이 확정한다 — "내일 상주 계획"을 실제로
+ * 골라야만 checkOut()이 호출되어 퇴근 처리된다. X(닫기)를 누르면 아무 계획도
+ * 고르지 않은 것이므로 퇴근이 전혀 되지 않은 채(체크인 상태 그대로) 모달만
+ * 닫힌다 — 예전에는 모달을 띄우기 전에 이미 퇴근 처리를 해버려서 계획을
+ * 안 고르고 닫아도 퇴근은 이미 된 상태로 남는 문제가 있었다.
+ * checkOut()이 성공한 뒤에만 setAttendancePlan()을 호출한다 — 계획 저장이
+ * 실패해도 checkOut()을 다시 부르면 "이미 퇴근 처리되었습니다" 에러가 나므로
+ * checkedOut 플래그로 재시도 시 checkOut()을 건너뛴다.
  */
-export function AttendancePlanModal({ onClose }: { onClose: () => void }) {
+export function AttendancePlanModal({ onCancel, onConfirm }: { onCancel: () => void; onConfirm: () => void }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [customOpen, setCustomOpen] = useState(false);
   const [customLabel, setCustomLabel] = useState("");
+  const [checkedOut, setCheckedOut] = useState(false);
 
   async function submit(kind: PlanKind, label?: string) {
     setPending(true);
     setError(null);
+
+    if (!checkedOut) {
+      const checkoutResult = await checkOut();
+      if (checkoutResult.error) {
+        setPending(false);
+        setError(checkoutResult.error);
+        return;
+      }
+      setCheckedOut(true);
+    }
+
     const formData = new FormData();
     formData.append("kind", kind);
     if (label) formData.append("label", label);
@@ -35,14 +53,14 @@ export function AttendancePlanModal({ onClose }: { onClose: () => void }) {
       setError(result.error);
       return;
     }
-    onClose();
+    onConfirm();
   }
 
   return (
     <div
       className="fixed inset-0 z-[110] flex items-center justify-center bg-[rgba(4,10,8,0.65)] p-5"
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget && !pending) onCancel();
       }}
     >
       <div className="w-full max-w-[360px] rounded-card border border-border bg-bg-panel px-[22px] pt-[22px] pb-6">
@@ -50,15 +68,16 @@ export function AttendancePlanModal({ onClose }: { onClose: () => void }) {
           <h3 className="m-0 text-[14.5px] font-semibold">내일 상주 계획</h3>
           <button
             type="button"
-            onClick={onClose}
+            onClick={onCancel}
+            disabled={pending}
             aria-label="닫기"
-            className="cursor-pointer border-none bg-transparent px-1 py-0.5 text-xl leading-none text-silk-faint hover:text-silk"
+            className="cursor-pointer border-none bg-transparent px-1 py-0.5 text-xl leading-none text-silk-faint hover:text-silk disabled:cursor-not-allowed disabled:opacity-60"
           >
             ×
           </button>
         </div>
         <p className="m-0 mb-4 text-[12.5px] leading-[1.6] text-silk-dim">
-          내일 얼마나 상주할지 미리 알려주면 팀원들이 오늘 출석 현황에서 미리 볼 수 있어요.
+          내일 얼마나 상주할지 골라야 퇴근이 처리돼요. 닫기(×)를 누르면 퇴근하지 않은 상태로 남아요.
         </p>
 
         {!customOpen ? (
@@ -116,15 +135,6 @@ export function AttendancePlanModal({ onClose }: { onClose: () => void }) {
         )}
 
         {error && <p className="m-0 mt-3 font-mono text-[11px] text-[#e2543f]">{error}</p>}
-
-        <button
-          type="button"
-          onClick={onClose}
-          disabled={pending}
-          className="mt-4 w-full cursor-pointer border-none bg-transparent p-0 text-center font-mono text-[11.5px] text-silk-faint hover:text-silk disabled:cursor-not-allowed"
-        >
-          건너뛰기
-        </button>
       </div>
     </div>
   );

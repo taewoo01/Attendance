@@ -89,9 +89,7 @@ export function RegisterEventModal() {
       >
         <div className="w-full max-w-[420px] overflow-y-auto rounded-card border border-border bg-bg-panel">
           <div className="flex items-center justify-between border-b border-border px-[22px] py-[18px]">
-            <h3 className="m-0 text-[14.5px] font-semibold">
-              {kind === "personal" ? "개인 일정 등록" : kind === "team" ? "팀 일정 등록" : "고정 시간표 등록"}
-            </h3>
+            <h3 className="m-0 text-[14.5px] font-semibold">일정 등록</h3>
             <button
               type="button"
               onClick={closeModal}

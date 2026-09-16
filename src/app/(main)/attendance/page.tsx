@@ -106,6 +106,7 @@ export default async function AttendancePage({ searchParams }: PageProps<"/atten
           checkedInAt={user ? todaysByUser.get(user.id)?.checkedInAt : undefined}
           checkedOutAt={user ? todaysByUser.get(user.id)?.checkedOutAt : undefined}
           bannerStatus={checkinStatus}
+          userId={user?.id}
         />
         <AttendanceList members={members} />
       </div>

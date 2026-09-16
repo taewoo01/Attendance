@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AttendancePlanModal } from "@/components/attendance/AttendancePlanModal";
-import { checkOut } from "@/lib/attendance/checkout";
+import { useSelfCheckinRealtime } from "@/lib/attendance/useSelfCheckinRealtime";
 import { useRotatingCheckinQr } from "@/lib/attendance/useRotatingQr";
 
 export type CheckinBannerStatus = "ok" | "already" | "invalid_token" | "unauthenticated";
@@ -31,6 +31,8 @@ type CheckinCardProps = {
   checkedOutAt?: Date | null;
   /** /attendance/checkin 리다이렉트 직후에만 존재하는 방금 시도한 체크인 결과. */
   bannerStatus?: CheckinBannerStatus | null;
+  /** QR 모달이 떠 있는 동안 본인 체크인을 감지해 자동으로 닫기 위한 로그인 사용자 id. */
+  userId?: string;
 };
 
 /**
@@ -42,26 +44,23 @@ type CheckinCardProps = {
  * 체크아웃 버튼은 원본에서 disabled 정적 상태였으나(체크아웃 기능 자체가 없었음),
  * 퇴근은 위치 증빙 없이 버튼 한 번으로 처리하기로 해서(HeroSection.tsx와 동일한
  * checkOut() Server Action) 실제 동작으로 바꿨다.
+ * "퇴근" 버튼은 곧바로 checkOut()을 부르지 않고 AttendancePlanModal을 띄우기만
+ * 한다 — 실제 퇴근 처리는 그 모달에서 "내일 상주 계획"을 골라야 확정된다
+ * (계획을 안 고르고 닫으면 퇴근이 안 된 상태로 남는다).
+ * QR 체크인 모달은 내가 폰으로 QR을 스캔해 체크인해도 자동으로 닫히지 않던
+ * 문제가 있었다 — Realtime으로 본인 체크인을 감지해 자동으로 닫고
+ * router.refresh()로 카드 상태(체크인 완료)를 갱신한다.
  */
-export function CheckinCard({ checkedInAt, checkedOutAt, bannerStatus }: CheckinCardProps) {
+export function CheckinCard({ checkedInAt, checkedOutAt, bannerStatus, userId }: CheckinCardProps) {
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
-  const [checkingOut, setCheckingOut] = useState(false);
   const [planModalOpen, setPlanModalOpen] = useState(false);
 
-  async function handleCheckOut() {
-    setCheckingOut(true);
-    const result = await checkOut();
-    setCheckingOut(false);
-    if (result.error) {
-      window.alert(result.error);
-      return;
-    }
-    // 퇴근 직후 "내일 상주 계획" 모달을 띄운다(HeroSection.tsx와 동일한 흐름).
-    setPlanModalOpen(true);
+  function cancelPlanModal() {
+    setPlanModalOpen(false);
   }
 
-  function closePlanModal() {
+  function confirmPlanModal() {
     setPlanModalOpen(false);
     router.refresh();
   }
@@ -334,11 +333,11 @@ export function CheckinCard({ checkedInAt, checkedOutAt, bannerStatus }: Checkin
       <div className="flex flex-col gap-2.5">
         <button
           type="button"
-          onClick={handleCheckOut}
-          disabled={!checkedInAt || !!checkedOutAt || checkingOut}
+          onClick={() => setPlanModalOpen(true)}
+          disabled={!checkedInAt || !!checkedOutAt}
           className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-button border border-border bg-transparent px-[18px] py-[13px] text-sm font-semibold text-silk disabled:cursor-not-allowed disabled:text-silk-faint"
         >
-          {checkingOut ? "처리 중..." : checkedOutAt ? "퇴근 완료" : "체크아웃"}
+          {checkedOutAt ? "퇴근 완료" : "체크아웃"}
         </button>
       </div>
 
@@ -346,14 +345,32 @@ export function CheckinCard({ checkedInAt, checkedOutAt, bannerStatus }: Checkin
         위 QR을 탭하면 실제 체크인 QR을 볼 수 있어요 · 폰 카메라로 스캔해 체크인하세요
       </p>
 
-      {modalOpen && <CheckinQrModal onClose={() => setModalOpen(false)} />}
-      {planModalOpen && <AttendancePlanModal onClose={closePlanModal} />}
+      {modalOpen && (
+        <CheckinQrModal
+          userId={userId}
+          onClose={() => setModalOpen(false)}
+          onCheckedIn={() => {
+            setModalOpen(false);
+            router.refresh();
+          }}
+        />
+      )}
+      {planModalOpen && <AttendancePlanModal onCancel={cancelPlanModal} onConfirm={confirmPlanModal} />}
     </div>
   );
 }
 
-function CheckinQrModal({ onClose }: { onClose: () => void }) {
+function CheckinQrModal({
+  userId,
+  onClose,
+  onCheckedIn,
+}: {
+  userId?: string;
+  onClose: () => void;
+  onCheckedIn: () => void;
+}) {
   const { qrDataUrl, error } = useRotatingCheckinQr(320);
+  useSelfCheckinRealtime(userId, onCheckedIn);
 
   return (
     <div

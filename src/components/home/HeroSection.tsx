@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { AttendancePlanModal } from "@/components/attendance/AttendancePlanModal";
 import { PlanBadge, type AttendanceMember } from "@/components/attendance/AttendanceList";
-import { checkOut } from "@/lib/attendance/checkout";
+import { useSelfCheckinRealtime } from "@/lib/attendance/useSelfCheckinRealtime";
 import { useRotatingCheckinQr } from "@/lib/attendance/useRotatingQr";
 
 type HeroSectionProps = {
@@ -15,6 +15,8 @@ type HeroSectionProps = {
   /** 오늘 이미 퇴근 처리했는지 — true면 "퇴근" 버튼 대신 완료 표시를 보여준다. */
   initialCheckedOut: boolean;
   attendance: AttendanceMember[];
+  /** QR 모달이 떠 있는 동안 본인 체크인을 감지해 자동으로 닫기 위한 로그인 사용자 id. */
+  userId?: string;
 };
 
 /**
@@ -27,30 +29,33 @@ type HeroSectionProps = {
  * 실제 스캔 가능한 회전 QR을 보여준다 — 수동으로 "완료" 처리하는 버튼은 정적 QR
  * 우회가 되므로 두지 않는다. checkedIn(오늘 이미 체크인했는지)은 page.tsx가 조회한
  * 실제 DB 값(initialCheckedIn)을 그대로 쓴다.
+ * "퇴근" 버튼은 곧바로 checkOut()을 부르지 않고 AttendancePlanModal을 띄우기만
+ * 한다(CheckinCard.tsx와 동일) — 실제 퇴근 처리는 그 모달에서 "내일 상주 계획"을
+ * 골라야 확정된다(계획을 안 고르고 닫으면 퇴근이 안 된 상태로 남는다).
+ * QR 체크인 모달도 CheckinCard.tsx와 동일하게 Realtime으로 본인 체크인을 감지해
+ * 자동으로 닫는다(useSelfCheckinRealtime) — 예전에는 폰으로 스캔해 체크인해도
+ * 모달이 안 닫혀서 직접 X를 누르거나 새로고침해야 했다.
  */
-export function HeroSection({ children, myName, initialCheckedIn, initialCheckedOut, attendance }: HeroSectionProps) {
+export function HeroSection({
+  children,
+  myName,
+  initialCheckedIn,
+  initialCheckedOut,
+  attendance,
+  userId,
+}: HeroSectionProps) {
   const router = useRouter();
   const checkedIn = initialCheckedIn;
   const checkedOut = initialCheckedOut;
   const [qrOpen, setQrOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
-  const [checkingOut, setCheckingOut] = useState(false);
   const [planModalOpen, setPlanModalOpen] = useState(false);
 
-  async function handleCheckOut() {
-    setCheckingOut(true);
-    const result = await checkOut();
-    setCheckingOut(false);
-    if (result.error) {
-      window.alert(result.error);
-      return;
-    }
-    // 퇴근 직후 "내일 상주 계획" 모달을 띄운다 — 모달을 닫을 때(등록/건너뛰기
-    // 모두) router.refresh()로 "퇴근 완료" 표시와 방금 등록한 계획 배지를 함께 반영한다.
-    setPlanModalOpen(true);
+  function cancelPlanModal() {
+    setPlanModalOpen(false);
   }
 
-  function closePlanModal() {
+  function confirmPlanModal() {
     setPlanModalOpen(false);
     router.refresh();
   }
@@ -87,11 +92,10 @@ export function HeroSection({ children, myName, initialCheckedIn, initialChecked
             ) : (
               <button
                 type="button"
-                onClick={handleCheckOut}
-                disabled={checkingOut}
-                className="inline-flex cursor-pointer items-center gap-2 border border-border bg-transparent px-5 py-[13px] text-[13.5px] font-semibold text-silk disabled:cursor-not-allowed disabled:opacity-60"
+                onClick={() => setPlanModalOpen(true)}
+                className="inline-flex cursor-pointer items-center gap-2 border border-border bg-transparent px-5 py-[13px] text-[13.5px] font-semibold text-silk"
               >
-                {checkingOut ? "처리 중..." : "퇴근"}
+                퇴근
               </button>
             ))}
           <Link
@@ -128,7 +132,15 @@ export function HeroSection({ children, myName, initialCheckedIn, initialChecked
               ✕
             </button>
           </div>
-          {qrOpen && <HeroQrModalBody />}
+          {qrOpen && (
+            <HeroQrModalBody
+              userId={userId}
+              onCheckedIn={() => {
+                setQrOpen(false);
+                router.refresh();
+              }}
+            />
+          )}
         </div>
       </div>
 
@@ -205,13 +217,14 @@ export function HeroSection({ children, myName, initialCheckedIn, initialChecked
 
       {children}
 
-      {planModalOpen && <AttendancePlanModal onClose={closePlanModal} />}
+      {planModalOpen && <AttendancePlanModal onCancel={cancelPlanModal} onConfirm={confirmPlanModal} />}
     </header>
   );
 }
 
-function HeroQrModalBody() {
+function HeroQrModalBody({ userId, onCheckedIn }: { userId?: string; onCheckedIn: () => void }) {
   const { qrDataUrl, error } = useRotatingCheckinQr(184);
+  useSelfCheckinRealtime(userId, onCheckedIn);
 
   return (
     <>

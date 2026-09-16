@@ -105,6 +105,7 @@ export default async function Home() {
         initialCheckedIn={initialCheckedIn}
         initialCheckedOut={initialCheckedOut}
         attendance={attendance}
+        userId={user?.id}
       >
         <Battery3D />
       </HeroSection>
