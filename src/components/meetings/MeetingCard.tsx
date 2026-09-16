@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { deleteMeeting, toggleMeetingAction } from "@/lib/meetings/actions";
@@ -41,6 +42,10 @@ export type Meeting = {
  * 전혀 건드리지 않는 순수 정적 영역이었으나, TASK-033에서 수정/삭제 버튼과
  * 액션 아이템 완료 체크박스(원본에 없던 새 UI — 사이드바의 죽은 `.chk`와 달리
  * 카드 쪽엔 원래 체크박스 자체가 없었다)를 추가해 Client Component로 바꿨다.
+ * "인쇄" 링크는 다크 테마 화면을 그대로 인쇄하면 배경/버튼/다른 카드까지 같이
+ * 찍혀서, 이 회의록 하나만 흰 배경 문서로 렌더링하는 별도 페이지
+ * (/meetings/[id]/print, (main) 밖이라 StatusBar 등을 상속하지 않음)를 새 탭으로
+ * 연다 — 그 페이지가 열리자마자 자동으로 인쇄 대화상자를 띄운다.
  */
 export function MeetingCard({ meeting }: { meeting: Meeting }) {
   const router = useRouter();
@@ -219,6 +224,14 @@ export function MeetingCard({ meeting }: { meeting: Meeting }) {
         <span className="rounded-[5px] bg-bg-raised px-2 py-[3px]">{meeting.tag}</span>
         <div className="flex items-center gap-3">
           <span>기록: {meeting.recorder}</span>
+          <Link
+            href={`/meetings/${meeting.id}/print`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-silk-dim hover:text-silk hover:underline"
+          >
+            인쇄
+          </Link>
           <button
             type="button"
             onClick={() => setEditing(true)}

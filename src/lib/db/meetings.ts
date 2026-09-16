@@ -1,4 +1,4 @@
-import { desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { meetingNotes, meetingRecordings } from "@/db/schema";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -14,6 +14,12 @@ import { BUCKET } from "@/lib/files/upload-shared";
  */
 export async function listMeetings() {
   return db.select().from(meetingNotes).orderBy(desc(meetingNotes.createdAt));
+}
+
+/** 회의록 인쇄 페이지(/meetings/[id]/print)용 단건 조회. 없으면 null. */
+export async function getMeetingById(id: string) {
+  const [row] = await db.select().from(meetingNotes).where(eq(meetingNotes.id, id)).limit(1);
+  return row ?? null;
 }
 
 /** 상단바 녹음 버튼으로 만든 녹음 목록. 회의록 사이드바(RecordingsCard)에 최신순으로 나열한다. */

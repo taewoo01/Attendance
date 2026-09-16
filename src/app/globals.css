@@ -101,3 +101,17 @@ body {
 ::-webkit-scrollbar-corner {
   background: var(--bg-raised);
 }
+
+/*
+ * 회의록 인쇄 페이지(/meetings/[id]/print)용 인쇄 리셋. body는 위에서 다크
+ * 배경(--bg)을 전역으로 깔아두는데, 인쇄 페이지 콘텐츠가 페이지 경계를 넘어가면
+ * (여러 장 인쇄) 다음 장에 그 어두운 배경이 비칠 수 있어 인쇄 시에는 항상
+ * 흰 배경/검은 글자로 되돌린다. 인쇄 대상이 아닌 다른 페이지를 실수로
+ * 인쇄하더라도 다크 테마 그대로 인쇄되는 것보다는 이쪽이 낫다.
+ */
+@media print {
+  body {
+    background: #fff;
+    color: #141a18;
+  }
+}
