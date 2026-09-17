@@ -39,8 +39,15 @@ type CheckinCardProps = {
  * playground-design/attendance.html의 .card(QR 체크인 카드).
  * 카드에 그려진 픽셀 그림은 실제로 스캔 가능한 QR이 아니라 장식용 패턴이다 — 탭하면
  * 열리는 모달에서 실제 회전형 QR(AGENTS.md 11.3절, useRotatingCheckinQr)을 보여준다.
- * 입구에 전용 디스플레이(/attendance-display)가 없을 때도 이 모달로 그 자리를 대신할
- * 수 있다. 정적 QR 우회를 막기 위해 QR 없이 바로 체크인되는 수동 버튼은 두지 않는다.
+ * 정적 QR 우회를 막기 위해 QR 없이 바로 체크인되는 수동 버튼은 두지 않는다.
+ * 폰마다 매일 로그인이 풀려서(갤럭시 카메라 앱의 QR 미리보기가 Chrome과 쿠키를
+ * 공유하지 않는 문제) "스캔 → 로그인 → 다시 스캔"을 해야 하는 번거로움이 있었다
+ * (사용자 확인 완료) — 이 화면은 이미 로그인된 세션(예: 데스크톱 브라우저)에서
+ * 열리므로, useRotatingCheckinQr에 본인 userId를 넘겨 "본인 전용" QR을 보여준다.
+ * 본인 폰 카메라로 그 QR을 스캔하면 스캔하는 폰의 로그인 여부와 무관하게 바로
+ * 체크인된다(신원 확인은 이미 이 화면에 로그인돼 있다는 것으로 끝났다). 입구
+ * 디스플레이(/attendance-display)의 "본인 이름 선택" 방식과 같은 원리이되,
+ * 여기서는 이름을 새로 고를 필요 없이 이미 로그인된 사용자 본인으로 고정된다.
  * 체크아웃 버튼은 원본에서 disabled 정적 상태였으나(체크아웃 기능 자체가 없었음),
  * 퇴근은 위치 증빙 없이 버튼 한 번으로 처리하기로 해서(HeroSection.tsx와 동일한
  * checkOut() Server Action) 실제 동작으로 바꿨다.
@@ -369,7 +376,7 @@ function CheckinQrModal({
   onClose: () => void;
   onCheckedIn: () => void;
 }) {
-  const { qrDataUrl, error } = useRotatingCheckinQr(320);
+  const { qrDataUrl, error } = useRotatingCheckinQr(320, userId);
   useSelfCheckinRealtime(userId, onCheckedIn);
 
   return (
@@ -404,7 +411,7 @@ function CheckinQrModal({
             )}
           </div>
           <p className="m-0 text-center font-mono text-[11px] text-silk-faint">
-            다른 팀원이 폰 카메라로 이 QR을 스캔하면 체크인됩니다 · QR은 주기적으로 갱신됩니다
+            본인 폰 카메라로 이 QR을 스캔하면 로그인 여부와 상관없이 바로 체크인됩니다 · QR은 주기적으로 갱신됩니다
           </p>
         </div>
       </div>

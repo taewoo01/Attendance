@@ -29,6 +29,10 @@ type HeroSectionProps = {
  * 실제 스캔 가능한 회전 QR을 보여준다 — 수동으로 "완료" 처리하는 버튼은 정적 QR
  * 우회가 되므로 두지 않는다. checkedIn(오늘 이미 체크인했는지)은 page.tsx가 조회한
  * 실제 DB 값(initialCheckedIn)을 그대로 쓴다.
+ * QR 모달은 CheckinCard.tsx와 동일하게 useRotatingCheckinQr에 본인 userId를 넘겨
+ * "본인 전용" QR을 보여준다 — 이미 이 화면에 로그인돼 있다는 것으로 신원 확인이
+ * 끝났기 때문에, 스캔하는 폰 자체는 로그인 여부와 무관하게 바로 체크인된다(폰마다
+ * 매일 로그인이 풀리는 문제의 우회책, 사용자 확인 완료).
  * "퇴근" 버튼은 곧바로 checkOut()을 부르지 않고 AttendancePlanModal을 띄우기만
  * 한다(CheckinCard.tsx와 동일) — 실제 퇴근 처리는 그 모달에서 "내일 상주 계획"을
  * 골라야 확정된다(계획을 안 고르고 닫으면 퇴근이 안 된 상태로 남는다).
@@ -223,7 +227,7 @@ export function HeroSection({
 }
 
 function HeroQrModalBody({ userId, onCheckedIn }: { userId?: string; onCheckedIn: () => void }) {
-  const { qrDataUrl, error } = useRotatingCheckinQr(184);
+  const { qrDataUrl, error } = useRotatingCheckinQr(184, userId);
   useSelfCheckinRealtime(userId, onCheckedIn);
 
   return (
@@ -239,7 +243,7 @@ function HeroQrModalBody({ userId, onCheckedIn }: { userId?: string; onCheckedIn
         )}
       </div>
       <p className="m-0 text-center text-[12.5px] leading-[1.5] text-silk-dim">
-        이 QR을 폰 카메라로 스캔하면 체크인됩니다 · QR은 주기적으로 갱신됩니다
+        본인 폰 카메라로 이 QR을 스캔하면 로그인 여부와 상관없이 바로 체크인됩니다 · QR은 주기적으로 갱신됩니다
       </p>
     </>
   );
