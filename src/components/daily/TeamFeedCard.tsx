@@ -9,6 +9,7 @@ export type FeedEntry = {
   mine?: boolean;
   name: string;
   avatar: string;
+  avatarUrl?: string | null;
   time: string;
   desc: string;
   check: string;
@@ -108,9 +109,14 @@ export function TeamFeedCard({
           >
             <div className="mb-[7px] flex flex-wrap items-center justify-between gap-[10px]">
               <span className="flex items-center gap-[7px] text-[12.5px] font-semibold text-silk">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(155deg,var(--teal),#157a5f)] text-[9.5px] font-bold text-[#04231b]">
-                  {e.avatar}
-                </span>
+                {e.avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- signed URL은 만료가 있어 next/image 원격 최적화 대상으로 등록하기보다 그대로 <img>로 둔다.
+                  <img src={e.avatarUrl} alt="" className="h-5 w-5 shrink-0 rounded-full object-cover" />
+                ) : (
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(155deg,var(--teal),#157a5f)] text-[9.5px] font-bold text-[#04231b]">
+                    {e.avatar}
+                  </span>
+                )}
                 {e.name}
                 <span className="font-normal text-silk-faint"> · {e.time}</span>
               </span>

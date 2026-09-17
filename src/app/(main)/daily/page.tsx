@@ -5,6 +5,7 @@ import type { PastLog } from "@/components/daily/PastLogsCard";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { listDailyLogs, listMyTemplates } from "@/lib/db/daily";
 import { listProfiles } from "@/lib/db/profiles";
+import { withAvatarUrls } from "@/lib/team/avatars";
 
 // TASK-025: DB 조회가 build 시점에 고정되지 않도록 매 요청마다 렌더링한다.
 export const dynamic = "force-dynamic";
@@ -78,6 +79,11 @@ export default async function DailyPage() {
   const templates = user ? await listMyTemplates(user.id) : [];
   const todayKey = seoulDateKey(new Date());
 
+  // team 페이지와 동일하게 profiles.avatarPath로 signed URL을 발급해, 팀 기록
+  // 피드의 이니셜 원형 아바타 대신 각자 설정한 프로필 사진을 보여준다.
+  const rosterWithAvatars = await withAvatarUrls(roster);
+  const avatarUrlByUserId = new Map(rosterWithAvatars.map((profile) => [profile.userId, profile.avatarUrl]));
+
   const byDate = new Map<string, typeof rows>();
   for (const row of rows) {
     const key = seoulDateKey(row.loggedAt);
@@ -120,6 +126,7 @@ export default async function DailyPage() {
         mine: user ? row.userId === user.id : false,
         name,
         avatar: name.trim().charAt(0) || "?",
+        avatarUrl: avatarUrlByUserId.get(row.userId) ?? null,
         time: seoulTime(row.loggedAt),
         desc: row.body,
         check: `${doneCount}/${total} 완료`,
