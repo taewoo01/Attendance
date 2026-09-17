@@ -1,15 +1,9 @@
 import { AttendanceList, type AttendanceMember } from "@/components/attendance/AttendanceList";
-import { CheckinCard, type CheckinBannerStatus } from "@/components/attendance/CheckinCard";
+import { CheckinCard } from "@/components/attendance/CheckinCard";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { getAttendancePlansForDate, listAttendance } from "@/lib/db/attendance";
 import { listProfiles } from "@/lib/db/profiles";
 import { addDays } from "@/lib/date";
-
-const CHECKIN_STATUSES: CheckinBannerStatus[] = ["ok", "already", "invalid_token", "unauthenticated"];
-
-function parseCheckinStatus(value: string | undefined): CheckinBannerStatus | null {
-  return CHECKIN_STATUSES.includes(value as CheckinBannerStatus) ? (value as CheckinBannerStatus) : null;
-}
 
 // TASK-027: DB 조회가 build 시점에 고정되지 않도록 매 요청마다 렌더링한다.
 export const dynamic = "force-dynamic";
@@ -35,22 +29,22 @@ function seoulTime(date: Date): string {
  * TASK-027: 하드코딩된 출석 현황 8명 대신 실제 profiles + 오늘의 attendance를
  * 조회해 병합한다.
  * QR 체크인(AGENTS.md 11.3절): 실제 체크인은 /attendance/checkin GET 라우트가
- * 처리하고 이 페이지로 `?checkin=<result>` 쿼리와 함께 리다이렉트된다 — 여기서는
- * 그 결과 배너와 로그인 사용자 본인의 오늘 체크인/퇴근 여부만 CheckinCard에 내려준다.
+ * 처리하고 결과 화면(/attendance/checkin-result)으로 리다이렉트된다(로그인 없이
+ * 체크인되는 개인 토큰도 있어, 결과 확인에 로그인을 요구하지 않는 별도 페이지로
+ * 분리했다) — 여기서는 로그인 사용자 본인의 오늘 체크인/퇴근 여부만 CheckinCard에
+ * 내려준다.
  */
-export default async function AttendancePage({ searchParams }: PageProps<"/attendance">) {
+export default async function AttendancePage() {
   const now = new Date();
   const todayKey = seoulDateKey(now);
   const tomorrowKey = addDays(todayKey, 1);
-  const [{ checkin }, user, roster, rows, planRows, nextPlanRows] = await Promise.all([
-    searchParams,
+  const [user, roster, rows, planRows, nextPlanRows] = await Promise.all([
     getCurrentUser(),
     listProfiles(),
     listAttendance(),
     getAttendancePlansForDate(todayKey),
     getAttendancePlansForDate(tomorrowKey),
   ]);
-  const checkinStatus = parseCheckinStatus(Array.isArray(checkin) ? checkin[0] : checkin);
 
   const todaysByUser = new Map<string, { checkedInAt: Date; checkedOutAt: Date | null }>();
   for (const row of rows) {
@@ -105,7 +99,6 @@ export default async function AttendancePage({ searchParams }: PageProps<"/atten
         <CheckinCard
           checkedInAt={user ? todaysByUser.get(user.id)?.checkedInAt : undefined}
           checkedOutAt={user ? todaysByUser.get(user.id)?.checkedOutAt : undefined}
-          bannerStatus={checkinStatus}
           userId={user?.id}
         />
         <AttendanceList members={members} />

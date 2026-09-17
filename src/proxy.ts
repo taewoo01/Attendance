@@ -24,11 +24,14 @@ export async function proxy(request: NextRequest) {
   // 로그인 세션이 없는 공용 기기에서 동작해야 한다. /attendance/checkin(QR 스캔 착지)도
   // 자체적으로 getCurrentUser()를 확인해 미로그인 시 "unauthenticated" 배너를 보여주므로,
   // 여기서 먼저 /login으로 가로채면 그 안내가 아예 뜨지 못한다 — 통과시키고 라우트 핸들러에
-  // 맡긴다.
+  // 맡긴다. /attendance/checkin-result는 그 착지 리다이렉트가 보여주는 결과 화면 —
+  // "본인 QR"(로그인 없이 체크인되는 토큰)은 체크인 자체는 성공해도 스캔한 폰이
+  // 로그인 안 돼 있을 수 있어, 결과 확인에까지 로그인을 요구하면 안 된다.
   const isPublicAttendanceRoute =
     request.nextUrl.pathname === "/attendance-display" ||
     request.nextUrl.pathname === "/api/attendance/qr-token" ||
-    request.nextUrl.pathname === "/attendance/checkin";
+    request.nextUrl.pathname === "/attendance/checkin" ||
+    request.nextUrl.pathname === "/attendance/checkin-result";
 
   if (isAuthCallback || isPublicAttendanceRoute) {
     return getResponse();

@@ -6,15 +6,6 @@ import { AttendancePlanModal } from "@/components/attendance/AttendancePlanModal
 import { useSelfCheckinRealtime } from "@/lib/attendance/useSelfCheckinRealtime";
 import { useRotatingCheckinQr } from "@/lib/attendance/useRotatingQr";
 
-export type CheckinBannerStatus = "ok" | "already" | "invalid_token" | "unauthenticated";
-
-const BANNER_TEXT: Record<CheckinBannerStatus, string> = {
-  ok: "체크인 완료되었습니다.",
-  already: "오늘 이미 체크인했습니다.",
-  invalid_token: "QR이 만료되었어요. 화면의 QR을 다시 스캔해 주세요.",
-  unauthenticated: "로그인 후 다시 QR을 스캔해 주세요.",
-};
-
 function seoulTime(date: Date): string {
   return new Intl.DateTimeFormat("ko-KR", {
     timeZone: "Asia/Seoul",
@@ -29,8 +20,6 @@ type CheckinCardProps = {
   checkedInAt?: Date;
   /** 로그인한 본인의 오늘 퇴근 시각. 없으면 아직 퇴근 전(또는 체크인 자체를 안 함). */
   checkedOutAt?: Date | null;
-  /** /attendance/checkin 리다이렉트 직후에만 존재하는 방금 시도한 체크인 결과. */
-  bannerStatus?: CheckinBannerStatus | null;
   /** QR 모달이 떠 있는 동안 본인 체크인을 감지해 자동으로 닫기 위한 로그인 사용자 id. */
   userId?: string;
 };
@@ -58,7 +47,7 @@ type CheckinCardProps = {
  * 문제가 있었다 — Realtime으로 본인 체크인을 감지해 자동으로 닫고
  * router.refresh()로 카드 상태(체크인 완료)를 갱신한다.
  */
-export function CheckinCard({ checkedInAt, checkedOutAt, bannerStatus, userId }: CheckinCardProps) {
+export function CheckinCard({ checkedInAt, checkedOutAt, userId }: CheckinCardProps) {
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
   const [planModalOpen, setPlanModalOpen] = useState(false);
@@ -326,16 +315,6 @@ export function CheckinCard({ checkedInAt, checkedOutAt, bannerStatus, userId }:
             ? `오늘 ${seoulTime(checkedInAt)} 체크인 완료`
             : "아직 체크인하지 않았어요"}
       </div>
-
-      {bannerStatus && (
-        <p
-          className={`m-0 mb-[14px] rounded-input border px-[14px] py-2.5 text-center text-[12.5px] ${
-            bannerStatus === "ok" ? "border-teal/40 bg-teal/10 text-teal" : "border-border bg-bg-raised text-silk-dim"
-          }`}
-        >
-          {BANNER_TEXT[bannerStatus]}
-        </p>
-      )}
 
       <div className="flex flex-col gap-2.5">
         <button
