@@ -3,6 +3,7 @@ import { StatusBar } from "@/components/layout/StatusBar";
 import { Footer } from "@/components/layout/Footer";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { getProfileByUserId } from "@/lib/db/profiles";
+import { listNotificationsForUser } from "@/lib/db/notifications";
 import { listRecentActivity } from "@/lib/notifications/activity";
 import { withAvatarUrls } from "@/lib/team/avatars";
 
@@ -28,14 +29,23 @@ import { withAvatarUrls } from "@/lib/team/avatars";
  * defaultName으로 미리 채워서 다시 입력하지 않게 한다.
  */
 export default async function MainLayout({ children }: { children: React.ReactNode }) {
-  const [user, notifications] = await Promise.all([getCurrentUser(), listRecentActivity()]);
-  const profile = user ? await getProfileByUserId(user.id) : null;
+  const [user, activity] = await Promise.all([getCurrentUser(), listRecentActivity()]);
+  const [profile, personalNotifications] = await Promise.all([
+    user ? getProfileByUserId(user.id) : null,
+    user ? listNotificationsForUser(user.id) : [],
+  ]);
   const avatarUrl = profile ? (await withAvatarUrls([profile]))[0].avatarUrl : null;
   const needsProfile = !!user && (!profile?.name || !profile?.contact);
 
   return (
     <>
-      <StatusBar userName={profile?.name || undefined} avatarUrl={avatarUrl} notifications={notifications} />
+      <StatusBar
+        userName={profile?.name || undefined}
+        avatarUrl={avatarUrl}
+        activity={activity}
+        personalNotifications={personalNotifications}
+        userId={user?.id}
+      />
       <main className="flex-1">{children}</main>
       <Footer />
       {needsProfile && (

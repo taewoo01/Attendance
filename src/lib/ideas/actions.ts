@@ -7,6 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { db } from "@/lib/db/client";
 import { getProfileByUserId } from "@/lib/db/profiles";
 import { getIdeaFileById, listIdeaFilesFor } from "@/lib/db/ideas";
+import { notifyUser, truncateForPreview } from "@/lib/notifications/create";
 import { ideaFiles, ideaReactions, ideas, type IdeaCommentRow } from "@/db/schema";
 import {
   ALLOWED_EXTENSIONS,
@@ -323,6 +324,8 @@ export type AddIdeaCommentState = { error?: string; success?: boolean };
  * 어떤 아이디어에든 댓글을 달 수 있다(원본이 사회적 피드 성격). comments는
  * jsonb 배열이라 전체를 읽어 새 댓글을 append한 뒤 다시 쓴다(meeting_notes의
  * actions 토글과 동일한 패턴).
+ * 알림: 글 작성자가 있고(userId 없는 레거시 글 제외) 댓글 작성자 본인 글이
+ * 아닐 때만 글 작성자에게 알림을 보낸다(자기 글에 자기가 단 댓글은 제외).
  */
 export async function addIdeaComment(ideaId: string, formData: FormData): Promise<AddIdeaCommentState> {
   const author = await requireAuthorProfile();
@@ -335,7 +338,10 @@ export async function addIdeaComment(ideaId: string, formData: FormData): Promis
     return { error: "댓글 내용을 입력해 주세요." };
   }
 
-  const [idea] = await db.select({ comments: ideas.comments }).from(ideas).where(eq(ideas.id, ideaId));
+  const [idea] = await db
+    .select({ comments: ideas.comments, userId: ideas.userId, title: ideas.title })
+    .from(ideas)
+    .where(eq(ideas.id, ideaId));
   if (!idea) {
     return { error: "아이디어를 찾을 수 없습니다." };
   }
@@ -353,6 +359,16 @@ export async function addIdeaComment(ideaId: string, formData: FormData): Promis
     .update(ideas)
     .set({ comments: [...idea.comments, newComment] })
     .where(eq(ideas.id, ideaId));
+
+  if (idea.userId && idea.userId !== author.userId) {
+    await notifyUser(idea.userId, {
+      type: "idea_comment",
+      actorUserId: author.userId,
+      actorName: author.who,
+      message: `${author.who}님이 "${idea.title || "제목 없음"}"에 댓글을 남겼습니다: ${truncateForPreview(text)}`,
+      linkHref: `/ideas#idea-${ideaId}`,
+    });
+  }
 
   revalidatePath("/ideas");
   return { success: true };

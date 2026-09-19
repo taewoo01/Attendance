@@ -1,4 +1,4 @@
-import { NotificationBell } from "@/components/layout/NotificationBell";
+import { NotificationBell, type PersonalNotification } from "@/components/layout/NotificationBell";
 import { RecordingControl } from "@/components/layout/RecordingControl";
 import { LogoutButton } from "@/components/ui/LogoutButton";
 import { UserChip } from "@/components/ui/UserChip";
@@ -14,14 +14,19 @@ import { Navigation } from "./Navigation";
  * 두 아이콘 중 눌러도 아무 반응이 없던 달력 아이콘은 없앴고(대응하는 실제 기능이
  * 없어 장식으로만 남아 있었다), 알림 아이콘은 NotificationBell로 교체해 실제 최근
  * 활동(layout.tsx가 listRecentActivity()로 조회)을 드롭다운으로 보여준다.
+ * 알림 고도화: 벨을 둘로 쪼개지 않고 하나로 합쳤다 — 드롭다운 위쪽에 "나에게 온"
+ * 개인 알림(댓글/체크인, 읽음·안읽음 있음)을, 그 아래 기존 전체 활동 피드를
+ * 그대로 보여준다(사용자 확인 완료). 배지 숫자는 개인 알림 안읽음 개수만 센다.
  */
 type StatusBarProps = {
   userName?: string;
   avatarUrl?: string | null;
-  notifications: ActivityItem[];
+  activity: ActivityItem[];
+  personalNotifications: PersonalNotification[];
+  userId?: string;
 };
 
-export function StatusBar({ userName, avatarUrl, notifications }: StatusBarProps) {
+export function StatusBar({ userName, avatarUrl, activity, personalNotifications, userId }: StatusBarProps) {
   return (
     <div className="border-b border-border bg-[rgba(8,21,18,0.7)]">
       <div className="mx-auto flex max-w-[1220px] items-center justify-between px-7 py-4 font-mono text-xs text-silk-dim">
@@ -63,7 +68,7 @@ export function StatusBar({ userName, avatarUrl, notifications }: StatusBarProps
 
         <div className="flex items-center gap-4">
           <RecordingControl />
-          <NotificationBell items={notifications} />
+          <NotificationBell activity={activity} initialPersonalNotifications={personalNotifications} userId={userId} />
           <UserChip name={userName} initial={userName?.charAt(0)} avatarUrl={avatarUrl} />
           <LogoutButton />
         </div>

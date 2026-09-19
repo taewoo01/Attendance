@@ -1,4 +1,5 @@
 import { AttendanceList, type AttendanceMember } from "@/components/attendance/AttendanceList";
+import { AttendanceRealtimeRefresh } from "@/components/attendance/AttendanceRealtimeRefresh";
 import { CheckinCard } from "@/components/attendance/CheckinCard";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { getAttendancePlansForDate, listAttendance } from "@/lib/db/attendance";
@@ -83,6 +84,7 @@ export default async function AttendancePage() {
 
   return (
     <>
+      <AttendanceRealtimeRefresh />
       <div className="mx-auto flex max-w-[1220px] flex-wrap items-baseline justify-between gap-[10px] px-7 pt-[30px]">
         <div>
           <p className="font-mono text-xs text-silk-faint">

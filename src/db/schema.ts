@@ -457,3 +457,30 @@ export const meetingRecordings = pgTable("meeting_recordings", {
   sizeBytes: integer("size_bytes").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * 실시간 개인 알림(상단바 벨 + 토스트 미리보기)이 읽는 테이블. 기존
+ * lib/notifications/activity.ts의 listRecentActivity는 "팀 전체 활동을 누구나
+ * 동일하게" 보여주는 별개 기능이라(개인화 없음, 읽음 상태 없음) 이 테이블로
+ * 대체하지 않고 그대로 둔다 — 이 테이블은 "나에게 온" 알림만 담는다.
+ * type으로 이벤트 종류를 구분한다("idea_comment"|"attendance_checkin", 앱 코드에서만
+ * 값을 제한한다) — 댓글/체크인 외에 나중에 다른 콘텐츠에 댓글·반응 기능이 생겨도
+ * 이 테이블/헬퍼를 그대로 재사용할 수 있게 이벤트별 전용 컬럼 대신 범용 구조로 둔다.
+ * actorName은 알림 발생 시점의 이름 스냅샷이다(actorUserId 계정이 나중에 삭제돼도
+ * "OO님이 댓글을 남겼습니다" 문구가 깨지지 않도록 — folders.userId와 동일한 원칙).
+ * message는 벨 목록/토스트에 그대로 표시할 미리보기 텍스트(댓글 본문 일부 등),
+ * linkHref는 클릭 시 이동할 경로다. readAt이 null이면 안읽음.
+ */
+export const notifications = pgTable("notifications", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => authUsers.id, { onDelete: "cascade" }),
+  type: text("type").notNull(),
+  actorUserId: uuid("actor_user_id").references(() => authUsers.id, { onDelete: "set null" }),
+  actorName: text("actor_name").notNull().default(""),
+  message: text("message").notNull().default(""),
+  linkHref: text("link_href").notNull().default(""),
+  readAt: timestamp("read_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});

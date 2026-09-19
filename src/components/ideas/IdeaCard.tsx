@@ -150,7 +150,7 @@ export function IdeaCard({ idea, currentUserId }: { idea: Idea; currentUserId: s
     }`;
 
   return (
-    <div className="mb-4 rounded-card border border-border bg-bg-panel px-5 pt-[18px] pb-4">
+    <div id={`idea-${idea.id}`} className="mb-4 scroll-mt-24 rounded-card border border-border bg-bg-panel px-5 pt-[18px] pb-4">
       <div className="mb-[11px] flex items-start justify-between gap-2.5">
         <div className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(72,217,176,0.14)] font-mono text-xs font-bold text-teal">
