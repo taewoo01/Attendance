@@ -91,6 +91,13 @@ export default async function MeetingPrintPage({ params }: { params: Promise<{ i
             )}
           </section>
         </>
+      ) : meeting.notesFormat === "plain" ? (
+        <section className="mb-6">
+          <h2 className="m-0 mb-2.5 font-mono text-[11px] tracking-[0.1em] text-[#6b7a75]">회의 내용</h2>
+          {meeting.agenda[0] && (
+            <p className="m-0 whitespace-pre-wrap text-[13px] leading-[1.6] text-[#141a18]">{meeting.agenda[0]}</p>
+          )}
+        </section>
       ) : (
         <>
           <section className="mb-6">

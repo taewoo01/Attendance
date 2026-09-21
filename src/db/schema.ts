@@ -86,10 +86,12 @@ export const meetingNotes = pgTable("meeting_notes", {
   /** 발표자. attendees와 달리 선택 사항이라 빈 문자열이면 "미지정"으로 취급한다. */
   presenter: text("presenter").notNull().default(""),
   /**
-   * agenda/decisions를 등록 모달에서 어떤 방식으로 입력했는지("rows" | "text").
+   * agenda/decisions를 등록 모달에서 어떤 방식으로 입력했는지("rows" | "text" | "plain").
    * "rows"는 안건과 결정 사항이 인덱스로 1:1 짝지어진 것(decisions[i]가 agenda[i]의
    * 결정 사항, 비어있을 수 있음). "text"는 자유 텍스트로 입력한 것 — 줄바꿈을 보존한
    * 원문 그대로 배열에 1개 원소로 저장한다(안건/결정 사항 각각 최대 1개 원소).
+   * "plain"은 안건/결정 구분 없는 단일 작성공간 — 원문 그대로 agenda[0]에 1개
+   * 원소로 저장하고 decisions는 비워둔다.
    * 이 기능 이전에 저장된 기존 회의록은 빈 문자열("")로, 지금까지 해온 대로
    * (줄 단위로 쪼개진 독립적인 안건/결정 사항 목록) 그대로 표시한다 — 과거 데이터는
    * agenda[i]/decisions[i]가 서로 짝지어졌다는 보장이 없어 "rows"로 되짚어

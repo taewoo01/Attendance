@@ -41,12 +41,16 @@ function parseAgendaRowsJson(raw: FormDataEntryValue | null): { agenda: string; 
 
 /**
  * agenda/decisions를 폼의 notesFormat에 따라 파싱한다.
- * - "text"(자유 텍스트): 줄바꿈을 보존한 원문 그대로 배열에 1개 원소로 담는다(있으면).
+ * - "text"(자유 텍스트, 안건·결정 분리): 줄바꿈을 보존한 원문 그대로 배열에
+ *   1개 원소로 담는다(있으면).
+ * - "plain"(자유 텍스트, 단일 작성공간): 안건/결정 구분이 없는 원문 그대로
+ *   agenda[0]에 담고 decisions는 비워둔다.
  * - 그 외("rows", 행 편집기): agendaRowsJson을 그대로 두 배열로 풀어 인덱스가
  *   1:1로 짝지어지게 한다 — decisions[i]가 비어있어도 자리(빈 문자열)를 유지한다.
  */
 function parseAgendaAndDecisions(formData: FormData): { notesFormat: string; agenda: string[]; decisions: string[] } {
-  const notesFormat = formData.get("notesFormat") === "text" ? "text" : "rows";
+  const rawFormat = formData.get("notesFormat");
+  const notesFormat = rawFormat === "text" ? "text" : rawFormat === "plain" ? "plain" : "rows";
 
   if (notesFormat === "text") {
     const agendaText = String(formData.get("agenda") ?? "").trim();
@@ -56,6 +60,11 @@ function parseAgendaAndDecisions(formData: FormData): { notesFormat: string; age
       agenda: agendaText ? [agendaText] : [],
       decisions: decisionsText ? [decisionsText] : [],
     };
+  }
+
+  if (notesFormat === "plain") {
+    const text = String(formData.get("agenda") ?? "").trim();
+    return { notesFormat, agenda: text ? [text] : [], decisions: [] };
   }
 
   const rows = parseAgendaRowsJson(formData.get("agendaRowsJson"));

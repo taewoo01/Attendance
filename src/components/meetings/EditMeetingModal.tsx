@@ -7,6 +7,7 @@ import type { MeetingActionRow } from "@/db/schema";
 import type { Meeting } from "@/components/meetings/MeetingCard";
 
 type AgendaRow = { agenda: string; decision: string };
+type NotesMode = "rows" | "text" | "plain";
 
 const EMPTY_ACTION: MeetingActionRow = { text: "", who: "", avatar: "", due: "", dueVariant: undefined, done: false };
 const EMPTY_AGENDA_ROW: AgendaRow = { agenda: "", decision: "" };
@@ -24,6 +25,12 @@ function splitLines(text: string): string[] {
     .filter(Boolean);
 }
 
+function tabButtonClass(active: boolean): string {
+  return `cursor-pointer rounded-[6px] border-none px-2.5 py-1 font-mono text-[11.5px] font-semibold ${
+    active ? "bg-teal text-[#04231b]" : "bg-transparent text-silk-faint hover:text-silk"
+  }`;
+}
+
 /**
  * RegisterMeetingModal과 필드 구성이 동일하다(제목/날짜/장소/참석자/안건/결정
  * 사항/액션 아이템/태그/기록자). EditPersonalEventModal·EditFixedScheduleModal과
@@ -34,14 +41,16 @@ export function EditMeetingModal({ meeting, onClose }: { meeting: Meeting | null
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const isTextFormat = meeting?.notesFormat === "text";
+  const initialNotesMode: NotesMode =
+    meeting?.notesFormat === "text" ? "text" : meeting?.notesFormat === "plain" ? "plain" : "rows";
   const [actions, setActions] = useState<MeetingActionRow[]>(meeting?.actions ?? []);
   const [agendaRows, setAgendaRows] = useState<AgendaRow[]>(
-    isTextFormat ? [] : zipAgendaRows(meeting?.agenda ?? [], meeting?.decisions ?? []),
+    initialNotesMode === "rows" ? zipAgendaRows(meeting?.agenda ?? [], meeting?.decisions ?? []) : [],
   );
-  const [freeTextMode, setFreeTextMode] = useState(isTextFormat);
-  const [agendaText, setAgendaText] = useState(isTextFormat ? (meeting?.agenda[0] ?? "") : "");
-  const [decisionText, setDecisionText] = useState(isTextFormat ? (meeting?.decisions[0] ?? "") : "");
+  const [notesMode, setNotesMode] = useState<NotesMode>(initialNotesMode);
+  const [agendaText, setAgendaText] = useState(initialNotesMode === "text" ? (meeting?.agenda[0] ?? "") : "");
+  const [decisionText, setDecisionText] = useState(initialNotesMode === "text" ? (meeting?.decisions[0] ?? "") : "");
+  const [plainText, setPlainText] = useState(initialNotesMode === "plain" ? (meeting?.agenda[0] ?? "") : "");
 
   if (!meeting) return null;
 
@@ -53,15 +62,37 @@ export function EditMeetingModal({ meeting, onClose }: { meeting: Meeting | null
     setAgendaRows((prev) => prev.map((r, i) => (i === index ? { ...r, ...patch } : r)));
   }
 
-  /** 행 편집 ↔ 자유 텍스트 전환 시 입력값을 서로 변환해 유지한다. */
-  function toggleFreeTextMode() {
-    if (freeTextMode) {
-      setAgendaRows(zipAgendaRows(splitLines(agendaText), splitLines(decisionText)));
+  /** 행 편집 ↔ 자유 텍스트(안건·결정) ↔ 자유 텍스트(단일) 전환 시 입력값을 서로 변환해 유지한다. */
+  function switchNotesMode(next: NotesMode) {
+    if (next === notesMode) return;
+
+    if (notesMode === "rows") {
+      if (next === "text") {
+        setAgendaText(agendaRows.map((r) => r.agenda.trim()).filter(Boolean).join("\n"));
+        setDecisionText(agendaRows.map((r) => r.decision.trim()).filter(Boolean).join("\n"));
+      } else {
+        setPlainText(
+          agendaRows
+            .map((r) => (r.decision.trim() ? `${r.agenda.trim()} - ${r.decision.trim()}` : r.agenda.trim()))
+            .filter(Boolean)
+            .join("\n"),
+        );
+      }
+    } else if (notesMode === "text") {
+      if (next === "rows") {
+        setAgendaRows(zipAgendaRows(splitLines(agendaText), splitLines(decisionText)));
+      } else {
+        setPlainText([agendaText.trim(), decisionText.trim()].filter(Boolean).join("\n\n"));
+      }
     } else {
-      setAgendaText(agendaRows.map((r) => r.agenda.trim()).filter(Boolean).join("\n"));
-      setDecisionText(agendaRows.map((r) => r.decision.trim()).filter(Boolean).join("\n"));
+      if (next === "rows") {
+        setAgendaRows(splitLines(plainText).map((line) => ({ agenda: line, decision: "" })));
+      } else {
+        setAgendaText(plainText);
+        setDecisionText("");
+      }
     }
-    setFreeTextMode((prev) => !prev);
+    setNotesMode(next);
   }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -71,10 +102,12 @@ export function EditMeetingModal({ meeting, onClose }: { meeting: Meeting | null
 
     const formData = new FormData(e.currentTarget);
     formData.set("actionsJson", JSON.stringify(actions.filter((a) => a.text.trim().length > 0)));
-    formData.set("notesFormat", freeTextMode ? "text" : "rows");
-    if (freeTextMode) {
+    formData.set("notesFormat", notesMode);
+    if (notesMode === "text") {
       formData.set("agenda", agendaText);
       formData.set("decisions", decisionText);
+    } else if (notesMode === "plain") {
+      formData.set("agenda", plainText);
     } else {
       formData.set(
         "agendaRowsJson",
@@ -177,10 +210,12 @@ export function EditMeetingModal({ meeting, onClose }: { meeting: Meeting | null
             </div>
 
             <div className="mb-[18px] rounded-input border border-border bg-bg-raised p-3">
-              <div className="mb-2 flex items-center justify-between">
-                <p className="m-0 font-mono text-[11.5px] tracking-[0.1em] text-silk-faint">안건 · 결정 사항</p>
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <p className="m-0 font-mono text-[11.5px] tracking-[0.1em] text-silk-faint">
+                  {notesMode === "plain" ? "회의 내용" : "안건 · 결정 사항"}
+                </p>
                 <div className="flex items-center gap-2">
-                  {!freeTextMode && (
+                  {notesMode === "rows" && (
                     <button
                       type="button"
                       onClick={() => setAgendaRows((prev) => [...prev, { ...EMPTY_AGENDA_ROW }])}
@@ -189,17 +224,21 @@ export function EditMeetingModal({ meeting, onClose }: { meeting: Meeting | null
                       + 항목 추가
                     </button>
                   )}
-                  <button
-                    type="button"
-                    onClick={toggleFreeTextMode}
-                    className="cursor-pointer border-none bg-transparent p-0 font-mono text-[12px] text-silk-faint hover:text-silk hover:underline"
-                  >
-                    {freeTextMode ? "행 편집으로" : "자유 텍스트로"}
-                  </button>
+                  <div className="flex items-center gap-1 rounded-[8px] border border-border p-0.5">
+                    <button type="button" onClick={() => switchNotesMode("rows")} className={tabButtonClass(notesMode === "rows")}>
+                      행 편집
+                    </button>
+                    <button type="button" onClick={() => switchNotesMode("text")} className={tabButtonClass(notesMode === "text")}>
+                      자유 텍스트(안건·결정)
+                    </button>
+                    <button type="button" onClick={() => switchNotesMode("plain")} className={tabButtonClass(notesMode === "plain")}>
+                      자유 텍스트(단일)
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              {freeTextMode ? (
+              {notesMode === "text" ? (
                 <div className="grid grid-cols-2 gap-[14px] max-[640px]:grid-cols-1">
                   <div>
                     <p className="m-0 mb-1.5 font-mono text-[11px] text-silk-faint">안건 (한 줄에 하나씩)</p>
@@ -220,6 +259,13 @@ export function EditMeetingModal({ meeting, onClose }: { meeting: Meeting | null
                     />
                   </div>
                 </div>
+              ) : notesMode === "plain" ? (
+                <textarea
+                  value={plainText}
+                  onChange={(e) => setPlainText(e.target.value)}
+                  placeholder={"안건과 결정 사항을 구분하지 않고 자유롭게 적어보세요."}
+                  className="min-h-[200px] w-full resize-y rounded-input border border-border bg-bg-panel px-2.5 py-2 font-sans text-[12.5px] leading-[1.6] text-silk focus:border-teal-dim focus:outline-none"
+                />
               ) : (
                 <>
                   {agendaRows.length === 0 && (

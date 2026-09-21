@@ -27,6 +27,7 @@ export type Meeting = {
   /**
    * "rows"면 agenda[i]/decisions[i]가 짝지어진 것(decisions[i]가 빈 문자열일 수 있음).
    * "text"면 agenda[0]/decisions[0]에 줄바꿈이 보존된 원문이 통째로 들어있다.
+   * "plain"이면 안건/결정 구분 없이 agenda[0]에 원문이 통째로 들어있다(decisions는 비어있음).
    * 그 외(과거 데이터, "")는 각각 독립된 줄 단위 목록으로 취급한다.
    */
   notesFormat: string;
@@ -149,6 +150,13 @@ export function MeetingCard({ meeting }: { meeting: Meeting }) {
             )}
           </div>
         </>
+      ) : meeting.notesFormat === "plain" ? (
+        <div className="mb-[14px]">
+          <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">회의 내용</p>
+          {meeting.agenda[0] && (
+            <p className="m-0 whitespace-pre-wrap text-[12.8px] leading-[1.6] text-silk-dim">{meeting.agenda[0]}</p>
+          )}
+        </div>
       ) : (
         <>
           <div className="mb-[14px]">
