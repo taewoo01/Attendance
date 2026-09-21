@@ -1,16 +1,16 @@
 "use server";
 
 import { getCurrentUser } from "@/lib/auth/get-user";
-import { seoulDateKey } from "@/lib/date";
-import { checkOutAttendance, findTodayAttendance } from "@/lib/db/attendance";
+import { checkOutAttendance, findOpenAttendance } from "@/lib/db/attendance";
 
 export type CheckOutState = { error?: string; success?: boolean };
 
 /**
  * 홈 화면(HeroSection)/출석 인증 페이지(CheckinCard) "퇴근" 버튼이 호출하는
  * Server Action. 체크인과 달리 QR/위치 증빙 없이 버튼 한 번으로 처리하기로
- * 했다(사용자 확인 완료) — 로그인 여부와 "오늘 체크인했고 아직 퇴근 전인가"만
- * 확인한다. 클라이언트 컴포넌트에서 직접 호출되므로(Next.js 제약) 함수 단위가
+ * 했다(사용자 확인 완료) — 로그인 여부와 "아직 퇴근하지 않은 출석 행이 있는가"만
+ * 확인한다(날짜가 아니라 퇴근 여부 기준 — 밤새 상주해 날짜가 바뀌어도 퇴근
+ * 버튼을 눌러야만 처리된다). 클라이언트 컴포넌트에서 직접 호출되므로(Next.js 제약) 함수 단위가
  * 아니라 파일 최상단에 "use server"가 있는 별도 파일로 둔다 — actions.ts의
  * checkInWithQr은 Route Handler 전용이라 그 파일과 이 파일을 분리했다.
  * 일부러 revalidatePath를 호출하지 않는다 — 여기서 revalidatePath를 쓰면
@@ -26,13 +26,9 @@ export async function checkOut(): Promise<CheckOutState> {
     return { error: "로그인이 필요합니다." };
   }
 
-  const todayKey = seoulDateKey(new Date());
-  const existing = await findTodayAttendance(user.id, todayKey);
+  const existing = await findOpenAttendance(user.id);
   if (!existing) {
-    return { error: "오늘 아직 체크인하지 않았어요." };
-  }
-  if (existing.checkedOutAt) {
-    return { error: "이미 퇴근 처리되었습니다." };
+    return { error: "아직 체크인하지 않았거나 이미 퇴근 처리되었습니다." };
   }
 
   await checkOutAttendance(existing.id);

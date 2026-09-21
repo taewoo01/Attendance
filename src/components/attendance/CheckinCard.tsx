@@ -16,10 +16,15 @@ function seoulTime(date: Date): string {
 }
 
 type CheckinCardProps = {
-  /** 로그인한 본인의 오늘 체크인 시각. 없으면 아직 체크인하지 않은 것. */
+  /**
+   * 로그인한 본인의 현재 체크인 시각(아직 퇴근 전이면 자정을 넘긴 어제 시각일
+   * 수 있다 — 밤새 상주 중인 경우). 없으면 아직 체크인하지 않은 것.
+   */
   checkedInAt?: Date;
   /** 로그인한 본인의 오늘 퇴근 시각. 없으면 아직 퇴근 전(또는 체크인 자체를 안 함). */
   checkedOutAt?: Date | null;
+  /** checkedInAt이 오늘 날짜가 아니면(자정을 넘겨 계속 상주 중) "오늘" 대신 "전날"로 표시한다. */
+  checkedInToday?: boolean;
   /** QR 모달이 떠 있는 동안 본인 체크인을 감지해 자동으로 닫기 위한 로그인 사용자 id. */
   userId?: string;
 };
@@ -47,7 +52,7 @@ type CheckinCardProps = {
  * 문제가 있었다 — Realtime으로 본인 체크인을 감지해 자동으로 닫고
  * router.refresh()로 카드 상태(체크인 완료)를 갱신한다.
  */
-export function CheckinCard({ checkedInAt, checkedOutAt, userId }: CheckinCardProps) {
+export function CheckinCard({ checkedInAt, checkedOutAt, checkedInToday = true, userId }: CheckinCardProps) {
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
   const [planModalOpen, setPlanModalOpen] = useState(false);
@@ -312,7 +317,7 @@ export function CheckinCard({ checkedInAt, checkedOutAt, userId }: CheckinCardPr
         {checkedOutAt
           ? `오늘 ${seoulTime(checkedOutAt)} 퇴근 완료`
           : checkedInAt
-            ? `오늘 ${seoulTime(checkedInAt)} 체크인 완료`
+            ? `${checkedInToday ? "오늘" : "전날"} ${seoulTime(checkedInAt)} 체크인 완료`
             : "아직 체크인하지 않았어요"}
       </div>
 

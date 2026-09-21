@@ -2,7 +2,7 @@ import { AttendanceList, type AttendanceMember } from "@/components/attendance/A
 import { AttendanceRealtimeRefresh } from "@/components/attendance/AttendanceRealtimeRefresh";
 import { CheckinCard } from "@/components/attendance/CheckinCard";
 import { getCurrentUser } from "@/lib/auth/get-user";
-import { getAttendancePlansForDate, listAttendance } from "@/lib/db/attendance";
+import { getAttendancePlansForDate, latestAttendanceByUser, listAttendance, resolveAttendanceState } from "@/lib/db/attendance";
 import { listProfiles } from "@/lib/db/profiles";
 import { addDays } from "@/lib/date";
 
@@ -23,6 +23,11 @@ function seoulTime(date: Date): string {
     minute: "2-digit",
     hourCycle: "h23",
   }).format(date);
+}
+
+/** 밤새 상주해 체크인이 어제 날짜인 채로 아직 "on" 상태인 경우, 시각만 보여주면 오늘 체크인한 것처럼 보여 "전날" 표시를 붙인다. */
+function formatCheckinTime(checkedInAt: Date, todayKey: string): string {
+  return seoulDateKey(checkedInAt) === todayKey ? seoulTime(checkedInAt) : `전날 ${seoulTime(checkedInAt)}`;
 }
 
 /**
@@ -47,19 +52,15 @@ export default async function AttendancePage() {
     getAttendancePlansForDate(tomorrowKey),
   ]);
 
-  const todaysByUser = new Map<string, { checkedInAt: Date; checkedOutAt: Date | null }>();
-  for (const row of rows) {
-    if (seoulDateKey(row.checkedInAt) !== todayKey) continue;
-    // 하루 여러 번 체크인한 경우 첫 체크인 시각을 사용한다(orderBy desc이므로
-    // 나중에 만나는 값으로 덮어써서 가장 이른 시각이 남는다).
-    todaysByUser.set(row.userId, { checkedInAt: row.checkedInAt, checkedOutAt: row.checkedOutAt });
-  }
+  // "오늘 체크인한 행"이 아니라 사용자별 "가장 최근 행"을 기준으로 상태를 판단한다
+  // (밤새 상주해 날짜가 바뀌어도 퇴근 전까지 "on" 상태가 유지되도록 — resolveAttendanceState).
+  const latestByUser = latestAttendanceByUser(rows);
   const planByUser = new Map(planRows.map((row) => [row.userId, row]));
   // 퇴근하면서 등록한 "내일" 계획 — 등록한 당일에도 퇴근 옆에 미리 보여준다(다음날까지 기다릴 필요 없음).
   const nextPlanByUser = new Map(nextPlanRows.map((row) => [row.userId, row]));
 
   const members: AttendanceMember[] = roster.map((profile) => {
-    const today = todaysByUser.get(profile.userId);
+    const state = resolveAttendanceState(latestByUser.get(profile.userId), todayKey);
     const plan = planByUser.get(profile.userId);
     const nextPlan = nextPlanByUser.get(profile.userId);
     return {
@@ -67,14 +68,16 @@ export default async function AttendancePage() {
       avatar: profile.name.trim().charAt(0) || "?",
       name: profile.name,
       role: profile.role,
-      time: today ? seoulTime(today.checkedInAt) : "—",
-      status: !today ? "off" : today.checkedOutAt ? "left" : "on",
+      time: state ? formatCheckinTime(state.checkedInAt, todayKey) : "—",
+      status: state?.status ?? "off",
       planLabel: plan?.label,
       planKind: plan?.kind,
       nextPlanLabel: nextPlan?.label,
       nextPlanKind: nextPlan?.kind,
     };
   });
+
+  const myState = user ? resolveAttendanceState(latestByUser.get(user.id), todayKey) : null;
 
   // "오늘 출석한 인원"이 기준이라 이미 퇴근한(left) 인원도 포함한다.
   const checkedInCount = members.filter((m) => m.status !== "off").length;
@@ -99,8 +102,9 @@ export default async function AttendancePage() {
 
       <div className="mx-auto grid max-w-[1220px] grid-cols-[360px_1fr] items-start gap-[22px] px-7 pt-[26px] pb-[90px] max-[860px]:grid-cols-1">
         <CheckinCard
-          checkedInAt={user ? todaysByUser.get(user.id)?.checkedInAt : undefined}
-          checkedOutAt={user ? todaysByUser.get(user.id)?.checkedOutAt : undefined}
+          checkedInAt={myState?.checkedInAt}
+          checkedOutAt={myState?.checkedOutAt}
+          checkedInToday={myState ? seoulDateKey(myState.checkedInAt) === todayKey : true}
           userId={user?.id}
         />
         <AttendanceList members={members} />
