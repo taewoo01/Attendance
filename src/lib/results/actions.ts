@@ -13,6 +13,7 @@ import {
   MAX_SIZE_BYTES,
   contentTypeFor,
   extensionOf,
+  isHtmlExtension,
   sanitizeFileName,
 } from "@/lib/files/upload-shared";
 
@@ -352,7 +353,9 @@ export async function getAchievementFileDownloadUrl(fileId: string): Promise<Dow
   }
 
   const supabaseAdmin = createAdminClient();
-  const { data, error } = await supabaseAdmin.storage.from(BUCKET).createSignedUrl(file.storagePath, 60);
+  const { data, error } = await supabaseAdmin.storage
+    .from(BUCKET)
+    .createSignedUrl(file.storagePath, 60, isHtmlExtension(file.name) ? { download: true } : undefined);
 
   if (error || !data) {
     return { error: "다운로드 링크 발급 중 오류가 발생했습니다." };
