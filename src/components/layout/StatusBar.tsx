@@ -1,9 +1,7 @@
-import { NotificationBell, type PersonalNotification } from "@/components/layout/NotificationBell";
-import { RecordingControl } from "@/components/layout/RecordingControl";
-import { LogoutButton } from "@/components/ui/LogoutButton";
-import { UserChip } from "@/components/ui/UserChip";
+import type { PersonalNotification } from "@/components/layout/NotificationBell";
 import type { ActivityItem } from "@/lib/notifications/activity";
 import { Navigation } from "./Navigation";
+import { StatusBarControls } from "./StatusBarControls";
 
 /**
  * playground-design/ 9개 파일에서 반복되는 상단 statusbar.
@@ -17,6 +15,9 @@ import { Navigation } from "./Navigation";
  * 알림 고도화: 벨을 둘로 쪼개지 않고 하나로 합쳤다 — 드롭다운 위쪽에 "나에게 온"
  * 개인 알림(댓글/체크인, 읽음·안읽음 있음)을, 그 아래 기존 전체 활동 피드를
  * 그대로 보여준다(사용자 확인 완료). 배지 숫자는 개인 알림 안읽음 개수만 센다.
+ * 모바일 재배치: 960px 미만에서 워드마크 텍스트("PLAY_GROUND")는 숨기고 로고
+ * 아이콘만 남긴다 — 나머지 우측 아이콘 그룹(녹음/알림/프로필/로그아웃/메뉴)의
+ * 반응형 배치는 StatusBarControls로 옮겼다(사용자 확인 완료).
  */
 type StatusBarProps = {
   userName?: string;
@@ -61,17 +62,18 @@ export function StatusBar({ userName, avatarUrl, activity, personalNotifications
               </g>
             </g>
           </svg>
-          PLAY_GROUND
+          <span className="hidden min-[960px]:inline">PLAY_GROUND</span>
         </div>
 
         <Navigation />
 
-        <div className="flex items-center gap-4">
-          <RecordingControl />
-          <NotificationBell activity={activity} initialPersonalNotifications={personalNotifications} userId={userId} />
-          <UserChip name={userName} initial={userName?.charAt(0)} avatarUrl={avatarUrl} />
-          <LogoutButton />
-        </div>
+        <StatusBarControls
+          userName={userName}
+          avatarUrl={avatarUrl}
+          activity={activity}
+          personalNotifications={personalNotifications}
+          userId={userId}
+        />
       </div>
     </div>
   );
