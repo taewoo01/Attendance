@@ -70,7 +70,7 @@ export function FileList({ files, title = "전체 파일" }: FileListProps) {
       {files.map((file) => (
         <div
           key={file.id}
-          className="grid grid-cols-[36px_1fr_90px_130px_80px] items-center gap-[14px] border-b border-border px-[22px] py-[13px] last:border-b-0 hover:bg-[rgba(231,239,236,0.02)] max-[640px]:grid-cols-[30px_1fr_60px]"
+          className="grid grid-cols-[36px_1fr_90px_130px_116px] items-center gap-[14px] border-b border-border px-[22px] py-[13px] last:border-b-0 hover:bg-[rgba(231,239,236,0.02)] max-[640px]:grid-cols-[30px_1fr_104px]"
         >
           <FileIcon type={file.type} />
           <div>

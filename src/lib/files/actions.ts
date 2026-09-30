@@ -80,9 +80,11 @@ export type DownloadUrlResult = { url?: string; error?: string };
 /**
  * 다운로드 signed URL 발급 Server Action. 클라이언트는 Storage 경로를 직접
  * 조합하지 않는다(docs/MIGRATION.md 11절) — 인증된 사용자면 60초 만료 URL을
- * 서버가 대신 발급한다.
+ * 서버가 대신 발급한다. `forceDownload`가 true면 Content-Disposition: attachment
+ * 로 발급해 "보기"(브라우저에서 바로 열기) 대신 실제 파일 저장을 강제한다
+ * (원본 파일명으로 저장되도록 file.name을 download 옵션에 넘긴다).
  */
-export async function getFileDownloadUrl(fileId: string): Promise<DownloadUrlResult> {
+export async function getFileDownloadUrl(fileId: string, forceDownload = false): Promise<DownloadUrlResult> {
   const user = await getCurrentUser();
   if (!user) {
     return { error: "로그인이 필요합니다." };
@@ -96,7 +98,7 @@ export async function getFileDownloadUrl(fileId: string): Promise<DownloadUrlRes
   const supabaseAdmin = createAdminClient();
   const { data, error } = await supabaseAdmin.storage
     .from(BUCKET)
-    .createSignedUrl(file.storagePath, 60);
+    .createSignedUrl(file.storagePath, 60, forceDownload ? { download: file.name } : undefined);
 
   if (error || !data) {
     return { error: "다운로드 링크 발급 중 오류가 발생했습니다." };

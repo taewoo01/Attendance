@@ -14,3 +14,17 @@ export function openDownloadUrl(url: string, name: string) {
   }
   window.open(url, "_blank", "noopener,noreferrer");
 }
+
+/**
+ * "다운로드" 전용 버튼이 쓰는 헬퍼. url은 서버에서 이미 Content-Disposition:
+ * attachment로 발급받은 signed URL(getFileDownloadUrl(id, true) 등)이어야 한다 —
+ * 새 탭을 띄우는 대신 임시 <a download> 클릭으로 바로 저장 대화상자를 띄운다.
+ */
+export function triggerFileDownload(url: string) {
+  const a = document.createElement("a");
+  a.href = url;
+  a.rel = "noopener noreferrer";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}

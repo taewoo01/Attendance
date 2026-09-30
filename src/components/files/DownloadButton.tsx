@@ -2,36 +2,65 @@
 
 import { useState } from "react";
 import { getFileDownloadUrl } from "@/lib/files/actions";
-import { openDownloadUrl } from "@/lib/files/open-download";
+import { openDownloadUrl, triggerFileDownload } from "@/lib/files/open-download";
 
 /**
  * playground-design/files.html의 .file-dl 다운로드 버튼(원본은 리스너 없는 정적 버튼).
  * TASK-029: 클릭 시 서버에서 60초 만료 presigned URL을 발급받아 새 탭으로 연다
  * (docs/MIGRATION.md 11절 — 클라이언트가 Storage 경로를 직접 조합하지 않음).
- * html/htm은 openDownloadUrl이 /preview(sandbox iframe 뷰어)로 대신 연다.
+ * 버튼 하나가 "열기"와 "다운로드"를 겸하고 있어 실제로는 다운로드가 안 된다는
+ * 오해가 있어(html은 /preview 뷰어로, 그 외는 새 탭 미리보기로 열릴 뿐) 보기/
+ * 다운로드 버튼을 분리했다 — 다운로드는 항상 Content-Disposition: attachment로
+ * 발급받아(getFileDownloadUrl의 forceDownload) 실제 파일 저장을 보장한다.
  */
 export function DownloadButton({ fileId, name }: { fileId: string; name: string }) {
-  const [pending, setPending] = useState(false);
+  const [pending, setPending] = useState<"view" | "download" | null>(null);
 
-  async function handleClick() {
-    setPending(true);
+  async function handleView() {
+    setPending("view");
     const result = await getFileDownloadUrl(fileId);
-    setPending(false);
+    setPending(null);
     if (result.url) {
       openDownloadUrl(result.url, name);
     }
   }
 
+  async function handleDownload() {
+    setPending("download");
+    const result = await getFileDownloadUrl(fileId, true);
+    setPending(null);
+    if (result.url) {
+      triggerFileDownload(result.url);
+    }
+  }
+
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      disabled={pending}
-      className="ml-auto flex h-[30px] w-[30px] cursor-pointer items-center justify-center rounded-chip border border-border bg-transparent text-silk-dim hover:border-teal-dim hover:text-teal disabled:cursor-not-allowed"
-    >
-      <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.8} className="h-[14px] w-[14px] stroke-current">
-        <path d="M12 3v12M7 10l5 5 5-5M5 21h14" />
-      </svg>
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={handleView}
+        disabled={pending !== null}
+        title="보기"
+        aria-label="보기"
+        className="flex h-[30px] w-[30px] cursor-pointer items-center justify-center rounded-chip border border-border bg-transparent text-silk-dim hover:border-teal-dim hover:text-teal disabled:cursor-not-allowed"
+      >
+        <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.8} className="h-[14px] w-[14px] stroke-current">
+          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        onClick={handleDownload}
+        disabled={pending !== null}
+        title="다운로드"
+        aria-label="다운로드"
+        className="flex h-[30px] w-[30px] cursor-pointer items-center justify-center rounded-chip border border-border bg-transparent text-silk-dim hover:border-teal-dim hover:text-teal disabled:cursor-not-allowed"
+      >
+        <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.8} className="h-[14px] w-[14px] stroke-current">
+          <path d="M12 3v12M7 10l5 5 5-5M5 21h14" />
+        </svg>
+      </button>
+    </>
   );
 }
