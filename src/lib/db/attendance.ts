@@ -40,15 +40,24 @@ export async function findOpenAttendance(userId: string) {
 export type AttendanceCheckRow = { checkedInAt: Date; checkedOutAt: Date | null };
 export type AttendanceState = AttendanceCheckRow & { status: "on" | "left" };
 
-/** attendance 전체 목록(desc 정렬 전제)에서 사용자별 가장 최근 체크인 행만 추린다. */
+/**
+ * attendance 전체 목록(desc 정렬 전제)에서 사용자별 대표 행 하나를 추린다.
+ * 단순히 "가장 최근에 체크인한 행"을 고르면 안 된다 — 퇴근을 안 눌러 여러 날짜에
+ * 걸쳐 checkedOutAt이 비어 있는 행이 남아 있는 사용자가, 그 뒤 새로 체크인+퇴근을
+ * 마친(=더 최근이지만 이미 닫힌) 행 때문에 "퇴근한 사람"으로 잘못 보이는 문제가
+ * 있었다(실사용 데이터로 확인). 열려 있는(checkedOutAt null) 행이 하나라도 있으면
+ * 그게 몇 칠 전이든 항상 그 행을 우선한다 — "퇴근을 눌러야만 정리된다"는 제품
+ * 의도(3ea5592) 그대로, 표시도 "며칠째 상주 중"을 반영해야 한다.
+ */
 export function latestAttendanceByUser<T extends { userId: string; checkedInAt: Date; checkedOutAt: Date | null }>(
   rows: T[],
 ): Map<string, AttendanceCheckRow> {
   const map = new Map<string, AttendanceCheckRow>();
   for (const row of rows) {
-    if (!map.has(row.userId)) {
-      map.set(row.userId, { checkedInAt: row.checkedInAt, checkedOutAt: row.checkedOutAt });
-    }
+    const existing = map.get(row.userId);
+    if (existing && !existing.checkedOutAt) continue; // 이미 이 사용자의 열린 행을 찾았으면 유지(열린 행이 항상 우선)
+    if (row.checkedOutAt && existing) continue; // 닫힌 행은 처음 보는(=가장 최근) 것 하나만 후보로 둔다
+    map.set(row.userId, { checkedInAt: row.checkedInAt, checkedOutAt: row.checkedOutAt });
   }
   return map;
 }
