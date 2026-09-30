@@ -6,6 +6,15 @@ export function seoulDateKey(date: Date): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" }).format(date);
 }
 
+/** 두 dateKey("YYYY-MM-DD") 사이의 일수 차이(endKey - startKey). */
+export function daysBetweenKeys(startKey: string, endKey: string): number {
+  const [sy, sm, sd] = startKey.split("-").map(Number);
+  const [ey, em, ed] = endKey.split("-").map(Number);
+  const start = Date.UTC(sy, sm - 1, sd);
+  const end = Date.UTC(ey, em - 1, ed);
+  return Math.round((end - start) / 86400000);
+}
+
 /** dateKey("YYYY-MM-DD") 기준 +/- delta일. */
 export function addDays(dateKey: string, delta: number): string {
   const [y, m, d] = dateKey.split("-").map(Number);

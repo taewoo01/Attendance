@@ -14,6 +14,8 @@ type HeroSectionProps = {
   initialCheckedIn: boolean;
   /** 오늘 이미 퇴근 처리했는지 — true면 "퇴근" 버튼 대신 완료 표시를 보여준다. */
   initialCheckedOut: boolean;
+  /** 퇴근을 안 누른 채 며칠째 체크인 상태인지(체크인한 날을 1일째로 센다). 2 이상일 때만 버튼에 표시한다. */
+  residentDays?: number | null;
   attendance: AttendanceMember[];
   /** QR 모달이 떠 있는 동안 본인 체크인을 감지해 자동으로 닫기 위한 로그인 사용자 id. */
   userId?: string;
@@ -45,6 +47,7 @@ export function HeroSection({
   myName,
   initialCheckedIn,
   initialCheckedOut,
+  residentDays,
   attendance,
   userId,
 }: HeroSectionProps) {
@@ -86,7 +89,7 @@ export function HeroSection({
                 : "inline-flex cursor-pointer items-center gap-2 border border-teal bg-teal px-5 py-[13px] text-[13.5px] font-semibold text-[#04231b]"
             }
           >
-            {checkedIn ? "✓ 오늘 출석 현황 보기" : "▸ 오늘 출석 체크"}
+            {checkedIn ? (residentDays && residentDays >= 2 ? `✓ ${residentDays}일째 상주 중` : "✓ 오늘 출석 현황 보기") : "▸ 오늘 출석 체크"}
           </button>
           {checkedIn &&
             (checkedOut ? (

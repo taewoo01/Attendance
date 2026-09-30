@@ -6,32 +6,15 @@ import { AttendanceRealtimeRefresh } from "@/components/attendance/AttendanceRea
 import type { AttendanceMember } from "@/components/attendance/AttendanceList";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { getAttendancePlansForDate, latestAttendanceByUser, listAttendance, resolveAttendanceState } from "@/lib/db/attendance";
+import { formatCheckinTime } from "@/lib/attendance/format";
 import { listAchievements } from "@/lib/db/achievements";
 import { listIdeas } from "@/lib/db/ideas";
 import { listMeetings } from "@/lib/db/meetings";
 import { listProfiles } from "@/lib/db/profiles";
-import { DOW_KO, addDays, mondayKeyOf, weekdayIndex } from "@/lib/date";
+import { DOW_KO, addDays, daysBetweenKeys, mondayKeyOf, seoulDateKey, weekdayIndex } from "@/lib/date";
 
 // TASK-030: DB 조회가 build 시점에 고정되지 않도록 매 요청마다 렌더링한다.
 export const dynamic = "force-dynamic";
-
-function seoulDateKey(date: Date): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" }).format(date);
-}
-
-function seoulTime(date: Date): string {
-  return new Intl.DateTimeFormat("ko-KR", {
-    timeZone: "Asia/Seoul",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).format(date);
-}
-
-/** 밤새 상주해 체크인이 어제 날짜인 채로 아직 "on" 상태인 경우, 시각만 보여주면 오늘 체크인한 것처럼 보여 "전날" 표시를 붙인다. */
-function formatCheckinTime(checkedInAt: Date, todayKey: string): string {
-  return seoulDateKey(checkedInAt) === todayKey ? seoulTime(checkedInAt) : `전날 ${seoulTime(checkedInAt)}`;
-}
 
 export default async function Home() {
   const todayKey = seoulDateKey(new Date());
@@ -78,6 +61,10 @@ export default async function Home() {
   const myState = user ? resolveAttendanceState(latestByUser.get(user.id), todayKey) : null;
   const initialCheckedIn = Boolean(myState);
   const initialCheckedOut = Boolean(myState?.checkedOutAt);
+  // 퇴근을 안 누른 채 며칠째 열려 있는 체크인이면 헤더 버튼에 그 사실을 바로 보여준다
+  // (그냥 "오늘 출석 현황 보기"만 보이면 실제로 며칠째 상주 중인지 눌러보기 전엔 알 수 없다).
+  const myResidentDays =
+    myState && !myState.checkedOutAt ? daysBetweenKeys(seoulDateKey(myState.checkedInAt), todayKey) + 1 : null;
 
   // 콘솔 위젯: 이번 주(월~일, Asia/Seoul) 범위.
   const mondayKey = mondayKeyOf(todayKey);
@@ -107,6 +94,7 @@ export default async function Home() {
         myName={myName}
         initialCheckedIn={initialCheckedIn}
         initialCheckedOut={initialCheckedOut}
+        residentDays={myResidentDays}
         attendance={attendance}
         userId={user?.id}
       >

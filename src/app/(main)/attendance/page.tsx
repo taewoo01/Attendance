@@ -3,32 +3,14 @@ import { AttendanceRealtimeRefresh } from "@/components/attendance/AttendanceRea
 import { CheckinCard } from "@/components/attendance/CheckinCard";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { getAttendancePlansForDate, latestAttendanceByUser, listAttendance, resolveAttendanceState } from "@/lib/db/attendance";
+import { formatCheckinTime } from "@/lib/attendance/format";
 import { listProfiles } from "@/lib/db/profiles";
-import { addDays } from "@/lib/date";
+import { addDays, seoulDateKey } from "@/lib/date";
 
 // TASK-027: DB 조회가 build 시점에 고정되지 않도록 매 요청마다 렌더링한다.
 export const dynamic = "force-dynamic";
 
 const WEEKDAY_KO = ["일", "월", "화", "수", "목", "금", "토"];
-
-/** Asia/Seoul 기준 캘린더 날짜 키(YYYY-MM-DD). */
-function seoulDateKey(date: Date): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" }).format(date);
-}
-
-function seoulTime(date: Date): string {
-  return new Intl.DateTimeFormat("ko-KR", {
-    timeZone: "Asia/Seoul",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).format(date);
-}
-
-/** 밤새 상주해 체크인이 어제 날짜인 채로 아직 "on" 상태인 경우, 시각만 보여주면 오늘 체크인한 것처럼 보여 "전날" 표시를 붙인다. */
-function formatCheckinTime(checkedInAt: Date, todayKey: string): string {
-  return seoulDateKey(checkedInAt) === todayKey ? seoulTime(checkedInAt) : `전날 ${seoulTime(checkedInAt)}`;
-}
 
 /**
  * playground-design/attendance.html 변환.
