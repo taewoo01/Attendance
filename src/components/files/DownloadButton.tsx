@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import { getFileDownloadUrl } from "@/lib/files/actions";
+import { openDownloadUrl } from "@/lib/files/open-download";
 
 /**
  * playground-design/files.html의 .file-dl 다운로드 버튼(원본은 리스너 없는 정적 버튼).
  * TASK-029: 클릭 시 서버에서 60초 만료 presigned URL을 발급받아 새 탭으로 연다
  * (docs/MIGRATION.md 11절 — 클라이언트가 Storage 경로를 직접 조합하지 않음).
+ * html/htm은 openDownloadUrl이 /preview(sandbox iframe 뷰어)로 대신 연다.
  */
-export function DownloadButton({ fileId }: { fileId: string }) {
+export function DownloadButton({ fileId, name }: { fileId: string; name: string }) {
   const [pending, setPending] = useState(false);
 
   async function handleClick() {
@@ -16,7 +18,7 @@ export function DownloadButton({ fileId }: { fileId: string }) {
     const result = await getFileDownloadUrl(fileId);
     setPending(false);
     if (result.url) {
-      window.open(result.url, "_blank", "noopener,noreferrer");
+      openDownloadUrl(result.url, name);
     }
   }
 

@@ -80,7 +80,7 @@ export function FileList({ files, title = "전체 파일" }: FileListProps) {
           <div className="font-mono text-[11.5px] text-silk-dim max-[640px]:hidden">{file.size}</div>
           <div className="font-mono text-[11.5px] text-silk-faint max-[640px]:hidden">{file.date}</div>
           <div className="ml-auto flex items-center gap-1.5">
-            <DownloadButton fileId={file.id} />
+            <DownloadButton fileId={file.id} name={file.name} />
             {file.isOwner && <DeleteFileButton fileId={file.id} />}
           </div>
         </div>

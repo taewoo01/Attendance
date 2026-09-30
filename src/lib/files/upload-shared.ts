@@ -11,9 +11,10 @@ export const BUCKET = "files";
  * 전부 거부한다. 목록 밖 확장자를 만나면 값을 추측해서 추가하지 않는다.
  * 실적 첨부파일(src/lib/results/actions.ts)도 같은 버킷/allowlist를 그대로
  * 재사용한다 — 새 버킷을 만들지 않고 `achievements/<id>/...` 경로로 구분한다.
- * html/htm은 AI가 만든 문서 첨부를 위해 허용하되, 새 탭에서 스크립트가 실행되는
- * stored XSS를 막기 위해 다운로드 URL 발급 시 항상 강제 다운로드로 처리한다
- * (isHtmlExtension() 참고 — getFileDownloadUrl 계열에서 download 옵션으로 사용).
+ * html/htm은 AI가 만든 문서 첨부를 화면으로 바로 볼 수 있게 허용하되, signed URL을
+ * 그대로 새 탭에 열면 Storage 도메인에서 첨부된 스크립트가 실행될 수 있어(stored XSS)
+ * 항상 sandbox iframe 뷰어(src/app/preview, isHtmlExtension() 참고)를 거쳐서만
+ * 보여준다.
  */
 export const ALLOWED_EXTENSIONS = new Set([
   "pdf",
@@ -60,10 +61,9 @@ export function isImageExtension(name: string): boolean {
 const HTML_EXTENSIONS = new Set(["html", "htm"]);
 
 /**
- * html/htm 첨부파일인지 판단한다. signed URL을 새 탭(window.open)으로 여는
- * DownloadButton 등에서 브라우저가 HTML을 그대로 렌더링(=업로드한 스크립트가
- * Storage 도메인에서 실행)하지 않도록, 이 경우 다운로드 URL 발급 시
- * createSignedUrl(..., { download: true })로 강제 다운로드 처리한다.
+ * html/htm 첨부파일인지 판단한다. DownloadButton/AchievementFileLink/IdeaFileLink가
+ * 이 값이 true면 signed URL을 바로 새 탭에 열지 않고 /preview(sandbox iframe 뷰어,
+ * 스크립트 실행 차단)로 보낸다.
  */
 export function isHtmlExtension(name: string): boolean {
   return HTML_EXTENSIONS.has(extensionOf(name));

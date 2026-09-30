@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { getIdeaFileDownloadUrl } from "@/lib/ideas/actions";
+import { openDownloadUrl } from "@/lib/files/open-download";
 
 /**
  * AchievementFileLink(src/components/results/AchievementFileLink.tsx)와 동일한
  * 패턴 — 클릭 시 60초 만료 presigned URL을 발급받아 새 탭으로 연다.
+ * html/htm은 openDownloadUrl이 /preview(sandbox iframe 뷰어)로 대신 연다.
  */
 export function IdeaFileLink({ fileId, name }: { fileId: string; name: string }) {
   const [pending, setPending] = useState(false);
@@ -15,7 +17,7 @@ export function IdeaFileLink({ fileId, name }: { fileId: string; name: string })
     const result = await getIdeaFileDownloadUrl(fileId);
     setPending(false);
     if (result.url) {
-      window.open(result.url, "_blank", "noopener,noreferrer");
+      openDownloadUrl(result.url, name);
     }
   }
 
