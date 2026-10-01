@@ -34,6 +34,7 @@ export const ALLOWED_EXTENSIONS = new Set([
   "svg",
   "txt",
   "csv",
+  "md",
   "zip",
   "html",
   "htm",
@@ -66,7 +67,7 @@ export function isImageExtension(name: string): boolean {
 
 const SANDBOXED_PREVIEW_EXTENSIONS = new Set(["html", "htm", "svg"]);
 const PDF_PREVIEW_EXTENSIONS = new Set(["pdf"]);
-const TEXT_PREVIEW_EXTENSIONS = new Set(["txt", "csv"]);
+const TEXT_PREVIEW_EXTENSIONS = new Set(["txt", "csv", "md"]);
 
 export type PreviewKind = "sandboxed" | "pdf" | "image" | "text" | "unsupported";
 
@@ -75,7 +76,8 @@ export type PreviewKind = "sandboxed" | "pdf" | "image" | "text" | "unsupported"
  * - sandboxed: html/htm/svg — <script> 삽입이 가능해(stored XSS) fetch한 텍스트를
  *   sandbox iframe의 srcDoc에 넣어서만 보여준다.
  * - pdf/image: 브라우저가 직접 렌더링 가능 — signed URL을 iframe/img src에 그대로 건다.
- * - text: txt/csv — fetch한 내용을 그대로 텍스트로 보여준다(HTML로 파싱되지 않아 안전).
+ * - text: txt/csv/md — fetch한 내용을 그대로 텍스트로 보여준다(HTML로 파싱되지 않아
+ *   안전 — md도 렌더링하지 않고 원문 그대로 보여준다).
  * - unsupported: office 문서(doc/xls/ppt 등)·hwp·zip처럼 브라우저가 직접 열 수 없는
  *   포맷 — /preview가 "다운로드 버튼을 이용하라"는 안내만 보여준다(여기서 바로
  *   열면 원본 파일명 없이 다운로드가 시작돼 버린다).
@@ -105,6 +107,7 @@ const EXTENSION_MIME_TYPES: Record<string, string> = {
   svg: "image/svg+xml",
   txt: "text/plain",
   csv: "text/csv",
+  md: "text/markdown",
   zip: "application/zip",
   html: "text/html",
   htm: "text/html",
