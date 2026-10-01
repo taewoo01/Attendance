@@ -486,3 +486,26 @@ export const notifications = pgTable("notifications", {
   readAt: timestamp("read_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * Web Push 구독 정보. 브라우저의 PushManager.subscribe()가 돌려주는
+ * endpoint/keys를 그대로 저장한다 — 서버가 web-push로 실제 알림을 보낼 때
+ * 이 값들로 수신자를 찾는다. 기기(브라우저)마다 구독이 하나씩 생기므로
+ * 한 사람이 여러 기기(노트북+데스크탑 등)에서 켜면 행도 여러 개가 쌓인다.
+ * endpoint는 구독마다 고유해서 unique로 두고, 같은 기기에서 다시 구독하면
+ * upsert(onConflictDoUpdate)로 덮어쓴다 — 중복 행이 쌓이지 않는다.
+ * profiles와 마찬가지로 client가 직접 읽고 쓰지 않는다(RLS 전부 차단, 서버
+ * Server Action이 DATABASE_URL 연결로만 insert/delete) — 다른 사람 명의로
+ * 가짜 구독을 심거나 남의 구독 endpoint를 훔쳐보는 걸 막기 위해서다.
+ */
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => authUsers.id, { onDelete: "cascade" }),
+  endpoint: text("endpoint").notNull().unique(),
+  p256dh: text("p256dh").notNull(),
+  authKey: text("auth_key").notNull(),
+  userAgent: text("user_agent").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
