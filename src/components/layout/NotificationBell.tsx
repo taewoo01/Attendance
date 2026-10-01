@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { IconButton } from "@/components/ui/IconButton";
+import { PushSubscribeToggle } from "@/components/notifications/PushSubscribeToggle";
 import { createClient } from "@/lib/supabase/browser";
 import { markAllNotificationsRead } from "@/lib/notifications/actions";
 import type { ActivityItem } from "@/lib/notifications/activity";
@@ -142,6 +143,7 @@ export function NotificationBell({
         {open && (
           <div className="absolute right-0 top-[calc(100%+10px)] z-50 w-[320px] overflow-hidden rounded-card border border-border bg-bg-panel shadow-[0_20px_40px_-18px_rgba(0,0,0,0.6)]">
             <div className="border-b border-border px-4 py-3 text-[12.5px] font-semibold text-silk">알림</div>
+            <PushSubscribeToggle />
             <div className="max-h-[360px] overflow-y-auto">
               {personal.length === 0 && activity.length === 0 ? (
                 <p className="m-0 px-4 py-5 text-center text-[12px] text-silk-faint">아직 알림이 없습니다.</p>
