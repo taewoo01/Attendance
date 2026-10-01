@@ -3,6 +3,7 @@ import { FileList, type FileEntry } from "@/components/files/FileList";
 import { FilesSidebar, type RecentFileItem } from "@/components/files/FilesSidebar";
 import { FolderGrid, type Folder } from "@/components/files/FolderGrid";
 import { UploadButton } from "@/components/files/UploadButton";
+import { TableRealtimeRefresh } from "@/components/realtime/TableRealtimeRefresh";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { listFiles, listFolders } from "@/lib/db/files";
 import { fileKindOf, formatBytes, formatRelative, formatShortDate } from "@/lib/files/format";
@@ -66,6 +67,7 @@ export default async function FilesPage({ searchParams }: PageProps<"/files">) {
 
   return (
     <>
+      <TableRealtimeRefresh channel="files-changes" tables={["files"]} />
       <div className="mx-auto flex max-w-[1220px] flex-wrap items-baseline justify-between gap-[10px] px-7 pt-[30px]">
         <div>
           <p className="font-mono text-xs text-silk-faint">

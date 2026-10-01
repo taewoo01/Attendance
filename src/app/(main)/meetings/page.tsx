@@ -2,6 +2,7 @@ import { MeetingsBoard } from "@/components/meetings/MeetingsBoard";
 import { MeetingsSidebar } from "@/components/meetings/MeetingsSidebar";
 import { type RecordingItem } from "@/components/meetings/RecordingsCard";
 import { RegisterMeetingModal } from "@/components/meetings/RegisterMeetingModal";
+import { TableRealtimeRefresh } from "@/components/realtime/TableRealtimeRefresh";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { listMeetingRecordings, listMeetings, withRecordingUrls } from "@/lib/db/meetings";
 import { getProfileByUserId } from "@/lib/db/profiles";
@@ -43,6 +44,7 @@ export default async function MeetingsPage() {
 
   return (
     <>
+      <TableRealtimeRefresh channel="meeting-notes-changes" tables={["meeting_notes"]} />
       <RegisterMeetingModal defaultRecorder={myProfile?.name ?? ""} />
       <MeetingsBoard
         meetings={meetings}

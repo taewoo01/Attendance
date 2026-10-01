@@ -2,6 +2,7 @@ import { DailyBoard, type FeedDay } from "@/components/daily/DailyBoard";
 import type { WeekStatusDay } from "@/components/daily/DailySidebar";
 import type { FeedEntry } from "@/components/daily/TeamFeedCard";
 import type { PastLog } from "@/components/daily/PastLogsCard";
+import { TableRealtimeRefresh } from "@/components/realtime/TableRealtimeRefresh";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { listDailyLogs, listMyTemplates } from "@/lib/db/daily";
 import { listProfiles } from "@/lib/db/profiles";
@@ -184,15 +185,18 @@ export default async function DailyPage() {
   const streakBest = Math.max(streakCurrent, computeBestStreakThisMonth(myDates, todayKey));
 
   return (
-    <DailyBoard
-      feedDays={feedDays}
-      pastLogs={pastLogs}
-      todayKey={todayKey}
-      templates={templates}
-      weekStatus={weekStatus}
-      streakCurrent={streakCurrent}
-      streakBest={streakBest}
-      roster={roster.map((profile) => ({ userId: profile.userId, name: profile.name }))}
-    />
+    <>
+      <TableRealtimeRefresh channel="daily-logs-changes" tables={["daily_logs"]} />
+      <DailyBoard
+        feedDays={feedDays}
+        pastLogs={pastLogs}
+        todayKey={todayKey}
+        templates={templates}
+        weekStatus={weekStatus}
+        streakCurrent={streakCurrent}
+        streakBest={streakBest}
+        roster={roster.map((profile) => ({ userId: profile.userId, name: profile.name }))}
+      />
+    </>
   );
 }

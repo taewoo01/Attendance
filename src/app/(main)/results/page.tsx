@@ -2,6 +2,7 @@ import { RegisterResultModal } from "@/components/results/RegisterResultModal";
 import { ResultsBoard } from "@/components/results/ResultsBoard";
 import type { Result } from "@/components/results/ResultList";
 import { ResultsSidebar } from "@/components/results/ResultsSidebar";
+import { TableRealtimeRefresh } from "@/components/realtime/TableRealtimeRefresh";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { listAchievementFiles, listAchievements } from "@/lib/db/achievements";
 import { listProfiles } from "@/lib/db/profiles";
@@ -53,6 +54,7 @@ export default async function ResultsPage() {
 
   return (
     <>
+      <TableRealtimeRefresh channel="achievements-changes" tables={["achievements"]} />
       <RegisterResultModal members={members} />
 
       <div className="mx-auto grid max-w-[1220px] grid-cols-[1fr_300px] items-start gap-[22px] px-7 pt-[22px] pb-[90px] max-[960px]:grid-cols-1">

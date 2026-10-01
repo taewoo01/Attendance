@@ -1,6 +1,7 @@
 import { IdeasBoard } from "@/components/ideas/IdeasBoard";
 import type { Idea, IdeaReaction } from "@/components/ideas/IdeaCard";
 import type { RecentActivityItem } from "@/components/ideas/IdeasSidebar";
+import { TableRealtimeRefresh } from "@/components/realtime/TableRealtimeRefresh";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { listIdeaFiles, listIdeaReactions, listIdeas } from "@/lib/db/ideas";
 import { ideaTimestampMs } from "@/lib/ideas/format";
@@ -71,5 +72,10 @@ export default async function IdeasPage() {
     .slice(0, RECENT_ACTIVITY_LIMIT)
     .map(({ item }) => item);
 
-  return <IdeasBoard ideas={ideas} currentUserId={user?.id ?? null} recentActivity={recentActivity} />;
+  return (
+    <>
+      <TableRealtimeRefresh channel="ideas-changes" tables={["ideas"]} />
+      <IdeasBoard ideas={ideas} currentUserId={user?.id ?? null} recentActivity={recentActivity} />
+    </>
+  );
 }
