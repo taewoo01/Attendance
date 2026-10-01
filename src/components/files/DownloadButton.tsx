@@ -9,9 +9,9 @@ import { openDownloadUrl, triggerFileDownload } from "@/lib/files/open-download"
  * TASK-029: 클릭 시 서버에서 60초 만료 presigned URL을 발급받아 새 탭으로 연다
  * (docs/MIGRATION.md 11절 — 클라이언트가 Storage 경로를 직접 조합하지 않음).
  * 버튼 하나가 "열기"와 "다운로드"를 겸하고 있어 실제로는 다운로드가 안 된다는
- * 오해가 있어(html은 /preview 뷰어로, 그 외는 새 탭 미리보기로 열릴 뿐) 보기/
- * 다운로드 버튼을 분리했다 — 다운로드는 항상 Content-Disposition: attachment로
- * 발급받아(getFileDownloadUrl의 forceDownload) 실제 파일 저장을 보장한다.
+ * 오해가 있어 보기/다운로드 버튼을 분리했다 — "보기"는 항상 /preview(사이트 내
+ * 뷰어)로 열리고, "다운로드"는 항상 Content-Disposition: attachment로 발급받아
+ * (getFileDownloadUrl의 forceDownload) 실제 파일 저장을 보장한다.
  */
 export function DownloadButton({ fileId, name }: { fileId: string; name: string }) {
   const [pending, setPending] = useState<"view" | "download" | null>(null);

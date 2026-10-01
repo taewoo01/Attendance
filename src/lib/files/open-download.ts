@@ -1,18 +1,14 @@
-import { needsSandboxedPreview } from "@/lib/files/upload-shared";
-
 /**
  * DownloadButton/AchievementFileLink/IdeaFileLink가 공유하는 "signed URL 발급 후
- * 열기" 동작. html/htm/svg 첨부는 그대로 새 탭에 열면 Storage 도메인에서 첨부된
- * 스크립트가 실행될 수 있어(stored XSS) /preview(sandbox iframe 뷰어)로 보내고,
- * 그 외 확장자는 기존처럼 signed URL을 새 탭에서 바로 연다.
+ * 보기" 동작. signed URL을 새 탭에 바로 열면 1) html/svg는 Storage 도메인에서
+ * 첨부된 스크립트가 실행될 수 있고(stored XSS) 2) 브라우저가 직접 렌더링하지
+ * 못하는 포맷(워드/엑셀/한글 등)은 사이트 밖에서 바로 다운로드가 시작돼버려 "보기"가
+ * 아니라 "다운로드"처럼 동작한다. 그래서 확장자와 무관하게 항상 /preview(사이트 내
+ * 뷰어, getPreviewKind()로 포맷별 렌더링 방식을 분기)로 보낸다.
  */
 export function openDownloadUrl(url: string, name: string) {
-  if (needsSandboxedPreview(name)) {
-    const preview = `/preview?u=${encodeURIComponent(url)}&n=${encodeURIComponent(name)}`;
-    window.open(preview, "_blank", "noopener,noreferrer");
-    return;
-  }
-  window.open(url, "_blank", "noopener,noreferrer");
+  const preview = `/preview?u=${encodeURIComponent(url)}&n=${encodeURIComponent(name)}`;
+  window.open(preview, "_blank", "noopener,noreferrer");
 }
 
 /**

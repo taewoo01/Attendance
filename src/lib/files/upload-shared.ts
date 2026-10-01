@@ -14,10 +14,10 @@ export const BUCKET = "files";
  * html/htm/svg는 화면으로 바로 볼 수 있게 허용하되, signed URL을 그대로 새 탭에 열면
  * (svg도 <script>를 심을 수 있어 html과 동일하게) Storage 도메인에서 첨부된 스크립트가
  * 실행될 수 있어(stored XSS) 항상 sandbox iframe 뷰어(src/app/preview,
- * needsSandboxedPreview() 참고)를 거쳐서만 보여준다.
- * hwp/hwpx(한글과컴퓨터 문서)는 브라우저가 직접 열 수 없는 포맷이라 다운로드만
- * 대상이고 미리보기 대상은 아니다 — isImageExtension/needsSandboxedPreview 어느
- * 쪽에도 넣지 않는다.
+ * getPreviewKind() 참고)를 거쳐서만 보여준다.
+ * hwp/hwpx(한글과컴퓨터 문서)·office 문서·zip은 브라우저가 직접 열 수 없는 포맷이라
+ * /preview에서도 미리보기 없이 "다운로드 버튼을 이용하라"는 안내만 보여준다
+ * (getPreviewKind()가 "unsupported"로 분류).
  */
 export const ALLOWED_EXTENSIONS = new Set([
   "pdf",
@@ -65,15 +65,28 @@ export function isImageExtension(name: string): boolean {
 }
 
 const SANDBOXED_PREVIEW_EXTENSIONS = new Set(["html", "htm", "svg"]);
+const PDF_PREVIEW_EXTENSIONS = new Set(["pdf"]);
+const TEXT_PREVIEW_EXTENSIONS = new Set(["txt", "csv"]);
+
+export type PreviewKind = "sandboxed" | "pdf" | "image" | "text" | "unsupported";
 
 /**
- * 브라우저가 그대로 파싱·실행할 수 있는(=<script> 삽입이 가능한) 첨부파일인지
- * 판단한다. DownloadButton/AchievementFileLink/IdeaFileLink가 이 값이 true면
- * signed URL을 바로 새 탭에 열지 않고 /preview(sandbox iframe 뷰어, 스크립트
- * 실행 차단)로 보낸다.
+ * "보기" 버튼이 /preview에서 첨부파일을 어떤 방식으로 보여줄지 판단한다.
+ * - sandboxed: html/htm/svg — <script> 삽입이 가능해(stored XSS) fetch한 텍스트를
+ *   sandbox iframe의 srcDoc에 넣어서만 보여준다.
+ * - pdf/image: 브라우저가 직접 렌더링 가능 — signed URL을 iframe/img src에 그대로 건다.
+ * - text: txt/csv — fetch한 내용을 그대로 텍스트로 보여준다(HTML로 파싱되지 않아 안전).
+ * - unsupported: office 문서(doc/xls/ppt 등)·hwp·zip처럼 브라우저가 직접 열 수 없는
+ *   포맷 — /preview가 "다운로드 버튼을 이용하라"는 안내만 보여준다(여기서 바로
+ *   열면 원본 파일명 없이 다운로드가 시작돼 버린다).
  */
-export function needsSandboxedPreview(name: string): boolean {
-  return SANDBOXED_PREVIEW_EXTENSIONS.has(extensionOf(name));
+export function getPreviewKind(name: string): PreviewKind {
+  const ext = extensionOf(name);
+  if (SANDBOXED_PREVIEW_EXTENSIONS.has(ext)) return "sandboxed";
+  if (PDF_PREVIEW_EXTENSIONS.has(ext)) return "pdf";
+  if (IMAGE_EXTENSIONS.has(ext)) return "image";
+  if (TEXT_PREVIEW_EXTENSIONS.has(ext)) return "text";
+  return "unsupported";
 }
 
 /** ALLOWED_EXTENSIONS와 1:1로 대응하는 MIME 타입. contentTypeFor()의 신뢰 가능한 소스. */

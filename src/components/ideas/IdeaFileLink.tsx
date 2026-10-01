@@ -6,8 +6,8 @@ import { openDownloadUrl } from "@/lib/files/open-download";
 
 /**
  * AchievementFileLink(src/components/results/AchievementFileLink.tsx)와 동일한
- * 패턴 — 클릭 시 60초 만료 presigned URL을 발급받아 새 탭으로 연다.
- * html/htm은 openDownloadUrl이 /preview(sandbox iframe 뷰어)로 대신 연다.
+ * 패턴 — 클릭 시 60초 만료 presigned URL을 발급받아 openDownloadUrl로 /preview
+ * (사이트 내 뷰어)에서 연다.
  */
 export function IdeaFileLink({ fileId, name }: { fileId: string; name: string }) {
   const [pending, setPending] = useState(false);

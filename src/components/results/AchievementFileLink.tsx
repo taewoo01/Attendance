@@ -6,9 +6,9 @@ import { openDownloadUrl } from "@/lib/files/open-download";
 
 /**
  * files 기능의 DownloadButton과 동일한 패턴(클릭 시 60초 만료 presigned URL 발급
- * 후 새 탭으로 열기) — 여기서는 아이콘 버튼이 아니라 파일명을 텍스트로 보여줘야
- * 해서(실적 하나에 첨부파일이 여러 개일 수 있다, #8) 별도 컴포넌트로 뒀다.
- * html/htm은 openDownloadUrl이 /preview(sandbox iframe 뷰어)로 대신 연다.
+ * 후 openDownloadUrl로 /preview 사이트 내 뷰어에서 열기) — 여기서는 아이콘 버튼이
+ * 아니라 파일명을 텍스트로 보여줘야 해서(실적 하나에 첨부파일이 여러 개일 수 있다,
+ * #8) 별도 컴포넌트로 뒀다.
  */
 export function AchievementFileLink({ fileId, name }: { fileId: string; name: string }) {
   const [pending, setPending] = useState(false);
