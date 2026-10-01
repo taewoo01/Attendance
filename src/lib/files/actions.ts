@@ -7,6 +7,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { db } from "@/lib/db/client";
 import { files, folders } from "@/db/schema";
 import { getFileById } from "@/lib/db/files";
+import { getProfileByUserId } from "@/lib/db/profiles";
+import { notifyTeamExcept } from "@/lib/notifications/create";
 import {
   ALLOWED_EXTENSIONS,
   BUCKET,
@@ -20,9 +22,11 @@ export type UploadFileState = { error?: string; success?: boolean };
 
 /**
  * 파일 업로드 Server Action. 순서: Authentication → 확장자/용량 검증 →
- * Storage 업로드 → files 메타데이터 insert. 폴더 상세 화면에서 업로드하면
- * UploadButton이 formData에 folder를 함께 보낸다 — 전체 폴더 화면에서는 folder가
- * 없어 기존처럼 빈 문자열로 저장된다.
+ * Storage 업로드 → files 메타데이터 insert → 업로더 본인 제외 팀 전체에게 알림
+ * (attendance_checkin과 동일한 notifyTeamExcept 패턴 — 토스트/배지/Web Push까지
+ * 간다. 이전엔 활동 피드에만 보이고 실시간 알림은 안 갔다). 폴더 상세 화면에서
+ * 업로드하면 UploadButton이 formData에 folder를 함께 보낸다 — 전체 폴더
+ * 화면에서는 folder가 없어 기존처럼 빈 문자열로 저장된다.
  */
 export async function uploadFile(formData: FormData): Promise<UploadFileState> {
   const user = await getCurrentUser();
@@ -69,6 +73,16 @@ export async function uploadFile(formData: FormData): Promise<UploadFileState> {
     name: safeName,
     folder,
     sizeBytes: file.size,
+  });
+
+  const profile = await getProfileByUserId(user.id);
+  const actorName = profile?.name?.trim() || "누군가";
+  await notifyTeamExcept(user.id, {
+    type: "file_upload",
+    actorUserId: user.id,
+    actorName,
+    message: `${actorName}님이 파일 "${safeName}"을 업로드했습니다`,
+    linkHref: folder ? `/files?folder=${encodeURIComponent(folder)}` : "/files",
   });
 
   revalidatePath("/files");

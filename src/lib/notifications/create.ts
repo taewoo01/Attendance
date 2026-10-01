@@ -3,7 +3,7 @@ import { notifications } from "@/db/schema";
 import { listProfiles } from "@/lib/db/profiles";
 import { sendPushToUsers } from "@/lib/push/send";
 
-export type NotificationType = "idea_comment" | "attendance_checkin";
+export type NotificationType = "idea_comment" | "attendance_checkin" | "file_upload";
 
 type NotificationInput = {
   type: NotificationType;
