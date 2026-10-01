@@ -124,8 +124,8 @@ export function HeroSection({
         }}
       >
         <div
-          className={`w-80 rounded-card border border-border bg-bg-panel px-[22px] pt-[22px] pb-6 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.6)] [transition:transform_.18s_ease] ${
-            qrOpen ? "translate-y-0" : "translate-y-2"
+          className={`w-80 origin-center rounded-card border border-border bg-bg-panel px-[22px] pt-[22px] pb-6 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.6)] [transition:scale_.22s_ease-out] ${
+            qrOpen ? "scale-y-100" : "scale-y-0"
           }`}
         >
           <div className="mb-4 flex items-center justify-between">
@@ -161,8 +161,8 @@ export function HeroSection({
         }}
       >
         <div
-          className={`w-[520px] max-h-[80vh] overflow-y-auto rounded-card border border-border bg-bg-panel px-[22px] pt-[22px] pb-6 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.6)] [transition:transform_.18s_ease] max-[560px]:w-[92vw] ${
-            statusOpen ? "translate-y-0" : "translate-y-2"
+          className={`w-[520px] max-h-[80vh] origin-center overflow-y-auto rounded-card border border-border bg-bg-panel px-[22px] pt-[22px] pb-6 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.6)] [transition:scale_.22s_ease-out] max-[560px]:w-[92vw] ${
+            statusOpen ? "scale-y-100" : "scale-y-0"
           }`}
         >
           <div className="mb-4 flex items-center justify-between">

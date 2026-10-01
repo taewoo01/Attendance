@@ -45,7 +45,7 @@ export function MobileNavToggle({
             }`}
           />
           <span
-            className={`absolute left-0 top-2 h-[2px] w-5 rounded-full bg-silk transition-[opacity,transform] duration-300 ${
+            className={`absolute left-0 top-2 h-[2px] w-5 rounded-full bg-silk transition-[opacity,scale] duration-300 ${
               open ? "scale-x-0 opacity-0" : "opacity-100"
             }`}
           />
@@ -67,7 +67,7 @@ export function MobileNavToggle({
 
       {/* 링크 드롭다운 — Navigation과 동일한 NAV_ITEMS를 세로로 보여준다. */}
       <div
-        className={`fixed inset-x-0 top-0 z-[95] max-h-dvh overflow-y-auto border-b border-border bg-bg-panel px-7 pt-[76px] pb-5 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.6)] transition-[opacity,transform] duration-200 ease-out ${
+        className={`fixed inset-x-0 top-0 z-[95] max-h-dvh overflow-y-auto border-b border-border bg-bg-panel px-7 pt-[76px] pb-5 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.6)] transition-[opacity,translate] duration-200 ease-out ${
           open ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-2 opacity-0"
         }`}
       >
