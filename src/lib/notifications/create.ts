@@ -1,6 +1,7 @@
 import { db } from "@/lib/db/client";
 import { notifications } from "@/db/schema";
 import { listProfiles } from "@/lib/db/profiles";
+import { sendPushToUsers } from "@/lib/push/send";
 
 export type NotificationType = "idea_comment" | "attendance_checkin";
 
@@ -21,6 +22,7 @@ export function truncateForPreview(text: string, maxLength = 60): string {
 /** 특정 한 명(글 작성자 등)에게 알림 하나를 보낸다. */
 export async function notifyUser(userId: string, input: NotificationInput) {
   await db.insert(notifications).values({ userId, ...input });
+  await sendPushToUsers([userId], { title: "PLAY GROUND", body: input.message, url: input.linkHref });
 }
 
 /**
@@ -34,4 +36,5 @@ export async function notifyTeamExcept(excludeUserId: string, input: Notificatio
   if (recipientIds.length === 0) return;
 
   await db.insert(notifications).values(recipientIds.map((userId) => ({ userId, ...input })));
+  await sendPushToUsers(recipientIds, { title: "PLAY GROUND", body: input.message, url: input.linkHref });
 }
