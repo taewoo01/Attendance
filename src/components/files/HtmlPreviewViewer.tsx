@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { getFileDownloadUrl } from "@/lib/files/actions";
+import { readPreviewNav, type PreviewSibling } from "@/lib/files/open-download";
 import { getPreviewKind } from "@/lib/files/upload-shared";
 
 /**
@@ -25,11 +27,26 @@ import { getPreviewKind } from "@/lib/files/upload-shared";
  * - unsupported(office 문서/hwp/zip 등): 브라우저가 열 수 없는 포맷 — 여기서 바로
  *   열면 원본 파일명 없이 다운로드가 시작돼버리니, 목록의 다운로드 버튼을 쓰라는
  *   안내만 보여준다.
+ *
+ * FileList에서 열었다면(여러 파일이 있는 목록) readPreviewNav가 localStorage에서
+ * 형제 파일 id/name 목록을 읽어와 이전/다음 버튼을 보여준다 — 클릭(또는 ←/→ 키)
+ * 시 getFileDownloadUrl로 그 파일의 새 signed URL을 발급받아 같은 탭에서 바로
+ * 바꿔 보여준다(새 탭을 또 열지 않는다).
  */
 export function HtmlPreviewViewer() {
   const params = useSearchParams();
-  const url = params.get("u") ?? "";
-  const name = params.get("n") || "미리보기";
+  const initialUrl = params.get("u") ?? "";
+  const initialName = params.get("n") || "미리보기";
+
+  const [url, setUrl] = useState(initialUrl);
+  const [name, setName] = useState(initialName);
+  // lazy initializer로 마운트 시 한 번만 localStorage를 읽는다(SSR에서는
+  // readPreviewNav 내부 try/catch가 ReferenceError를 삼켜 null을 돌려준다).
+  const [nav, setNav] = useState<{ list: PreviewSibling[]; index: number } | null>(() =>
+    readPreviewNav(initialName),
+  );
+  const [navPending, setNavPending] = useState(false);
+
   const kind = getPreviewKind(name);
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -63,6 +80,37 @@ export function HtmlPreviewViewer() {
     };
   }, [isAllowed, needsFetch, url]);
 
+  const goTo = useCallback(
+    async (step: 1 | -1) => {
+      if (!nav || navPending) return;
+      const nextIndex = nav.index + step;
+      const target = nav.list[nextIndex];
+      if (!target) return;
+
+      setNavPending(true);
+      const result = await getFileDownloadUrl(target.id);
+      setNavPending(false);
+      if (!result.url) return;
+
+      setNav({ list: nav.list, index: nextIndex });
+      setText(null);
+      setError(false);
+      setUrl(result.url);
+      setName(target.name);
+    },
+    [nav, navPending],
+  );
+
+  useEffect(() => {
+    if (!nav) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "ArrowLeft") goTo(-1);
+      if (e.key === "ArrowRight") goTo(1);
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [nav, goTo]);
+
   if (!isAllowed) {
     return (
       <div className="flex h-dvh items-center justify-center bg-bg text-[13px] text-silk-faint">
@@ -71,44 +119,82 @@ export function HtmlPreviewViewer() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="flex h-dvh items-center justify-center bg-bg text-[13px] text-silk-faint">
-        파일을 불러오지 못했습니다. 링크가 만료됐을 수 있어요 — 다시 시도해 주세요.
-      </div>
-    );
-  }
-
   return (
     <div className="flex h-dvh flex-col bg-bg">
-      <div className="truncate border-b border-border px-4 py-2.5 text-[12.5px] text-silk-dim">{name}</div>
-      {kind === "sandboxed" &&
-        (text === null ? (
-          <div className="flex flex-1 items-center justify-center text-[13px] text-silk-faint">불러오는 중...</div>
-        ) : (
-          <iframe sandbox="" srcDoc={text} title={name} className="flex-1 border-0 bg-white" />
-        ))}
-      {kind === "pdf" && <iframe src={url} title={name} className="flex-1 border-0 bg-white" />}
-      {kind === "image" && (
-        <div className="flex flex-1 items-center justify-center overflow-auto bg-[#1a1a1a] p-4">
-          {/* eslint-disable-next-line @next/next/no-img-element -- presigned Storage URL, next/image 최적화 대상이 아니다 */}
-          <img src={url} alt={name} className="max-h-full max-w-full object-contain" />
+      <div className="flex items-center gap-3 border-b border-border px-4 py-2.5">
+        {nav && (
+          <button
+            type="button"
+            onClick={() => goTo(-1)}
+            disabled={navPending || nav.index === 0}
+            aria-label="이전 파일"
+            className="flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-chip border border-border bg-transparent text-silk-dim hover:border-teal-dim hover:text-teal disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <svg viewBox="0 0 24 24" fill="none" strokeWidth={2} className="h-3 w-3 stroke-current">
+              <path d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+        )}
+        <div className="min-w-0 flex-1 truncate text-[12.5px] text-silk-dim">{name}</div>
+        {nav && (
+          <>
+            <span className="shrink-0 font-mono text-[11px] text-silk-faint">
+              {nav.index + 1} / {nav.list.length}
+            </span>
+            <button
+              type="button"
+              onClick={() => goTo(1)}
+              disabled={navPending || nav.index === nav.list.length - 1}
+              aria-label="다음 파일"
+              className="flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-chip border border-border bg-transparent text-silk-dim hover:border-teal-dim hover:text-teal disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <svg viewBox="0 0 24 24" fill="none" strokeWidth={2} className="h-3 w-3 stroke-current">
+                <path d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </>
+        )}
+      </div>
+
+      {error ? (
+        <div className="flex flex-1 items-center justify-center text-[13px] text-silk-faint">
+          파일을 불러오지 못했습니다. 링크가 만료됐을 수 있어요 — 다시 시도해 주세요.
         </div>
-      )}
-      {kind === "text" &&
-        (text === null ? (
-          <div className="flex flex-1 items-center justify-center text-[13px] text-silk-faint">불러오는 중...</div>
-        ) : (
-          <pre className="flex-1 overflow-auto whitespace-pre-wrap break-words p-4 text-[12.5px] text-silk">
-            {text}
-          </pre>
-        ))}
-      {kind === "unsupported" && (
-        <div className="flex flex-1 items-center justify-center text-center text-[13px] text-silk-faint">
-          이 파일 형식은 사이트 내 미리보기를 지원하지 않습니다.
-          <br />
-          목록의 다운로드 버튼을 이용해 주세요.
-        </div>
+      ) : (
+        <>
+          {kind === "sandboxed" &&
+            (text === null ? (
+              <div className="flex flex-1 items-center justify-center text-[13px] text-silk-faint">
+                불러오는 중...
+              </div>
+            ) : (
+              <iframe sandbox="" srcDoc={text} title={name} className="flex-1 border-0 bg-white" />
+            ))}
+          {kind === "pdf" && <iframe src={url} title={name} className="flex-1 border-0 bg-white" />}
+          {kind === "image" && (
+            <div className="flex flex-1 items-center justify-center overflow-auto bg-[#1a1a1a] p-4">
+              {/* eslint-disable-next-line @next/next/no-img-element -- presigned Storage URL, next/image 최적화 대상이 아니다 */}
+              <img src={url} alt={name} className="max-h-full max-w-full object-contain" />
+            </div>
+          )}
+          {kind === "text" &&
+            (text === null ? (
+              <div className="flex flex-1 items-center justify-center text-[13px] text-silk-faint">
+                불러오는 중...
+              </div>
+            ) : (
+              <pre className="flex-1 overflow-auto whitespace-pre-wrap break-words p-4 text-[12.5px] text-silk">
+                {text}
+              </pre>
+            ))}
+          {kind === "unsupported" && (
+            <div className="flex flex-1 items-center justify-center text-center text-[13px] text-silk-faint">
+              이 파일 형식은 사이트 내 미리보기를 지원하지 않습니다.
+              <br />
+              목록의 다운로드 버튼을 이용해 주세요.
+            </div>
+          )}
+        </>
       )}
     </div>
   );

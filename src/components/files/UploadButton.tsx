@@ -11,6 +11,10 @@ import { uploadFile } from "@/lib/files/actions";
  * 폴더 상세 화면에 폴더를 만들고 들어가서 업로드하는 흐름이 불편하다는 피드백에 따라,
  * 버튼 옆에 폴더 선택 드롭다운을 추가했다 — 어느 화면에서 업로드하든 원하는 폴더를 바로
  * 고를 수 있다. `defaultFolder`가 있으면(폴더 상세 화면) 그 폴더가 기본 선택값이다.
+ * `multiple`로 여러 파일을 한 번에 선택할 수 있다 — uploadFile Server Action은
+ * 여전히 파일 하나만 받으므로(서버 쪽 시그니처는 그대로 두고), 선택된 파일들을
+ * 순차로 하나씩 업로드한다. 일부만 실패해도 나머지는 계속 업로드하고, 실패한
+ * 파일명만 모아 에러로 보여준다.
  */
 export function UploadButton({ folders, defaultFolder }: { folders: string[]; defaultFolder?: string }) {
   const [pending, setPending] = useState(false);
@@ -18,19 +22,23 @@ export function UploadButton({ folders, defaultFolder }: { folders: string[]; de
   const [selectedFolder, setSelectedFolder] = useState(defaultFolder ?? "");
 
   async function handleChange(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+    const selectedFiles = Array.from(e.target.files ?? []);
     e.target.value = "";
-    if (!file) return;
+    if (selectedFiles.length === 0) return;
 
     setPending(true);
     setError(null);
-    const formData = new FormData();
-    formData.append("file", file);
-    if (selectedFolder) formData.append("folder", selectedFolder);
-    const result = await uploadFile(formData);
+    const failed: string[] = [];
+    for (const file of selectedFiles) {
+      const formData = new FormData();
+      formData.append("file", file);
+      if (selectedFolder) formData.append("folder", selectedFolder);
+      const result = await uploadFile(formData);
+      if (result.error) failed.push(`${file.name}(${result.error})`);
+    }
     setPending(false);
-    if (result.error) {
-      setError(result.error);
+    if (failed.length > 0) {
+      setError(`업로드 실패: ${failed.join(", ")}`);
     }
   }
 
@@ -59,7 +67,14 @@ export function UploadButton({ folders, defaultFolder }: { folders: string[]; de
           {pending ? "업로드 중..." : "⇧ 파일 업로드"}
         </label>
       </div>
-      <input id="fileUploadInput" type="file" className="hidden" disabled={pending} onChange={handleChange} />
+      <input
+        id="fileUploadInput"
+        type="file"
+        multiple
+        className="hidden"
+        disabled={pending}
+        onChange={handleChange}
+      />
       {error && <span className="font-mono text-[11px] text-[#e2543f]">{error}</span>}
     </div>
   );

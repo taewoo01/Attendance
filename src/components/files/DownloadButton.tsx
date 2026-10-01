@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { getFileDownloadUrl } from "@/lib/files/actions";
-import { openDownloadUrl, triggerFileDownload } from "@/lib/files/open-download";
+import { openDownloadUrl, triggerFileDownload, type PreviewSibling } from "@/lib/files/open-download";
 
 /**
  * playground-design/files.html의 .file-dl 다운로드 버튼(원본은 리스너 없는 정적 버튼).
@@ -12,8 +12,20 @@ import { openDownloadUrl, triggerFileDownload } from "@/lib/files/open-download"
  * 오해가 있어 보기/다운로드 버튼을 분리했다 — "보기"는 항상 /preview(사이트 내
  * 뷰어)로 열리고, "다운로드"는 항상 Content-Disposition: attachment로 발급받아
  * (getFileDownloadUrl의 forceDownload) 실제 파일 저장을 보장한다.
+ * siblings/index는 FileList가 넘기는 같은 목록의 전체 파일 id/name — /preview에서
+ * 이전/다음 버튼으로 넘겨볼 수 있게 openDownloadUrl에 그대로 전달한다.
  */
-export function DownloadButton({ fileId, name }: { fileId: string; name: string }) {
+export function DownloadButton({
+  fileId,
+  name,
+  siblings,
+  index,
+}: {
+  fileId: string;
+  name: string;
+  siblings: PreviewSibling[];
+  index: number;
+}) {
   const [pending, setPending] = useState<"view" | "download" | null>(null);
 
   async function handleView() {
@@ -21,7 +33,7 @@ export function DownloadButton({ fileId, name }: { fileId: string; name: string 
     const result = await getFileDownloadUrl(fileId);
     setPending(null);
     if (result.url) {
-      openDownloadUrl(result.url, name);
+      openDownloadUrl(result.url, name, { list: siblings, index });
     }
   }
 

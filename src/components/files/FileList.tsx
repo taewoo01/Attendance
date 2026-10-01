@@ -1,6 +1,11 @@
+"use client";
+
+import { useState } from "react";
 import { DeleteFileButton } from "@/components/files/DeleteFileButton";
 import { DownloadButton } from "@/components/files/DownloadButton";
+import { getFileDownloadUrl } from "@/lib/files/actions";
 import { type FileKind } from "@/lib/files/format";
+import { triggerFileDownload } from "@/lib/files/open-download";
 
 export type FileEntry = {
   id: string;
@@ -58,20 +63,92 @@ function FileIcon({ type }: { type: FileKind }) {
  * TASK-029: 하드코딩 6건 대신 page.tsx가 실제 files 테이블을 조회한 결과를
  * props로 받는다. `.file-dl` 다운로드 버튼은 `DownloadButton`(Client
  * Component)으로 교체해 실제 presigned URL 발급 기능을 연결했다.
+ * 여러 파일을 한 번에 다운로드할 수 있어야 해서("use client"로 전환) 행마다
+ * 체크박스를 두고, 선택된 항목은 getFileDownloadUrl(forceDownload)을 순차로
+ * 호출해 하나씩 저장 대화상자를 띄운다 — zip으로 묶지 않고 순차 다운로드인
+ * 이유는 서버에 압축 라이브러리를 새로 추가하지 않기 위해서다(최소 dependency
+ * 원칙). 브라우저가 여러 다운로드를 자동으로 막는 경우 사용자가 한 번 허용하면
+ * 이후부터는 그대로 진행된다.
  */
 export function FileList({ files, title = "전체 파일" }: FileListProps) {
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkPending, setBulkPending] = useState(false);
+
+  const siblings = files.map((f) => ({ id: f.id, name: f.name }));
+  const allSelected = files.length > 0 && selected.size === files.length;
+
+  function toggle(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  function toggleAll() {
+    setSelected(allSelected ? new Set() : new Set(files.map((f) => f.id)));
+  }
+
+  async function handleBulkDownload() {
+    setBulkPending(true);
+    for (const id of selected) {
+      const result = await getFileDownloadUrl(id, true);
+      if (result.url) {
+        triggerFileDownload(result.url);
+        // 브라우저가 "여러 파일 동시 다운로드"로 한꺼번에 막아버리지 않도록
+        // 다운로드 사이에 짧은 간격을 둔다.
+        await new Promise((resolve) => setTimeout(resolve, 400));
+      }
+    }
+    setBulkPending(false);
+    setSelected(new Set());
+  }
+
   return (
     <div className="overflow-hidden rounded-card border border-border bg-bg-panel">
-      <div className="flex items-center justify-between border-b border-border px-[22px] py-[18px]">
-        <h3 className="m-0 text-[14.5px] font-semibold">{title}</h3>
-        <span className="font-mono text-[11.5px] text-silk-faint">{files.length}개</span>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-[22px] py-[18px]">
+        <div className="flex items-center gap-3">
+          <h3 className="m-0 text-[14.5px] font-semibold">{title}</h3>
+          {files.length > 0 && (
+            <button
+              type="button"
+              onClick={toggleAll}
+              className="cursor-pointer border-none bg-transparent p-0 font-mono text-[11px] text-silk-faint hover:text-teal"
+            >
+              {allSelected ? "전체 해제" : "전체 선택"}
+            </button>
+          )}
+        </div>
+        {selected.size > 0 ? (
+          <button
+            type="button"
+            onClick={handleBulkDownload}
+            disabled={bulkPending}
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded-button border border-teal bg-teal px-3 py-1.5 text-[11.5px] font-semibold text-[#04231b] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {bulkPending ? "다운로드 중..." : `선택한 ${selected.size}개 다운로드`}
+          </button>
+        ) : (
+          <span className="font-mono text-[11.5px] text-silk-faint">{files.length}개</span>
+        )}
       </div>
 
-      {files.map((file) => (
+      {files.map((file, index) => (
         <div
           key={file.id}
-          className="grid grid-cols-[36px_1fr_90px_130px_116px] items-center gap-[14px] border-b border-border px-[22px] py-[13px] last:border-b-0 hover:bg-[rgba(231,239,236,0.02)] max-[640px]:grid-cols-[30px_1fr_104px]"
+          className="grid grid-cols-[18px_36px_1fr_90px_130px_116px] items-center gap-[14px] border-b border-border px-[22px] py-[13px] last:border-b-0 hover:bg-[rgba(231,239,236,0.02)] max-[640px]:grid-cols-[18px_30px_1fr_104px]"
         >
+          <input
+            type="checkbox"
+            checked={selected.has(file.id)}
+            onChange={() => toggle(file.id)}
+            aria-label={`${file.name} 선택`}
+            className="h-[15px] w-[15px] cursor-pointer accent-teal"
+          />
           <FileIcon type={file.type} />
           <div>
             <div className="text-[13px] font-medium text-silk">{file.name}</div>
@@ -80,7 +157,7 @@ export function FileList({ files, title = "전체 파일" }: FileListProps) {
           <div className="font-mono text-[11.5px] text-silk-dim max-[640px]:hidden">{file.size}</div>
           <div className="font-mono text-[11.5px] text-silk-faint max-[640px]:hidden">{file.date}</div>
           <div className="ml-auto flex items-center gap-1.5">
-            <DownloadButton fileId={file.id} name={file.name} />
+            <DownloadButton fileId={file.id} name={file.name} siblings={siblings} index={index} />
             {file.isOwner && <DeleteFileButton fileId={file.id} />}
           </div>
         </div>
