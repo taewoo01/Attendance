@@ -11,10 +11,13 @@ export const BUCKET = "files";
  * 전부 거부한다. 목록 밖 확장자를 만나면 값을 추측해서 추가하지 않는다.
  * 실적 첨부파일(src/lib/results/actions.ts)도 같은 버킷/allowlist를 그대로
  * 재사용한다 — 새 버킷을 만들지 않고 `achievements/<id>/...` 경로로 구분한다.
- * html/htm은 AI가 만든 문서 첨부를 화면으로 바로 볼 수 있게 허용하되, signed URL을
- * 그대로 새 탭에 열면 Storage 도메인에서 첨부된 스크립트가 실행될 수 있어(stored XSS)
- * 항상 sandbox iframe 뷰어(src/app/preview, isHtmlExtension() 참고)를 거쳐서만
- * 보여준다.
+ * html/htm/svg는 화면으로 바로 볼 수 있게 허용하되, signed URL을 그대로 새 탭에 열면
+ * (svg도 <script>를 심을 수 있어 html과 동일하게) Storage 도메인에서 첨부된 스크립트가
+ * 실행될 수 있어(stored XSS) 항상 sandbox iframe 뷰어(src/app/preview,
+ * needsSandboxedPreview() 참고)를 거쳐서만 보여준다.
+ * hwp/hwpx(한글과컴퓨터 문서)는 브라우저가 직접 열 수 없는 포맷이라 다운로드만
+ * 대상이고 미리보기 대상은 아니다 — isImageExtension/needsSandboxedPreview 어느
+ * 쪽에도 넣지 않는다.
  */
 export const ALLOWED_EXTENSIONS = new Set([
   "pdf",
@@ -28,11 +31,14 @@ export const ALLOWED_EXTENSIONS = new Set([
   "jpg",
   "jpeg",
   "gif",
+  "svg",
   "txt",
   "csv",
   "zip",
   "html",
   "htm",
+  "hwp",
+  "hwpx",
 ]);
 
 // 버킷 생성 시 file_size_limit(20MB)과 동일한 값. 서버 측에서도 별도로 확인한다.
@@ -58,15 +64,16 @@ export function isImageExtension(name: string): boolean {
   return IMAGE_EXTENSIONS.has(extensionOf(name));
 }
 
-const HTML_EXTENSIONS = new Set(["html", "htm"]);
+const SANDBOXED_PREVIEW_EXTENSIONS = new Set(["html", "htm", "svg"]);
 
 /**
- * html/htm 첨부파일인지 판단한다. DownloadButton/AchievementFileLink/IdeaFileLink가
- * 이 값이 true면 signed URL을 바로 새 탭에 열지 않고 /preview(sandbox iframe 뷰어,
- * 스크립트 실행 차단)로 보낸다.
+ * 브라우저가 그대로 파싱·실행할 수 있는(=<script> 삽입이 가능한) 첨부파일인지
+ * 판단한다. DownloadButton/AchievementFileLink/IdeaFileLink가 이 값이 true면
+ * signed URL을 바로 새 탭에 열지 않고 /preview(sandbox iframe 뷰어, 스크립트
+ * 실행 차단)로 보낸다.
  */
-export function isHtmlExtension(name: string): boolean {
-  return HTML_EXTENSIONS.has(extensionOf(name));
+export function needsSandboxedPreview(name: string): boolean {
+  return SANDBOXED_PREVIEW_EXTENSIONS.has(extensionOf(name));
 }
 
 /** ALLOWED_EXTENSIONS와 1:1로 대응하는 MIME 타입. contentTypeFor()의 신뢰 가능한 소스. */
@@ -82,11 +89,14 @@ const EXTENSION_MIME_TYPES: Record<string, string> = {
   jpg: "image/jpeg",
   jpeg: "image/jpeg",
   gif: "image/gif",
+  svg: "image/svg+xml",
   txt: "text/plain",
   csv: "text/csv",
   zip: "application/zip",
   html: "text/html",
   htm: "text/html",
+  hwp: "application/haansofthwp",
+  hwpx: "application/haansofthwpx",
 };
 
 /**
