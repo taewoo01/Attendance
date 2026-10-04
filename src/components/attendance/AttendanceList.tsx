@@ -6,7 +6,11 @@ export type AttendanceMember = {
   time: string;
   /** "on"=체크인 후 아직 근무 중, "left"=체크인 후 퇴근 완료, "off"=오늘 체크인 안 함. */
   status: "on" | "off" | "left";
-  /** 어제 퇴근할 때 등록해둔 오늘 상주 계획 배지("주간"/"야간"/"종일"/"안 옴"/직접 입력). 없으면 미설정. */
+  /**
+   * 어제 퇴근할 때 등록해둔 오늘 상주 계획 배지("주간"/"야간"/"종일"/"안 옴"/직접 입력).
+   * 없으면 미설정. status가 "off"(아직 오늘 체크인 안 함)일 때만 보여준다 — 체크인하면
+   * 계획이 아니라 실제 출근 여부로 상태가 드러나니 배지는 더 이상 필요 없다.
+   */
   planLabel?: string;
   /** planLabel의 스타일 분기용("day"|"night"|"full"|"off"|"custom"). */
   planKind?: string;
@@ -80,7 +84,9 @@ export function AttendanceList({ members }: AttendanceListProps) {
           <div>
             <div className="text-sm font-medium">
               {member.name}
-              {member.planLabel && <PlanBadge label={member.planLabel} kind={member.planKind} />}
+              {member.status === "off" && member.planLabel && (
+                <PlanBadge label={member.planLabel} kind={member.planKind} />
+              )}
             </div>
             <div className="mt-px text-[11.5px] text-silk-faint">{member.role}</div>
           </div>

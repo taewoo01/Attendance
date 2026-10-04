@@ -54,6 +54,11 @@ export function HeroSection({
   const router = useRouter();
   const checkedIn = initialCheckedIn;
   const checkedOut = initialCheckedOut;
+  // 출퇴근이 불분명한 팀 특성상 당일에 퇴근하고 당일에 다시 출근할 수도 있다 — 퇴근
+  // 완료(checkedOut) 상태는 "아직 출석 현황을 볼 체크인 중"이 아니라 "다시 체크인
+  // 가능한 상태"로 취급한다. 그래야 퇴근한 당일에도 메인 버튼이 QR 모달을 연다
+  // (이전엔 퇴근해도 계속 "출석 현황 보기"로 고정돼 재체크인할 방법이 없었다).
+  const activelyCheckedIn = checkedIn && !checkedOut;
   const [qrOpen, setQrOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
   const [planModalOpen, setPlanModalOpen] = useState(false);
@@ -82,29 +87,28 @@ export function HeroSection({
         <div className="flex flex-wrap gap-[14px]">
           <button
             type="button"
-            onClick={() => (checkedIn ? setStatusOpen(true) : setQrOpen(true))}
+            onClick={() => (activelyCheckedIn ? setStatusOpen(true) : setQrOpen(true))}
             className={
-              checkedIn
+              activelyCheckedIn
                 ? "inline-flex cursor-pointer items-center gap-2 border border-teal bg-transparent px-5 py-[13px] text-[13.5px] font-semibold text-teal"
                 : "inline-flex cursor-pointer items-center gap-2 border border-teal bg-teal px-5 py-[13px] text-[13.5px] font-semibold text-[#04231b]"
             }
           >
-            {checkedIn ? (residentDays && residentDays >= 2 ? `✓ ${residentDays}일째 상주 중` : "✓ 오늘 출석 현황 보기") : "▸ 오늘 출석 체크"}
+            {activelyCheckedIn
+              ? residentDays && residentDays >= 2
+                ? `✓ ${residentDays}일째 상주 중`
+                : "✓ 오늘 출석 현황 보기"
+              : "▸ 오늘 출석 체크"}
           </button>
-          {checkedIn &&
-            (checkedOut ? (
-              <span className="inline-flex items-center gap-2 border border-border bg-transparent px-5 py-[13px] text-[13.5px] font-semibold text-silk-faint">
-                ✓ 퇴근 완료
-              </span>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setPlanModalOpen(true)}
-                className="inline-flex cursor-pointer items-center gap-2 border border-border bg-transparent px-5 py-[13px] text-[13.5px] font-semibold text-silk"
-              >
-                퇴근
-              </button>
-            ))}
+          {activelyCheckedIn && (
+            <button
+              type="button"
+              onClick={() => setPlanModalOpen(true)}
+              className="inline-flex cursor-pointer items-center gap-2 border border-border bg-transparent px-5 py-[13px] text-[13.5px] font-semibold text-silk"
+            >
+              퇴근
+            </button>
+          )}
           <Link
             href="/schedule"
             className="inline-flex items-center gap-2 border border-border bg-transparent px-5 py-[13px] text-[13.5px] font-semibold text-silk"
@@ -196,7 +200,9 @@ export function HeroSection({
                 <div>
                   <div className="text-[13px] font-medium">
                     {member.name}
-                    {member.planLabel && <PlanBadge label={member.planLabel} kind={member.planKind} />}
+                    {member.status === "off" && member.planLabel && (
+                      <PlanBadge label={member.planLabel} kind={member.planKind} />
+                    )}
                   </div>
                   <div className="mt-px text-[10.5px] text-silk-faint">{member.role}</div>
                 </div>

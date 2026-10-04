@@ -117,3 +117,15 @@ export async function getAttendancePlansForDate(dateKey: string) {
     .from(attendancePlans)
     .where(eq(attendancePlans.planDate, dateKey));
 }
+
+/**
+ * 재체크인 시 이전 퇴근에서 등록해둔 "내일 상주 계획"을 지운다. 당일 재출근을
+ * 허용하면서(퇴근→출근→다시 퇴근) attendance_plans의 (userId, planDate) unique
+ * 제약(schema.ts 주석: "하루에 퇴근은 한 번만 가능해서 사실상 두 번 생길 일이
+ * 없다"는 전제)이 깨져버렸다 — 다시 출근했다는 건 그 계획이 더는 유효하지 않다는
+ * 뜻이라 지워서, 나중에 또 퇴근할 때 새 계획을 고를 수 있게 한다. 다른 팀원
+ * 화면에 뜨던 "내일 X" 배지도 이걸로 함께 사라진다.
+ */
+export async function deleteAttendancePlan(userId: string, planDate: string) {
+  await db.delete(attendancePlans).where(and(eq(attendancePlans.userId, userId), eq(attendancePlans.planDate, planDate)));
+}

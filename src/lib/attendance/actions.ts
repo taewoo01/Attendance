@@ -1,8 +1,9 @@
 import { getCurrentUser } from "@/lib/auth/get-user";
-import { findOpenAttendance, insertAttendanceCheckIn } from "@/lib/db/attendance";
+import { deleteAttendancePlan, findOpenAttendance, insertAttendanceCheckIn } from "@/lib/db/attendance";
 import { getProfileByUserId } from "@/lib/db/profiles";
 import { verifyAttendanceQrToken, verifyPersonalAttendanceQrToken } from "@/lib/attendance/qr-token";
 import { notifyTeamExcept } from "@/lib/notifications/create";
+import { addDays, seoulDateKey } from "@/lib/date";
 
 export type CheckInResult = "ok" | "already" | "invalid_token" | "unauthenticated";
 
@@ -30,6 +31,10 @@ export async function checkInWithQr(token: string | null): Promise<CheckInResult
   if (existing) return "already";
 
   await insertAttendanceCheckIn(userId);
+  // 당일 재출근: 직전 퇴근 때 등록해둔 "내일 상주 계획"은 더 이상 유효하지 않으니
+  // 지운다(다른 팀원 화면의 "내일 X" 배지도 함께 사라진다) — 안 지우면 이후 다시
+  // 퇴근할 때 같은 (userId, planDate) unique 제약에 걸려 계획을 재등록하지 못한다.
+  await deleteAttendancePlan(userId, addDays(seoulDateKey(new Date()), 1));
 
   const profile = await getProfileByUserId(userId);
   const actorName = profile?.name?.trim() || "누군가";
