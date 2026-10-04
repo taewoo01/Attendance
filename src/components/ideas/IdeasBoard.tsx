@@ -4,12 +4,16 @@ import { useMemo, useState } from "react";
 import { FeedToolbar, type FeedSort, type FeedTab } from "@/components/ideas/FeedToolbar";
 import { IdeaCard, type Idea } from "@/components/ideas/IdeaCard";
 import { IdeaComposer } from "@/components/ideas/IdeaComposer";
+import { IdeasPagination } from "@/components/ideas/IdeasPagination";
 import { IdeasSidebar, type RecentActivityItem } from "@/components/ideas/IdeasSidebar";
 import { ideaTimestampMs } from "@/lib/ideas/format";
 
 function totalReactions(idea: Idea): number {
   return idea.reactions.reduce((sum, r) => sum + r.count, 0);
 }
+
+// 아이디어가 계속 쌓이면 피드가 끝없이 길어지는 문제(무한 스크롤)를 막기 위한 페이지당 개수.
+const PAGE_SIZE = 10;
 
 /**
  * page.tsx가 서버에서 계산한 ideas/recentActivity를 받아 페이지 전체(헤더의
@@ -36,6 +40,21 @@ export function IdeasBoard({
   const [sort, setSort] = useState<FeedSort>("최신순");
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [composerOpen, setComposerOpen] = useState(false);
+  const [page, setPage] = useState(1);
+
+  // 탭/정렬/태그가 바뀌면 필터링된 목록이 달라지니 1페이지로 되돌아간다.
+  function changeTab(next: FeedTab) {
+    setTab(next);
+    setPage(1);
+  }
+  function changeSort(next: FeedSort) {
+    setSort(next);
+    setPage(1);
+  }
+  function changeTag(next: string | null) {
+    setActiveTag(next);
+    setPage(1);
+  }
 
   const visibleIdeas = useMemo(() => {
     let list = ideas;
@@ -50,6 +69,8 @@ export function IdeasBoard({
     const sorted = [...list];
     if (effectiveSort === "최신순") {
       sorted.sort((a, b) => ideaTimestampMs(b.postedAt) - ideaTimestampMs(a.postedAt));
+    } else if (effectiveSort === "오래된순") {
+      sorted.sort((a, b) => ideaTimestampMs(a.postedAt) - ideaTimestampMs(b.postedAt));
     } else if (effectiveSort === "리액션순") {
       sorted.sort((a, b) => totalReactions(b) - totalReactions(a));
     } else {
@@ -57,6 +78,10 @@ export function IdeasBoard({
     }
     return sorted;
   }, [ideas, tab, sort, activeTag, currentUserId]);
+
+  const totalPages = Math.max(1, Math.ceil(visibleIdeas.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pagedIdeas = visibleIdeas.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   return (
     <>
@@ -78,16 +103,21 @@ export function IdeasBoard({
 
       <div className="mx-auto grid max-w-[1220px] grid-cols-[1fr_300px] items-start gap-[22px] px-7 pt-[22px] pb-[90px] max-[960px]:grid-cols-1">
         <div>
-          <FeedToolbar activeTab={tab} onTabChange={setTab} sort={sort} onSortChange={setSort} />
+          <FeedToolbar activeTab={tab} onTabChange={changeTab} sort={sort} onSortChange={changeSort} />
           {visibleIdeas.length === 0 ? (
             <p className="m-0 rounded-card border border-border bg-bg-panel px-5 py-9 text-center text-[13px] text-silk-faint">
               조건에 맞는 아이디어가 없습니다.
             </p>
           ) : (
-            visibleIdeas.map((idea) => <IdeaCard key={idea.id} idea={idea} currentUserId={currentUserId} />)
+            <>
+              {pagedIdeas.map((idea) => (
+                <IdeaCard key={idea.id} idea={idea} currentUserId={currentUserId} />
+              ))}
+              <IdeasPagination page={safePage} totalPages={totalPages} onPageChange={setPage} />
+            </>
           )}
         </div>
-        <IdeasSidebar ideas={ideas} activeTag={activeTag} onTagClick={setActiveTag} recentActivity={recentActivity} />
+        <IdeasSidebar ideas={ideas} activeTag={activeTag} onTagClick={changeTag} recentActivity={recentActivity} />
       </div>
 
       {composerOpen && <IdeaComposer onClose={() => setComposerOpen(false)} />}

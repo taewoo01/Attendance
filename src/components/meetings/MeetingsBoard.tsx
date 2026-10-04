@@ -2,8 +2,12 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { MeetingCard, type Meeting } from "@/components/meetings/MeetingCard";
+import { MeetingsPagination } from "@/components/meetings/MeetingsPagination";
 import { SearchFilterBar, type FilterOption } from "@/components/meetings/SearchFilterBar";
 import { monthKeyOf, seoulDateKey } from "@/lib/date";
+
+// 회의록이 계속 쌓이면 목록이 끝없이 길어지는 문제(무한 스크롤)를 막기 위한 페이지당 개수.
+const PAGE_SIZE = 10;
 
 /** Asia/Seoul 기준 이번 달을 원본 표기("9월")로. 날짜 피커 도입 전 자유 텍스트로 등록된 회의록(meetingDateKey 없음)에만 쓰는 폴백. */
 function currentMonthPrefixKo(): string {
@@ -36,6 +40,17 @@ function isThisMonth(meeting: Meeting, todayKey: string, monthPrefix: string): b
 export function MeetingsBoard({ meetings, sidebar }: { meetings: Meeting[]; sidebar: ReactNode }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterOption>("전체");
+  const [page, setPage] = useState(1);
+
+  // 검색어/필터가 바뀌면 필터링된 목록이 달라지니 1페이지로 되돌아간다.
+  function changeQuery(next: string) {
+    setQuery(next);
+    setPage(1);
+  }
+  function changeFilter(next: FilterOption) {
+    setFilter(next);
+    setPage(1);
+  }
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -52,9 +67,13 @@ export function MeetingsBoard({ meetings, sidebar }: { meetings: Meeting[]; side
     });
   }, [meetings, query, filter]);
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pagedMeetings = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
   return (
     <>
-      <SearchFilterBar query={query} onQueryChange={setQuery} active={filter} onActiveChange={setFilter} />
+      <SearchFilterBar query={query} onQueryChange={changeQuery} active={filter} onActiveChange={changeFilter} />
 
       <div className="mx-auto grid max-w-[1220px] grid-cols-[1fr_300px] items-start gap-[22px] px-7 pt-5 pb-[90px] max-[960px]:grid-cols-1">
         <div>
@@ -63,7 +82,12 @@ export function MeetingsBoard({ meetings, sidebar }: { meetings: Meeting[]; side
               조건에 맞는 회의록이 없습니다.
             </p>
           ) : (
-            filtered.map((meeting) => <MeetingCard key={meeting.id} meeting={meeting} />)
+            <>
+              {pagedMeetings.map((meeting) => (
+                <MeetingCard key={meeting.id} meeting={meeting} />
+              ))}
+              <MeetingsPagination page={safePage} totalPages={totalPages} onPageChange={setPage} />
+            </>
           )}
         </div>
         {sidebar}

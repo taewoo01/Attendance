@@ -3,7 +3,7 @@
 export const TABS = ["전체", "내 아이디어", "인기순"] as const;
 export type FeedTab = (typeof TABS)[number];
 
-export const SORTS = ["최신순", "리액션순", "댓글순"] as const;
+export const SORTS = ["최신순", "오래된순", "리액션순", "댓글순"] as const;
 export type FeedSort = (typeof SORTS)[number];
 
 type FeedToolbarProps = {
