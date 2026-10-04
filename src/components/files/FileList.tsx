@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { DeleteFileButton } from "@/components/files/DeleteFileButton";
 import { DownloadButton } from "@/components/files/DownloadButton";
 import { getFileDownloadUrl } from "@/lib/files/actions";
@@ -22,14 +22,20 @@ type FileListProps = {
   files: FileEntry[];
   /** 폴더 필터링 중일 때 page.tsx가 폴더명을 넘긴다. 기본값은 "전체 파일". */
   title?: string;
+  /** 페이지네이션으로 `files`가 현재 페이지 항목만 담을 때, 뱃지에 표시할 전체 개수. 기본값은 files.length. */
+  totalCount?: number;
+  /** 목록 카드 하단에 그릴 페이지네이션 등 부가 요소. */
+  footer?: ReactNode;
 };
 
 // playground-design/files.html의 .file-icon.pdf/.doc/.sheet/.img stroke 색상 그대로.
+// video는 mp4 지원 추가로 생긴 5번째 분류라 원본에 없던 색을 새로 골랐다.
 const TYPE_COLOR: Record<FileKind, string> = {
   pdf: "stroke-[#e2543f]",
   doc: "stroke-[#4a9eff]",
   sheet: "stroke-teal",
   img: "stroke-amber",
+  video: "stroke-[#b48cff]",
 };
 
 function FileIcon({ type }: { type: FileKind }) {
@@ -41,6 +47,11 @@ function FileIcon({ type }: { type: FileKind }) {
             <rect x="3" y="3" width="18" height="18" rx="2" />
             <circle cx="8.5" cy="8.5" r="1.5" />
             <path d="M21 15l-5-5L5 21" />
+          </>
+        ) : type === "video" ? (
+          <>
+            <rect x="3" y="5" width="18" height="14" rx="2" />
+            <path d="M10 9.5v5l4.5-2.5z" />
           </>
         ) : type === "pdf" ? (
           <>
@@ -70,7 +81,7 @@ function FileIcon({ type }: { type: FileKind }) {
  * 원칙). 브라우저가 여러 다운로드를 자동으로 막는 경우 사용자가 한 번 허용하면
  * 이후부터는 그대로 진행된다.
  */
-export function FileList({ files, title = "전체 파일" }: FileListProps) {
+export function FileList({ files, title = "전체 파일", totalCount, footer }: FileListProps) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkPending, setBulkPending] = useState(false);
 
@@ -133,7 +144,7 @@ export function FileList({ files, title = "전체 파일" }: FileListProps) {
             {bulkPending ? "다운로드 중..." : `선택한 ${selected.size}개 다운로드`}
           </button>
         ) : (
-          <span className="font-mono text-[11.5px] text-silk-faint">{files.length}개</span>
+          <span className="font-mono text-[11.5px] text-silk-faint">{totalCount ?? files.length}개</span>
         )}
       </div>
 
@@ -162,6 +173,7 @@ export function FileList({ files, title = "전체 파일" }: FileListProps) {
           </div>
         </div>
       ))}
+      {footer}
     </div>
   );
 }

@@ -18,6 +18,10 @@ export const BUCKET = "files";
  * hwp/hwpx(한글과컴퓨터 문서)·office 문서·zip은 브라우저가 직접 열 수 없는 포맷이라
  * /preview에서도 미리보기 없이 "다운로드 버튼을 이용하라"는 안내만 보여준다
  * (getPreviewKind()가 "unsupported"로 분류).
+ * mp4는 짧은 영상 클립 업로드 지원을 위해 추가했다 — 다만 MAX_SIZE_BYTES(20MB)와
+ * Next.js Server Action의 body 크기 제한(next.config.ts), Supabase Storage
+ * 버킷 자체의 용량 제한은 그대로라 짧은 클립까지만 올라간다. 수십~수백MB 영상을
+ * 지원하려면 서버를 거치지 않는 직접 업로드 구조로 바꿔야 한다(현재는 범위 밖).
  */
 export const ALLOWED_EXTENSIONS = new Set([
   "pdf",
@@ -40,6 +44,7 @@ export const ALLOWED_EXTENSIONS = new Set([
   "htm",
   "hwp",
   "hwpx",
+  "mp4",
 ]);
 
 // 버킷 생성 시 file_size_limit(20MB)과 동일한 값. 서버 측에서도 별도로 확인한다.
@@ -68,8 +73,9 @@ export function isImageExtension(name: string): boolean {
 const SANDBOXED_PREVIEW_EXTENSIONS = new Set(["html", "htm", "svg"]);
 const PDF_PREVIEW_EXTENSIONS = new Set(["pdf"]);
 const TEXT_PREVIEW_EXTENSIONS = new Set(["txt", "csv", "md"]);
+const VIDEO_PREVIEW_EXTENSIONS = new Set(["mp4"]);
 
-export type PreviewKind = "sandboxed" | "pdf" | "image" | "text" | "unsupported";
+export type PreviewKind = "sandboxed" | "pdf" | "image" | "text" | "video" | "unsupported";
 
 /**
  * "보기" 버튼이 /preview에서 첨부파일을 어떤 방식으로 보여줄지 판단한다.
@@ -78,6 +84,8 @@ export type PreviewKind = "sandboxed" | "pdf" | "image" | "text" | "unsupported"
  * - pdf/image: 브라우저가 직접 렌더링 가능 — signed URL을 iframe/img src에 그대로 건다.
  * - text: txt/csv/md — fetch한 내용을 그대로 텍스트로 보여준다(HTML로 파싱되지 않아
  *   안전 — md도 렌더링하지 않고 원문 그대로 보여준다).
+ * - video: mp4 — <video> 태그는 html/svg와 달리 <script> 삽입 경로가 없어 signed URL을
+ *   src에 그대로 걸어도 안전하다(pdf/image와 동일한 이유).
  * - unsupported: office 문서(doc/xls/ppt 등)·hwp·zip처럼 브라우저가 직접 열 수 없는
  *   포맷 — /preview가 "다운로드 버튼을 이용하라"는 안내만 보여준다(여기서 바로
  *   열면 원본 파일명 없이 다운로드가 시작돼 버린다).
@@ -88,6 +96,7 @@ export function getPreviewKind(name: string): PreviewKind {
   if (PDF_PREVIEW_EXTENSIONS.has(ext)) return "pdf";
   if (IMAGE_EXTENSIONS.has(ext)) return "image";
   if (TEXT_PREVIEW_EXTENSIONS.has(ext)) return "text";
+  if (VIDEO_PREVIEW_EXTENSIONS.has(ext)) return "video";
   return "unsupported";
 }
 
@@ -113,6 +122,7 @@ const EXTENSION_MIME_TYPES: Record<string, string> = {
   htm: "text/html",
   hwp: "application/haansofthwp",
   hwpx: "application/haansofthwpx",
+  mp4: "video/mp4",
 };
 
 /**

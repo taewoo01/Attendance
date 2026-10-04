@@ -20,8 +20,8 @@ import { getPreviewKind } from "@/lib/files/upload-shared";
  *   fetch로 텍스트로 받아 iframe의 srcDoc에 넣는다 — srcDoc은 항상 HTML(SVG 루트
  *   태그 포함)로 파싱되고(1번 해결), sandbox 속성에 아무 권한도 주지 않아(스크립트/
  *   폼 제출/팝업 전부 차단) 스크립트는 실행되지 않는다(2번 해결).
- * - pdf/image: 브라우저가 직접 렌더링할 수 있어 signed URL을 iframe/img의 src에
- *   그대로 건다.
+ * - pdf/image/video: 브라우저가 직접 렌더링할 수 있어 signed URL을 iframe/img/video의
+ *   src에 그대로 건다.
  * - text(txt/csv): fetch한 내용을 <pre>에 그대로 넣는다 — HTML로 파싱되지 않고
  *   React가 이스케이프하므로 스크립트 실행 위험이 없다.
  * - unsupported(office 문서/hwp/zip 등): 브라우저가 열 수 없는 포맷 — 여기서 바로
@@ -175,6 +175,11 @@ export function HtmlPreviewViewer() {
             <div className="flex flex-1 items-center justify-center overflow-auto bg-[#1a1a1a] p-4">
               {/* eslint-disable-next-line @next/next/no-img-element -- presigned Storage URL, next/image 최적화 대상이 아니다 */}
               <img src={url} alt={name} className="max-h-full max-w-full object-contain" />
+            </div>
+          )}
+          {kind === "video" && (
+            <div className="flex flex-1 items-center justify-center overflow-auto bg-[#1a1a1a] p-4">
+              <video src={url} controls className="max-h-full max-w-full" />
             </div>
           )}
           {kind === "text" &&

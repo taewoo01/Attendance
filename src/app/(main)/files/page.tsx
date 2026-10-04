@@ -1,5 +1,8 @@
 import Link from "next/link";
 import { FileList, type FileEntry } from "@/components/files/FileList";
+import { FilesPagination } from "@/components/files/FilesPagination";
+import { FileSortSelect, type FileSortOrder } from "@/components/files/FileSortSelect";
+import { FileTypeFilter } from "@/components/files/FileTypeFilter";
 import { FilesSidebar, type RecentFileItem } from "@/components/files/FilesSidebar";
 import { FolderGrid, type Folder } from "@/components/files/FolderGrid";
 import { UploadButton } from "@/components/files/UploadButton";
@@ -7,6 +10,7 @@ import { TableRealtimeRefresh } from "@/components/realtime/TableRealtimeRefresh
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { listFiles, listFolders } from "@/lib/db/files";
 import { fileKindOf, formatBytes, formatRelative, formatShortDate } from "@/lib/files/format";
+import { extensionOf } from "@/lib/files/upload-shared";
 
 // TASK-029: DB 조회가 build 시점에 고정되지 않도록 매 요청마다 렌더링한다.
 export const dynamic = "force-dynamic";
@@ -15,8 +19,11 @@ export const dynamic = "force-dynamic";
 // 계산용으로 임시로 둔 기준값이다 — 실제 정책이 정해지면 바꿔야 한다.
 const ASSUMED_QUOTA_BYTES = 5 * 1024 * 1024 * 1024;
 
+// 파일이 계속 쌓이면 목록이 끝없이 길어지는 문제(무한 스크롤)를 막기 위한 페이지당 개수.
+const PAGE_SIZE = 20;
+
 export default async function FilesPage({ searchParams }: PageProps<"/files">) {
-  const [{ folder: folderParam }, user, rows, allFolders] = await Promise.all([
+  const [{ folder: folderParam, type: typeParam, page: pageParam, sort: sortParam }, user, rows, allFolders] = await Promise.all([
     searchParams,
     getCurrentUser(),
     listFiles(),
@@ -25,8 +32,28 @@ export default async function FilesPage({ searchParams }: PageProps<"/files">) {
   const selectedFolder = (Array.isArray(folderParam) ? folderParam[0] : folderParam)?.trim() || null;
   const now = new Date();
 
-  const visibleRows = selectedFolder ? rows.filter((row) => row.folder === selectedFolder) : rows;
-  const fileEntries: FileEntry[] = visibleRows.map((row) => ({
+  const folderRows = selectedFolder ? rows.filter((row) => row.folder === selectedFolder) : rows;
+
+  // 현재 폴더 범위 안에서 실제로 존재하는 확장자만 필터 옵션으로 보여준다.
+  const availableTypes = Array.from(new Set(folderRows.map((row) => extensionOf(row.name)).filter(Boolean))).sort();
+
+  const rawType = (Array.isArray(typeParam) ? typeParam[0] : typeParam)?.trim().toLowerCase() || null;
+  const selectedType = rawType && availableTypes.includes(rawType) ? rawType : null;
+
+  const typeFilteredRows = selectedType ? folderRows.filter((row) => extensionOf(row.name) === selectedType) : folderRows;
+
+  // listFiles()가 이미 uploadedAt 내림차순(최신순)으로 조회해두므로, 오래된순은
+  // 뒤집기만 하면 된다.
+  const rawSort = (Array.isArray(sortParam) ? sortParam[0] : sortParam)?.trim().toLowerCase();
+  const sortOrder: FileSortOrder = rawSort === "oldest" ? "oldest" : "newest";
+  const visibleRows = sortOrder === "oldest" ? [...typeFilteredRows].reverse() : typeFilteredRows;
+
+  const totalPages = Math.max(1, Math.ceil(visibleRows.length / PAGE_SIZE));
+  const rawPage = Number(Array.isArray(pageParam) ? pageParam[0] : pageParam) || 1;
+  const page = Math.min(Math.max(1, rawPage), totalPages);
+  const pagedRows = visibleRows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  const fileEntries: FileEntry[] = pagedRows.map((row) => ({
     id: row.id,
     type: fileKindOf(row.name),
     name: row.name,
@@ -112,10 +139,34 @@ export default async function FilesPage({ searchParams }: PageProps<"/files">) {
             </>
           )}
 
-          <p className="m-0 mb-3 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">
-            {selectedFolder ? `${selectedFolder} 폴더 파일` : "최근 업로드된 파일"}
-          </p>
-          <FileList files={fileEntries} title={selectedFolder ?? undefined} />
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <p className="m-0 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">
+              {selectedFolder ? `${selectedFolder} 폴더 파일` : "최근 업로드된 파일"}
+            </p>
+            <div className="flex items-center gap-2">
+              <FileTypeFilter
+                folder={selectedFolder}
+                availableTypes={availableTypes}
+                selectedType={selectedType}
+                sort={sortOrder === "oldest" ? sortOrder : null}
+              />
+              <FileSortSelect folder={selectedFolder} type={selectedType} sort={sortOrder} />
+            </div>
+          </div>
+          <FileList
+            files={fileEntries}
+            title={selectedFolder ?? undefined}
+            totalCount={visibleRows.length}
+            footer={
+              <FilesPagination
+                page={page}
+                totalPages={totalPages}
+                folder={selectedFolder}
+                type={selectedType}
+                sort={sortOrder === "oldest" ? sortOrder : null}
+              />
+            }
+          />
         </div>
         <FilesSidebar
           usageLabel={formatBytes(totalBytes)}

@@ -1,11 +1,12 @@
-export type FileKind = "pdf" | "doc" | "sheet" | "img";
+export type FileKind = "pdf" | "doc" | "sheet" | "img" | "video";
 
-/** playground-design/files.html의 .file-icon 4종 분류를 확장자에서 계산한다. */
+/** playground-design/files.html의 .file-icon 4종 분류를 확장자에서 계산한다("video"는 mp4 지원 추가로 생긴 5번째 분류). */
 export function fileKindOf(name: string): FileKind {
   const ext = name.split(".").pop()?.toLowerCase() ?? "";
   if (["png", "jpg", "jpeg", "gif"].includes(ext)) return "img";
   if (["xls", "xlsx", "csv"].includes(ext)) return "sheet";
   if (ext === "pdf") return "pdf";
+  if (ext === "mp4") return "video";
   return "doc";
 }
 
