@@ -31,7 +31,14 @@ export async function checkOut(): Promise<CheckOutState> {
     return { error: "아직 체크인하지 않았거나 이미 퇴근 처리되었습니다." };
   }
 
-  await checkOutAttendance(existing.id);
+  // checkOutAttendance는 동시에 또 다른 퇴근 요청이 먼저 처리된 경우(WHERE
+  // checkedOutAt IS NULL이 더는 매치되지 않음) 0행에 매치되어 null을 돌려준다.
+  // 예전엔 이 반환값을 확인하지 않고 무조건 success를 돌려줘서, 실제로는
+  // 아무것도 바뀌지 않았는데 모달이 성공으로 닫혀버리는 경우가 있었다.
+  const result = await checkOutAttendance(existing.id);
+  if (!result) {
+    return { error: "퇴근 처리 중 문제가 발생했습니다. 다시 시도해 주세요." };
+  }
 
   return { success: true };
 }

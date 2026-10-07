@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "attendance_open_per_user_unique" ON "attendance" USING btree ("user_id") WHERE "attendance"."checked_out_at" is null;

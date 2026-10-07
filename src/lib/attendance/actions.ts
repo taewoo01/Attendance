@@ -30,7 +30,18 @@ export async function checkInWithQr(token: string | null): Promise<CheckInResult
   const existing = await findOpenAttendance(userId);
   if (existing) return "already";
 
-  await insertAttendanceCheckIn(userId);
+  try {
+    await insertAttendanceCheckIn(userId);
+  } catch (error) {
+    // "열린 행 없음" 확인과 insert 사이에는 보호장치가 없어서, 거의 동시에
+    // 두 번 체크인되면 둘 다 이 확인을 통과할 수 있었다(실제 운영에서 한
+    // 사용자에게 중복된 열린 행이 쌓이는 버그로 이어짐 — drizzle/0052 마이그레이션
+    // 참고). attendance_open_per_user_unique partial unique index가 이제 두
+    // 번째 insert를 DB에서 막아주므로, unique_violation(23505)이면 이미
+    // 처리된 것으로 보고 "already"를 돌려준다. 다른 에러는 그대로 던진다.
+    if ((error as { code?: string }).code === "23505") return "already";
+    throw error;
+  }
   // 당일 재출근: 직전 퇴근 때 등록해둔 "내일 상주 계획"은 더 이상 유효하지 않으니
   // 지운다(다른 팀원 화면의 "내일 X" 배지도 함께 사라진다) — 안 지우면 이후 다시
   // 퇴근할 때 같은 (userId, planDate) unique 제약에 걸려 계획을 재등록하지 못한다.
