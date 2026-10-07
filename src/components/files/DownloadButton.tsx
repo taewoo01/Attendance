@@ -40,10 +40,10 @@ export function DownloadButton({
   async function handleDownload() {
     setPending("download");
     const result = await getFileDownloadUrl(fileId, true);
-    setPending(null);
     if (result.url) {
-      triggerFileDownload(result.url);
+      await triggerFileDownload(result.url, name);
     }
+    setPending(null);
   }
 
   return (

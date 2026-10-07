@@ -107,9 +107,10 @@ export function FileList({ files, title = "전체 파일", totalCount, footer }:
   async function handleBulkDownload() {
     setBulkPending(true);
     for (const id of selected) {
+      const name = files.find((f) => f.id === id)?.name ?? id;
       const result = await getFileDownloadUrl(id, true);
       if (result.url) {
-        triggerFileDownload(result.url);
+        await triggerFileDownload(result.url, name);
         // 브라우저가 "여러 파일 동시 다운로드"로 한꺼번에 막아버리지 않도록
         // 다운로드 사이에 짧은 간격을 둔다.
         await new Promise((resolve) => setTimeout(resolve, 400));

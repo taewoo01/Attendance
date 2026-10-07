@@ -56,14 +56,32 @@ export function readPreviewNav(currentName: string): { list: PreviewSibling[]; i
 
 /**
  * "다운로드" 전용 버튼이 쓰는 헬퍼. url은 서버에서 이미 Content-Disposition:
- * attachment로 발급받은 signed URL(getFileDownloadUrl(id, true) 등)이어야 한다 —
- * 새 탭을 띄우는 대신 임시 <a download> 클릭으로 바로 저장 대화상자를 띄운다.
+ * attachment로 발급받은 signed URL(getFileDownloadUrl(id, true) 등)이어야 한다.
+ * 원래는 <a href={url}>을 그냥 클릭해서 서버가 보낸 Content-Disposition의
+ * 파일명을 그대로 믿었는데, 한글 등 비-ASCII 파일명에서 Supabase Storage가
+ * filename*(RFC 5987)을 이중 인코딩해버리는 버그가 있어(실제 응답 헤더로 확인:
+ * filename*=UTF-8''%25EC%258A%25A4... 처럼 %가 또 인코딩됨) 브라우저가 그
+ * 헤더를 쓰면 등록된 이름이 아니라 깨진 이름으로 저장됐다. 그래서 서버 헤더에
+ * 의존하지 않고 직접 fetch로 받은 내용을 blob: URL로 바꿔 `<a download>`로
+ * 저장한다 — blob: URL은 Content-Disposition이 없어 브라우저가 항상 download
+ * 속성 값을 그대로 쓴다.
  */
-export function triggerFileDownload(url: string) {
+export async function triggerFileDownload(url: string, name: string): Promise<void> {
+  let blobUrl: string;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`download fetch failed: ${res.status}`);
+    blobUrl = URL.createObjectURL(await res.blob());
+  } catch (error) {
+    console.error("[triggerFileDownload] failed", name, error);
+    return;
+  }
+
   const a = document.createElement("a");
-  a.href = url;
-  a.rel = "noopener noreferrer";
+  a.href = blobUrl;
+  a.download = name;
   document.body.appendChild(a);
   a.click();
   a.remove();
+  URL.revokeObjectURL(blobUrl);
 }
