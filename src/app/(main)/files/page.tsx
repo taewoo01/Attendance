@@ -76,12 +76,16 @@ export default async function FilesPage({ searchParams }: PageProps<"/files">) {
     agg.bytes += row.sizeBytes;
     folderMap.set(row.folder, agg);
   }
-  const folders: Folder[] = Array.from(folderMap, ([name, agg]) => ({
-    id: agg.id,
-    name,
-    meta: `파일 ${agg.count}개 · ${formatBytes(agg.bytes)}`,
-    isOwner: agg.userId === user?.id,
-  }));
+  // 파일 많은(자주 쓰는) 폴더가 앞쪽에 오도록 정렬한다 — FolderGrid가 폴더 수가
+  // 많을 때 앞 6개만 기본으로 보여주므로, 접혀 있어도 자주 쓰는 폴더는 항상 보인다.
+  const folders: Folder[] = Array.from(folderMap, ([name, agg]) => ({ name, ...agg }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+    .map((agg) => ({
+      id: agg.id,
+      name: agg.name,
+      meta: `파일 ${agg.count}개 · ${formatBytes(agg.bytes)}`,
+      isOwner: agg.userId === user?.id,
+    }));
 
   const totalBytes = rows.reduce((sum, row) => sum + row.sizeBytes, 0);
   const usagePercent = Math.min(100, Math.round((totalBytes / ASSUMED_QUOTA_BYTES) * 100));
@@ -102,7 +106,11 @@ export default async function FilesPage({ searchParams }: PageProps<"/files">) {
           </p>
           <h1 className="m-0 mt-1.5 text-[26px] font-semibold">자료실</h1>
         </div>
-        <UploadButton folders={folders.map((f) => f.name)} defaultFolder={selectedFolder ?? undefined} />
+        <UploadButton
+          key={selectedFolder ?? "all"}
+          folders={folders.map((f) => f.name)}
+          defaultFolder={selectedFolder ?? undefined}
+        />
       </div>
 
       <div className="mx-auto flex max-w-[1220px] items-center gap-3 px-7 pt-[18px] font-mono text-[12.5px] text-silk-faint">
