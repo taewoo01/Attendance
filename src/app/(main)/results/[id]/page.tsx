@@ -137,13 +137,13 @@ export default async function ResultDetailPage({ params }: { params: Promise<{ i
                 <div className="flex flex-col gap-1">
                   {achievement.links.map((link, i) => (
                     <a
-                      key={link + i}
-                      href={link}
+                      key={link.url + i}
+                      href={link.url}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="break-all text-[13px] text-teal hover:underline"
                     >
-                      {link}
+                      {link.name || link.url}
                     </a>
                   ))}
                 </div>

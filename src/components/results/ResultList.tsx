@@ -3,6 +3,7 @@ import { AchievementFileLink } from "@/components/results/AchievementFileLink";
 import { ResultDeleteButton } from "@/components/results/ResultDeleteButton";
 import { ResultEditButton } from "@/components/results/ResultEditButton";
 import { formatCategoryLabel } from "@/lib/results/category";
+import type { LinkItem } from "@/db/schema";
 
 export type Result = {
   id: string;
@@ -20,7 +21,7 @@ export type Result = {
   /** 실적 페이지 상세화 #8: 실적 하나에 여러 개 첨부 가능(achievement_files). */
   files?: { id: string; name: string }[];
   /** 실적 페이지 상세화: 참고 링크 여러 개 등록 가능(achievements.links). */
-  links?: string[];
+  links?: LinkItem[];
   /** "" | "논문" | "공모전" | "프로젝트" | "창업" */
   category: string;
   /** category === "논문"일 때만 의미 있음. "" | "KCI" | "SCI". */
@@ -116,8 +117,8 @@ export function ResultList({ results, currentUserId, heading, members }: ResultL
               {r.files?.map((f) => <AchievementFileLink key={f.id} fileId={f.id} name={f.name} />)}
               {r.links?.map((link, i) => (
                 <a
-                  key={link + i}
-                  href={link}
+                  key={link.url + i}
+                  href={link.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-[5px] text-teal hover:underline"
@@ -125,7 +126,7 @@ export function ResultList({ results, currentUserId, heading, members }: ResultL
                   <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.8" className="h-[11px] w-[11px] stroke-teal">
                     <path d="M9 15l6-6M11 6h5a2 2 0 012 2v5M13 18H8a2 2 0 01-2-2v-5" />
                   </svg>
-                  참고 링크{r.links && r.links.length > 1 ? ` ${i + 1}` : ""}
+                  {link.name || link.url}
                 </a>
               ))}
             </div>

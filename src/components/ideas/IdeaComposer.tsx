@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { createIdea } from "@/lib/ideas/actions";
+import type { LinkItem } from "@/db/schema";
+import { LINK_NAME_MAX_LENGTH } from "@/lib/links-shared";
 
 /**
  * playground-design/ideas.html의 .composer(아이디어 작성 박스)는 원래 피드
@@ -18,7 +20,7 @@ export function IdeaComposer({ onClose }: { onClose: () => void }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [links, setLinks] = useState<string[]>([]);
+  const [links, setLinks] = useState<LinkItem[]>([{ name: "", url: "" }]);
   const [files, setFiles] = useState<File[]>([]);
 
   useEffect(() => {
@@ -30,11 +32,15 @@ export function IdeaComposer({ onClose }: { onClose: () => void }) {
   }, [onClose]);
 
   function addLink() {
-    setLinks((prev) => [...prev, ""]);
+    setLinks((prev) => [...prev, { name: "", url: "" }]);
   }
 
-  function updateLink(index: number, value: string) {
-    setLinks((prev) => prev.map((v, i) => (i === index ? value : v)));
+  function updateLinkName(index: number, value: string) {
+    setLinks((prev) => prev.map((l, i) => (i === index ? { ...l, name: value } : l)));
+  }
+
+  function updateLinkUrl(index: number, value: string) {
+    setLinks((prev) => prev.map((l, i) => (i === index ? { ...l, url: value } : l)));
   }
 
   function removeLink(index: number) {
@@ -139,13 +145,22 @@ export function IdeaComposer({ onClose }: { onClose: () => void }) {
               </div>
               {links.length > 0 && (
                 <div className="flex flex-col gap-2">
-                  {links.map((value, i) => (
+                  {links.map((link, i) => (
                     <div key={i} className="flex items-center gap-2">
                       <input
-                        name="links"
+                        name="linkNames"
+                        type="text"
+                        value={link.name}
+                        onChange={(e) => updateLinkName(i, e.target.value)}
+                        placeholder="이름 (선택)"
+                        maxLength={LINK_NAME_MAX_LENGTH}
+                        className="w-[38%] shrink-0 rounded-input border border-border bg-bg-raised px-[12px] py-[11px] font-sans text-[13.5px] text-silk focus:border-teal-dim focus:outline-none"
+                      />
+                      <input
+                        name="linkUrls"
                         type="url"
-                        value={value}
-                        onChange={(e) => updateLink(i, e.target.value)}
+                        value={link.url}
+                        onChange={(e) => updateLinkUrl(i, e.target.value)}
                         placeholder="https://..."
                         className="w-full rounded-input border border-border bg-bg-raised px-[14px] py-[11px] font-sans text-[13.5px] text-silk focus:border-teal-dim focus:outline-none"
                       />

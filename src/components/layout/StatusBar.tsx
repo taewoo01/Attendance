@@ -1,4 +1,5 @@
 import type { PersonalNotification } from "@/components/layout/NotificationBell";
+import type { ChatMessage } from "@/components/layout/TeamChatWidget";
 import type { ActivityItem } from "@/lib/notifications/activity";
 import { Navigation } from "./Navigation";
 import { StatusBarControls } from "./StatusBarControls";
@@ -24,10 +25,11 @@ type StatusBarProps = {
   avatarUrl?: string | null;
   activity: ActivityItem[];
   personalNotifications: PersonalNotification[];
+  chatMessages: ChatMessage[];
   userId?: string;
 };
 
-export function StatusBar({ userName, avatarUrl, activity, personalNotifications, userId }: StatusBarProps) {
+export function StatusBar({ userName, avatarUrl, activity, personalNotifications, chatMessages, userId }: StatusBarProps) {
   return (
     <div className="border-b border-border bg-[rgba(8,21,18,0.7)]">
       <div className="mx-auto flex max-w-[1220px] items-center justify-between px-7 py-4 font-mono text-xs text-silk-dim">
@@ -72,6 +74,7 @@ export function StatusBar({ userName, avatarUrl, activity, personalNotifications
           avatarUrl={avatarUrl}
           activity={activity}
           personalNotifications={personalNotifications}
+          chatMessages={chatMessages}
           userId={userId}
         />
       </div>

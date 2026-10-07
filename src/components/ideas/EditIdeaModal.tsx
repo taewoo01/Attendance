@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { updateIdea } from "@/lib/ideas/actions";
 import type { Idea } from "@/components/ideas/IdeaCard";
+import type { LinkItem } from "@/db/schema";
+import { LINK_NAME_MAX_LENGTH } from "@/lib/links-shared";
 
 /**
  * IdeaCard의 "수정" 버튼으로 여는 모달. IdeaComposer와 같은 필드(제목(선택)/
@@ -17,23 +19,27 @@ export function EditIdeaModal({ idea, onClose }: { idea: Idea; onClose: () => vo
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [links, setLinks] = useState<string[]>(idea.links.length > 0 ? idea.links : [""]);
+  const [links, setLinks] = useState<LinkItem[]>(idea.links.length > 0 ? idea.links : [{ name: "", url: "" }]);
   const [existingFiles, setExistingFiles] = useState(idea.files);
   const [removedFileIds, setRemovedFileIds] = useState<string[]>([]);
   const [newFiles, setNewFiles] = useState<File[]>([]);
 
   function addLink() {
-    setLinks((prev) => [...prev, ""]);
+    setLinks((prev) => [...prev, { name: "", url: "" }]);
   }
 
-  function updateLink(index: number, value: string) {
-    setLinks((prev) => prev.map((v, i) => (i === index ? value : v)));
+  function updateLinkName(index: number, value: string) {
+    setLinks((prev) => prev.map((l, i) => (i === index ? { ...l, name: value } : l)));
+  }
+
+  function updateLinkUrl(index: number, value: string) {
+    setLinks((prev) => prev.map((l, i) => (i === index ? { ...l, url: value } : l)));
   }
 
   function removeLink(index: number) {
     setLinks((prev) => {
       const next = prev.filter((_, i) => i !== index);
-      return next.length > 0 ? next : [""];
+      return next.length > 0 ? next : [{ name: "", url: "" }];
     });
   }
 
@@ -141,13 +147,22 @@ export function EditIdeaModal({ idea, onClose }: { idea: Idea; onClose: () => vo
                 </button>
               </div>
               <div className="flex flex-col gap-2">
-                {links.map((value, i) => (
+                {links.map((link, i) => (
                   <div key={i} className="flex items-center gap-2">
                     <input
-                      name="links"
+                      name="linkNames"
+                      type="text"
+                      value={link.name}
+                      onChange={(e) => updateLinkName(i, e.target.value)}
+                      placeholder="이름 (선택)"
+                      maxLength={LINK_NAME_MAX_LENGTH}
+                      className="w-[38%] shrink-0 rounded-input border border-border bg-bg-raised px-[12px] py-[11px] font-sans text-[13.5px] text-silk focus:border-teal-dim focus:outline-none"
+                    />
+                    <input
+                      name="linkUrls"
                       type="url"
-                      value={value}
-                      onChange={(e) => updateLink(i, e.target.value)}
+                      value={link.url}
+                      onChange={(e) => updateLinkUrl(i, e.target.value)}
                       placeholder="https://..."
                       className="w-full rounded-input border border-border bg-bg-raised px-[14px] py-[11px] font-sans text-[13.5px] text-silk focus:border-teal-dim focus:outline-none"
                     />

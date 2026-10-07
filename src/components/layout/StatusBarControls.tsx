@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { usePathname } from "next/navigation";
+import dynamic from "next/dynamic";
 import { NotificationBell, type PersonalNotification } from "@/components/layout/NotificationBell";
 import { RecordingControl } from "@/components/layout/RecordingControl";
 import { MobileNavToggle } from "@/components/layout/MobileNavToggle";
+import type { ChatMessage } from "@/components/layout/TeamChatWidget";
 import { LogoutButton } from "@/components/ui/LogoutButton";
 import { UserChip } from "@/components/ui/UserChip";
 import { formatElapsed, useRecordingControl } from "@/lib/meetings/useRecordingControl";
@@ -15,8 +17,22 @@ type StatusBarControlsProps = {
   avatarUrl?: string | null;
   activity: ActivityItem[];
   personalNotifications: PersonalNotification[];
+  chatMessages: ChatMessage[];
   userId?: string;
 };
+
+/**
+ * TeamChatWidget은 열림 상태를 localStorage에서 읽는데, 서버 렌더링 시점엔
+ * localStorage가 없어 항상 "닫힘"으로 그려진다 — 클라이언트가 실제로 "열림"을
+ * 읽어오면 서버가 보낸 HTML과 달라져 React hydration이 깨지고(콘솔 에러), 그
+ * 복구 과정에서 Realtime 구독이 불안정해져 두 번째 메시지부터 새로고침해야
+ * 보이는 문제가 있었다(사용자 확인). 이 위젯은 서버에서 그릴 이유가 없는
+ * 순수 클라이언트 전용 기능이라 `ssr: false`로 완전히 클라이언트에서만
+ * 마운트해서 애초에 hydration 비교 자체가 일어나지 않게 한다.
+ */
+const TeamChatWidget = dynamic(() => import("@/components/layout/TeamChatWidget").then((m) => m.TeamChatWidget), {
+  ssr: false,
+});
 
 /**
  * StatusBar 우측 전체(녹음/알림/프로필/로그아웃/모바일 메뉴)를 묶는 client 경계.
@@ -28,7 +44,14 @@ type StatusBarControlsProps = {
  * 두 벌 잡혀서 동시에 두 녹음이 생기는 사고가 난다. 녹음 중엔 모바일 상단바에
  * 작은 배지만 보이고, 탭하면 드로워가 열려 원래 칩(정지 버튼 포함)이 나온다.
  */
-export function StatusBarControls({ userName, avatarUrl, activity, personalNotifications, userId }: StatusBarControlsProps) {
+export function StatusBarControls({
+  userName,
+  avatarUrl,
+  activity,
+  personalNotifications,
+  chatMessages,
+  userId,
+}: StatusBarControlsProps) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   // 다른 페이지로 이동하면 열려 있던 드로워를 자동으로 닫는다 — effect 대신 렌더
@@ -53,6 +76,8 @@ export function StatusBarControls({ userName, avatarUrl, activity, personalNotif
         <UserChip name={userName} initial={userName?.charAt(0)} avatarUrl={avatarUrl} />
         <LogoutButton />
       </div>
+
+      <TeamChatWidget initialMessages={chatMessages} userId={userId} userName={userName} />
 
       {recording.recording && (
         <button

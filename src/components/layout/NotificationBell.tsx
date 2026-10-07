@@ -119,8 +119,15 @@ export function NotificationBell({
     }
   }
 
+  // 채팅 알림(linkHref === "#chat")은 실제 라우트가 아니다 — 채팅은 페이지가
+  // 아니라 상단바의 떠있는 패널(TeamChatWidget)이라, 라우팅 대신 그 패널을
+  // 열라는 커스텀 이벤트를 쏜다(src/lib/chat/actions.ts 주석 참고).
   function goTo(linkHref: string) {
     setOpen(false);
+    if (linkHref === "#chat") {
+      window.dispatchEvent(new CustomEvent("team-chat:open"));
+      return;
+    }
     router.push(linkHref);
   }
 

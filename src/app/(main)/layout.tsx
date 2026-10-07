@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth/get-user";
 import { getProfileByUserId } from "@/lib/db/profiles";
 import { listNotificationsForUser } from "@/lib/db/notifications";
 import { listRecentActivity } from "@/lib/notifications/activity";
+import { listRecentChatMessages } from "@/lib/db/chat";
 import { withAvatarUrls } from "@/lib/team/avatars";
 
 /**
@@ -29,7 +30,11 @@ import { withAvatarUrls } from "@/lib/team/avatars";
  * defaultName으로 미리 채워서 다시 입력하지 않게 한다.
  */
 export default async function MainLayout({ children }: { children: React.ReactNode }) {
-  const [user, activity] = await Promise.all([getCurrentUser(), listRecentActivity()]);
+  const [user, activity, chatMessages] = await Promise.all([
+    getCurrentUser(),
+    listRecentActivity(),
+    listRecentChatMessages(),
+  ]);
   const [profile, personalNotifications] = await Promise.all([
     user ? getProfileByUserId(user.id) : null,
     user ? listNotificationsForUser(user.id) : [],
@@ -44,6 +49,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
         avatarUrl={avatarUrl}
         activity={activity}
         personalNotifications={personalNotifications}
+        chatMessages={chatMessages}
         userId={user?.id}
       />
       <main className="flex-1">{children}</main>

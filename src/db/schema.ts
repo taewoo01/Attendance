@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { boolean, date, integer, jsonb, pgSchema, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 /**
@@ -138,6 +139,15 @@ export type IdeaReactionRow = {
 };
 
 /**
+ * 아이디어/실적의 "참고 링크" 한 건. 예전엔 URL 문자열만 저장해서 화면에
+ * "링크 1"/"링크 2"처럼 번호로만 구분해 보여줬다 — 어떤 링크인지 알아보기
+ * 어렵다는 피드백에 따라 이름(선택, 비어 있으면 화면에서 URL을 그대로 보여준다)을
+ * 추가했다. text[] → jsonb 마이그레이션(drizzle/0053)이 기존 문자열 배열을
+ * `{name: "", url: <기존 문자열>}[]`로 변환해 이전 데이터도 그대로 보존한다.
+ */
+export type LinkItem = { name: string; url: string };
+
+/**
  * TASK-024 최소 스키마. playground-design/ideas.html의 .idea-card 필드를
  * 그대로 반영한다.
  * TASK-034: `userId`를 추가했다 — 원래 이 테이블엔 작성자 소유권 컬럼이 아예
@@ -148,7 +158,7 @@ export type IdeaReactionRow = {
  * 작성자만 익명화한다(행 자체는 삭제하지 않음).
  * 아이디어 페이지 상세화: 작성 폼의 "이미지 첨부"/"링크 첨부" 버튼이 장식만
  * 있고 실제 동작이 없었다(IdeaComposer.tsx 원래 주석) — achievements의 첨부
- * 패턴(참고 링크는 text[] 컬럼, 첨부파일은 1:N 테이블 + Storage)을 그대로
+ * 패턴(참고 링크는 jsonb 컬럼, 첨부파일은 1:N 테이블 + Storage)을 그대로
  * 재사용한다. `links`는 achievements.links와 동일한 컨벤션이고, 파일은 아래
  * ideaFiles 테이블(achievementFiles와 동일 구조)로 관리한다.
  */
@@ -161,7 +171,7 @@ export const ideas = pgTable("ideas", {
   title: text("title").notNull().default(""),
   body: text("body").notNull().default(""),
   tags: text("tags").array().notNull().default([]),
-  links: text("links").array().notNull().default([]),
+  links: jsonb("links").$type<LinkItem[]>().notNull().default([]),
   reactions: jsonb("reactions").$type<IdeaReactionRow[]>().notNull().default([]),
   comments: jsonb("comments").$type<IdeaCommentRow[]>().notNull().default([]),
 });
@@ -255,8 +265,8 @@ export const dailyLogTemplates = pgTable("daily_log_templates", {
  * 첨부파일 텍스트)은 기존 데이터 호환을 위해 그대로 두고, 여러 첨부파일은 별도
  * achievementFiles 테이블(1:N)로 관리한다(files 테이블의 Storage 업로드 패턴 재사용).
  * 참고링크 여러 개 등록: `link`(단일 text)는 기존 데이터 호환을 위해 그대로 두고
- * (더 이상 쓰지 않는다 — `file`과 동일한 legacy 취급), 여러 개는 `teamMembers`와
- * 동일한 text[] 컨벤션으로 `links`에 저장한다.
+ * (더 이상 쓰지 않는다 — `file`과 동일한 legacy 취급), 여러 개는 `links`(LinkItem[]
+ * jsonb, ideas.links와 동일한 컨벤션)에 저장한다.
  * 실적 카테고리(논문/공모전/프로젝트/창업): `category`는 값 종류가 4개뿐이라
  * pgEnum도 고려했지만, 이 프로젝트 전반이 "구분"류 필드를 전부 자유 text +
  * 서버 측 whitelist 검증으로 다뤄서(team처럼 boolean화할 이유가 없는 경우) 그
@@ -276,7 +286,7 @@ export const achievements = pgTable("achievements", {
   desc: text("desc").notNull().default(""),
   who: text("who").notNull().default(""),
   link: text("link").notNull().default(""),
-  links: text("links").array().notNull().default([]),
+  links: jsonb("links").$type<LinkItem[]>().notNull().default([]),
   file: text("file").notNull().default(""),
   /** ISO 날짜("YYYY-MM-DD", personal_events.eventDate와 동일 컨벤션) — 실적 페이지의
    * 주간/월간 기간 필터링에 실제 날짜 연산이 필요해 자유 텍스트 대신 이 형식으로 저장한다.
@@ -323,14 +333,34 @@ export const achievementFiles = pgTable("achievement_files", {
  * 한 번으로 처리하기로 해서(사용자 확인 완료) 새 토큰 검증 로직 없이 이
  * 컬럼만 추가한다 — null이면 아직 퇴근 전이라는 뜻이다.
  */
-export const attendance = pgTable("attendance", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => authUsers.id, { onDelete: "cascade" }),
-  checkedInAt: timestamp("checked_in_at", { withTimezone: true }).notNull().defaultNow(),
-  checkedOutAt: timestamp("checked_out_at", { withTimezone: true }),
-});
+/**
+ * 체크인(checkInWithQr)이 "열린 행이 있는가" SELECT 후 insert하는 구조라, 거의
+ * 동시에 두 번 체크인되면(QR 더블탭, 네트워크 재시도 등) 둘 다 "없음"을 보고
+ * 둘 다 insert해서 한 사용자에게 열린(checkedOutAt null) 행이 여러 개 쌓일 수
+ * 있었다(실제 운영 데이터에서 발견 — 박정영/최준혁에게 수일~수주 전 열린 중복
+ * 행이 쌓여 있었다). latestAttendanceByUser는 "열린 행이면 무조건 최우선"이라
+ * 가장 오래된 열린 행이 계속 "상주 중"으로 표시되고, checkOut()은 가장 최근
+ * 열린 행만 닫아서 퇴근을 눌러도 안 된 것처럼 보이는 버그로 이어졌다. 사용자당
+ * 열린 행을 최대 1개로 강제하는 partial unique index로 insert 시점에 DB가
+ * 직접 막는다 — 애플리케이션 레벨의 "존재 확인 후 insert" 체크만으로는 경합을
+ * 막을 수 없어 DB 제약이 필요했다.
+ */
+export const attendance = pgTable(
+  "attendance",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    checkedInAt: timestamp("checked_in_at", { withTimezone: true }).notNull().defaultNow(),
+    checkedOutAt: timestamp("checked_out_at", { withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex("attendance_open_per_user_unique")
+      .on(table.userId)
+      .where(sql`${table.checkedOutAt} is null`),
+  ],
+);
 
 /**
  * 퇴근 직후 뜨는 "내일 상주 계획" 모달(AttendancePlanModal)에서 등록한다.
@@ -465,13 +495,15 @@ export const meetingRecordings = pgTable("meeting_recordings", {
  * lib/notifications/activity.ts의 listRecentActivity는 "팀 전체 활동을 누구나
  * 동일하게" 보여주는 별개 기능이라(개인화 없음, 읽음 상태 없음) 이 테이블로
  * 대체하지 않고 그대로 둔다 — 이 테이블은 "나에게 온" 알림만 담는다.
- * type으로 이벤트 종류를 구분한다("idea_comment"|"attendance_checkin", 앱 코드에서만
- * 값을 제한한다) — 댓글/체크인 외에 나중에 다른 콘텐츠에 댓글·반응 기능이 생겨도
- * 이 테이블/헬퍼를 그대로 재사용할 수 있게 이벤트별 전용 컬럼 대신 범용 구조로 둔다.
+ * type으로 이벤트 종류를 구분한다(NotificationType — "idea_comment"|"attendance_checkin"|
+ * "file_upload"|"chat_message", 앱 코드에서만 값을 제한한다) — 콘텐츠마다 전용 컬럼
+ * 대신 범용 구조로 둬서 이후 다른 알림이 생겨도 이 테이블/헬퍼를 그대로 재사용한다.
  * actorName은 알림 발생 시점의 이름 스냅샷이다(actorUserId 계정이 나중에 삭제돼도
  * "OO님이 댓글을 남겼습니다" 문구가 깨지지 않도록 — folders.userId와 동일한 원칙).
  * message는 벨 목록/토스트에 그대로 표시할 미리보기 텍스트(댓글 본문 일부 등),
- * linkHref는 클릭 시 이동할 경로다. readAt이 null이면 안읽음.
+ * linkHref는 클릭 시 이동할 경로다 — "#chat"이면 실제 라우트가 아니라 상단바의
+ * TeamChatWidget을 열라는 센티널 값이다(NotificationBell.goTo 참고). readAt이
+ * null이면 안읽음.
  */
 export const notifications = pgTable("notifications", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -507,5 +539,23 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
   p256dh: text("p256dh").notNull(),
   authKey: text("auth_key").notNull(),
   userAgent: text("user_agent").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * 상단바의 팀 채팅(TeamChatWidget) — 알림벨과 같은 자리에 아이콘을 두지만,
+ * 바깥을 클릭해도 닫히지 않고 화면 우측 하단에 떠 있는 패널로 열린다(사용자
+ * 확인 완료). DM/채널 구분 없이 팀 전체가 보는 단일 채팅방이라 별도 room/channel
+ * 컬럼을 두지 않는다. `who`/`avatar`는 ideas.who/avatar와 동일하게 작성 시점의
+ * profiles.name에서 서버가 채운다(폼 입력이 아니라 스푸핑 방지). 읽음 여부는
+ * 저장하지 않는다 — 패널이 닫혀 있는 동안 새 메시지가 오면 클라이언트가 그 순간의
+ * 개수만 세어 배지로 보여주고(ephemeral), 패널을 열면 그 수를 0으로 되돌린다.
+ */
+export const chatMessages = pgTable("chat_messages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => authUsers.id, { onDelete: "set null" }),
+  avatar: text("avatar").notNull().default(""),
+  who: text("who").notNull().default(""),
+  body: text("body").notNull().default(""),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

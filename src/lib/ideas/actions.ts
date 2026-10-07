@@ -17,6 +17,7 @@ import {
   extensionOf,
   sanitizeFileName,
 } from "@/lib/files/upload-shared";
+import { hasInvalidLinkUrl, parseLinkPairs } from "@/lib/links-shared";
 
 function parseCommaList(raw: FormDataEntryValue | null): string[] {
   return String(raw ?? "")
@@ -57,10 +58,7 @@ export async function createIdea(formData: FormData): Promise<CreateIdeaState> {
 
   const title = String(formData.get("title") ?? "").trim();
   const body = String(formData.get("body") ?? "").trim();
-  const links = formData
-    .getAll("links")
-    .map((v) => String(v).trim())
-    .filter(Boolean);
+  const links = parseLinkPairs(formData);
   const files = formData.getAll("files").filter((f): f is File => f instanceof File && f.size > 0);
 
   if (!title) {
@@ -69,9 +67,9 @@ export async function createIdea(formData: FormData): Promise<CreateIdeaState> {
   if (!body) {
     return { error: "내용을 입력해 주세요." };
   }
-  // <a href>로 그대로 렌더링되므로(IdeaCard.tsx) javascript:/data: 같은 스킴을
-  // 막아야 한다 — type="url" input은 문법만 검증하고 스킴은 안 가린다.
-  if (links.some((l) => !/^https?:\/\//i.test(l))) {
+  // type="url" input은 문법만 검증하고 스킴은 안 가린다 — hasInvalidLinkUrl이
+  // http(s)://만 허용한다(javascript:/data: 등은 <a href>로 그대로 렌더링되므로 막아야 함).
+  if (hasInvalidLinkUrl(links)) {
     return { error: "링크는 http:// 또는 https:// 로 시작해야 합니다." };
   }
   for (const file of files) {
@@ -162,10 +160,7 @@ export async function updateIdea(id: string, formData: FormData): Promise<Update
 
   const title = String(formData.get("title") ?? "").trim();
   const body = String(formData.get("body") ?? "").trim();
-  const links = formData
-    .getAll("links")
-    .map((v) => String(v).trim())
-    .filter(Boolean);
+  const links = parseLinkPairs(formData);
   const newFiles = formData.getAll("files").filter((f): f is File => f instanceof File && f.size > 0);
   const removeFileIds = formData
     .getAll("removeFileIds")
@@ -178,7 +173,7 @@ export async function updateIdea(id: string, formData: FormData): Promise<Update
   if (!body) {
     return { error: "내용을 입력해 주세요." };
   }
-  if (links.some((l) => !/^https?:\/\//i.test(l))) {
+  if (hasInvalidLinkUrl(links)) {
     return { error: "링크는 http:// 또는 https:// 로 시작해야 합니다." };
   }
   for (const file of newFiles) {
@@ -295,8 +290,10 @@ export type DownloadUrlResult = { url?: string; error?: string };
 /**
  * 아이디어 첨부파일 다운로드 signed URL 발급. getAchievementFileDownloadUrl과
  * 동일한 이유로 클라이언트가 Storage 경로를 직접 조합하지 않는다.
+ * `forceDownload`가 true면 Content-Disposition: attachment로 발급해(files/actions.ts의
+ * getFileDownloadUrl과 동일한 패턴) "보기" 대신 실제 파일 저장을 강제한다.
  */
-export async function getIdeaFileDownloadUrl(fileId: string): Promise<DownloadUrlResult> {
+export async function getIdeaFileDownloadUrl(fileId: string, forceDownload = false): Promise<DownloadUrlResult> {
   const user = await getCurrentUser();
   if (!user) {
     return { error: "로그인이 필요합니다." };
@@ -308,7 +305,9 @@ export async function getIdeaFileDownloadUrl(fileId: string): Promise<DownloadUr
   }
 
   const supabaseAdmin = createAdminClient();
-  const { data, error } = await supabaseAdmin.storage.from(BUCKET).createSignedUrl(file.storagePath, 60);
+  const { data, error } = await supabaseAdmin.storage
+    .from(BUCKET)
+    .createSignedUrl(file.storagePath, 60, forceDownload ? { download: file.name } : undefined);
 
   if (error || !data) {
     return { error: "다운로드 링크 발급 중 오류가 발생했습니다." };

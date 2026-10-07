@@ -8,7 +8,7 @@ import { EditIdeaModal } from "@/components/ideas/EditIdeaModal";
 import { IdeaFileLink } from "@/components/ideas/IdeaFileLink";
 import { IdeaImagePreview } from "@/components/ideas/IdeaImagePreview";
 import { isImageExtension } from "@/lib/files/upload-shared";
-import type { IdeaCommentRow } from "@/db/schema";
+import type { IdeaCommentRow, LinkItem } from "@/db/schema";
 
 export type IdeaComment = IdeaCommentRow;
 export type IdeaReaction = { count: number; active: boolean };
@@ -23,7 +23,7 @@ export type Idea = {
   title: string;
   body: string;
   tags: string[];
-  links: string[];
+  links: LinkItem[];
   files: { id: string; name: string }[];
   reactions: [IdeaReaction, IdeaReaction, IdeaReaction];
   comments: IdeaComment[];
@@ -60,6 +60,9 @@ export function IdeaCard({ idea, currentUserId }: { idea: Idea; currentUserId: s
   const [pickerOpen, setPickerOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLParagraphElement>(null);
+  const [bodyExpanded, setBodyExpanded] = useState(false);
+  const [bodyClamped, setBodyClamped] = useState(false);
 
   const isOwner = currentUserId !== null && idea.userId === currentUserId;
   const totalReactionCount = idea.reactions[0].count + idea.reactions[1].count + idea.reactions[2].count;
@@ -75,6 +78,14 @@ export function IdeaCard({ idea, currentUserId }: { idea: Idea; currentUserId: s
     document.addEventListener("pointerdown", handlePointerDown);
     return () => document.removeEventListener("pointerdown", handlePointerDown);
   }, [pickerOpen]);
+
+  // 5줄 클램프(line-clamp-5)가 실제로 텍스트를 잘라내고 있는지(줄바꿈 문자든 자동
+  // 줄바꿈이든 상관없이) scrollHeight/clientHeight 비교로 판단한다 — "더보기" 버튼은
+  // 실제로 잘릴 때만 보여준다. idea.body가 바뀌면(수정) 다시 측정한다.
+  useEffect(() => {
+    const el = bodyRef.current;
+    if (el) setBodyClamped(el.scrollHeight > el.clientHeight + 1);
+  }, [idea.body]);
 
   async function handleToggleReaction(i: 0 | 1 | 2) {
     setReactingIndex(i);
@@ -183,7 +194,25 @@ export function IdeaCard({ idea, currentUserId }: { idea: Idea; currentUserId: s
       </div>
 
       {idea.title && <h4 className="m-0 mb-[7px] text-[15px] font-semibold text-silk">{idea.title}</h4>}
-      <p className="m-0 mb-[13px] max-w-[70ch] whitespace-pre-wrap text-[13px] leading-[1.65] text-silk-dim">{idea.body}</p>
+      <div className="mb-[13px]">
+        <p
+          ref={bodyRef}
+          className={`m-0 max-w-[70ch] whitespace-pre-wrap break-words text-[13px] leading-[1.65] text-silk-dim ${
+            bodyExpanded ? "" : "line-clamp-5"
+          }`}
+        >
+          {idea.body}
+        </p>
+        {bodyClamped && (
+          <button
+            type="button"
+            onClick={() => setBodyExpanded((v) => !v)}
+            className="mt-1 cursor-pointer border-none bg-transparent p-0 font-mono text-[11px] text-teal hover:underline"
+          >
+            {bodyExpanded ? "접기" : "더보기"}
+          </button>
+        )}
+      </div>
 
       {idea.tags.length > 0 && (
         <div className="mb-[14px] flex flex-wrap gap-[6px]">
@@ -218,8 +247,8 @@ export function IdeaCard({ idea, currentUserId }: { idea: Idea; currentUserId: s
                 ))}
                 {idea.links.map((link, i) => (
                   <a
-                    key={link + i}
-                    href={link}
+                    key={link.url + i}
+                    href={link.url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-[5px] font-mono text-[11px] text-teal hover:underline"
@@ -227,7 +256,7 @@ export function IdeaCard({ idea, currentUserId }: { idea: Idea; currentUserId: s
                     <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.8" className="h-[11px] w-[11px] stroke-teal">
                       <path d="M9 15l6-6M11 6h5a2 2 0 012 2v5M13 18H8a2 2 0 01-2-2v-5" />
                     </svg>
-                    링크{idea.links.length > 1 ? ` ${i + 1}` : ""}
+                    {link.name || link.url}
                   </a>
                 ))}
               </div>

@@ -15,6 +15,7 @@ import {
   extensionOf,
   sanitizeFileName,
 } from "@/lib/files/upload-shared";
+import { hasInvalidLinkUrl, parseLinkPairs } from "@/lib/links-shared";
 
 const CATEGORIES = ["", "논문", "공모전", "프로젝트", "창업"] as const;
 // 저장 가능한 값("논문"이 아닐 때는 "")과 별개로, category === "논문"일 때 실제로
@@ -81,10 +82,7 @@ export async function createAchievement(formData: FormData): Promise<CreateAchie
   const resultDateInput = String(formData.get("resultDate") ?? "").trim();
   const metricLabel = String(formData.get("metricLabel") ?? "").trim();
   const metricValue = String(formData.get("metricValue") ?? "").trim();
-  const links = formData
-    .getAll("links")
-    .map((v) => String(v).trim())
-    .filter(Boolean);
+  const links = parseLinkPairs(formData);
   // 구분이 "팀"일 때만 의미가 있다 — 폼도 team일 때만 이 필드를 보여주지만,
   // 서버에서도 개인 실적에 팀원 목록이 섞여 들어가지 않게 한 번 더 막는다.
   const teamMembers = team
@@ -105,9 +103,7 @@ export async function createAchievement(formData: FormData): Promise<CreateAchie
   if (!resultDateInput) {
     return { error: "날짜를 선택해 주세요." };
   }
-  // <a href>로 그대로 렌더링되므로(ResultList.tsx/results/[id]/page.tsx) javascript:/data:
-  // 같은 스킴을 막아야 한다 — type="url" input은 문법만 검증하고 스킴은 안 가린다.
-  if (links.some((l) => !/^https?:\/\//i.test(l))) {
+  if (hasInvalidLinkUrl(links)) {
     return { error: "참고 링크는 http:// 또는 https:// 로 시작해야 합니다." };
   }
   if ("error" in categoryFields) {
@@ -220,10 +216,7 @@ export async function updateAchievement(id: string, formData: FormData): Promise
   const resultDateInput = String(formData.get("resultDate") ?? "").trim();
   const metricLabel = String(formData.get("metricLabel") ?? "").trim();
   const metricValue = String(formData.get("metricValue") ?? "").trim();
-  const links = formData
-    .getAll("links")
-    .map((v) => String(v).trim())
-    .filter(Boolean);
+  const links = parseLinkPairs(formData);
   const teamMembers = team
     ? formData
         .getAll("teamMembers")
@@ -246,7 +239,7 @@ export async function updateAchievement(id: string, formData: FormData): Promise
   if (!resultDateInput) {
     return { error: "날짜를 선택해 주세요." };
   }
-  if (links.some((l) => !/^https?:\/\//i.test(l))) {
+  if (hasInvalidLinkUrl(links)) {
     return { error: "참고 링크는 http:// 또는 https:// 로 시작해야 합니다." };
   }
   if ("error" in categoryFields) {
