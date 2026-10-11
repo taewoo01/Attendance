@@ -14,8 +14,18 @@ import { createClient } from "@/lib/supabase/browser";
  * `tables`는 매 렌더마다 새 배열이 넘어와도(부모가 인라인 배열 리터럴을 쓰는 게
  * 자연스럽다) 불필요하게 재구독하지 않도록, 배열 자체가 아니라 join한 문자열을
  * effect 의존성으로 둔다. 화면에는 아무것도 그리지 않는다.
+ * `event`는 기본 "INSERT"(기존 호출부 그대로)이고, 수정/삭제도 즉시 반영돼야 하는
+ * 칸반 같은 페이지만 "*"(INSERT/UPDATE/DELETE 전부)로 넘긴다.
  */
-export function TableRealtimeRefresh({ channel, tables }: { channel: string; tables: string[] }) {
+export function TableRealtimeRefresh({
+  channel,
+  tables,
+  event = "INSERT",
+}: {
+  channel: string;
+  tables: string[];
+  event?: "INSERT" | "*";
+}) {
   const router = useRouter();
   const tablesKey = tables.join(",");
 
@@ -25,7 +35,7 @@ export function TableRealtimeRefresh({ channel, tables }: { channel: string; tab
     for (const table of tablesKey.split(",")) {
       subscription = subscription.on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table },
+        { event, schema: "public", table },
         () => {
           router.refresh();
         },
@@ -36,7 +46,7 @@ export function TableRealtimeRefresh({ channel, tables }: { channel: string; tab
     return () => {
       supabase.removeChannel(subscription);
     };
-  }, [channel, tablesKey, router]);
+  }, [channel, tablesKey, event, router]);
 
   return null;
 }

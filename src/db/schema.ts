@@ -559,3 +559,58 @@ export const chatMessages = pgTable("chat_messages", {
   body: text("body").notNull().default(""),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * 프로젝트/업무 관리의 프로젝트 1건. 팀 전체(약 8명)가 모든 프로젝트를 보는
+ * 구조라 참여자 테이블을 두지 않는다(사용자 확인 완료). createdBy는 계정이
+ * 삭제돼도 프로젝트가 남도록 set null이다(chat_messages.userId와 동일한 원칙).
+ */
+export const projects = pgTable("projects", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull().default(""),
+  description: text("description").notNull().default(""),
+  createdBy: uuid("created_by").references(() => authUsers.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** 업무 카드 상태. 열은 3종 고정이라 별도 컬럼 테이블을 두지 않는다(사용자 확인 완료). */
+export type TaskStatus = "todo" | "doing" | "done";
+
+/**
+ * 업무 카드 1건. `position`은 같은 프로젝트의 같은 status 열 안에서의 순서다.
+ * 담당자는 여러 명이 될 수 있어 task_assignees 연결 테이블로 분리한다.
+ * dueDate는 날짜만 필요해 `date`(ISO "YYYY-MM-DD" 문자열)이고 없으면 null이다.
+ */
+export const tasks = pgTable("tasks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  projectId: uuid("project_id")
+    .notNull()
+    .references(() => projects.id, { onDelete: "cascade" }),
+  title: text("title").notNull().default(""),
+  description: text("description").notNull().default(""),
+  status: text("status").$type<TaskStatus>().notNull().default("todo"),
+  dueDate: date("due_date"),
+  position: integer("position").notNull().default(0),
+  createdBy: uuid("created_by").references(() => authUsers.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * 업무 ↔ 담당자 연결. idea_reactions와 동일하게 (task, user) unique라 같은 사람을
+ * 두 번 배정할 수 없고, 담당자 해제는 행 삭제로 표현한다.
+ */
+export const taskAssignees = pgTable(
+  "task_assignees",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    taskId: uuid("task_id")
+      .notNull()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("task_assignees_unique").on(table.taskId, table.userId)],
+);
