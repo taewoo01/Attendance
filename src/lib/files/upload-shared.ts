@@ -22,6 +22,9 @@ export const BUCKET = "files";
  * Next.js Server Action의 body 크기 제한(next.config.ts), Supabase Storage
  * 버킷 자체의 용량 제한은 그대로라 짧은 클립까지만 올라간다. 수십~수백MB 영상을
  * 지원하려면 서버를 거치지 않는 직접 업로드 구조로 바꿔야 한다(현재는 범위 밖).
+ * odt(OpenDocument Text)는 office 문서와 동일하게 브라우저가 직접 열 수 없어
+ * /preview에서 "unsupported"로 분류된다. jsonl(JSON Lines)은 txt/csv/md와
+ * 동일한 평문 텍스트라 "text" 미리보기로 분류한다(HTML로 파싱되지 않아 안전).
  */
 export const ALLOWED_EXTENSIONS = new Set([
   "pdf",
@@ -45,6 +48,8 @@ export const ALLOWED_EXTENSIONS = new Set([
   "hwp",
   "hwpx",
   "mp4",
+  "odt",
+  "jsonl",
 ]);
 
 // 버킷 생성 시 file_size_limit(20MB)과 동일한 값. 서버 측에서도 별도로 확인한다.
@@ -72,7 +77,7 @@ export function isImageExtension(name: string): boolean {
 
 const SANDBOXED_PREVIEW_EXTENSIONS = new Set(["html", "htm", "svg"]);
 const PDF_PREVIEW_EXTENSIONS = new Set(["pdf"]);
-const TEXT_PREVIEW_EXTENSIONS = new Set(["txt", "csv", "md"]);
+const TEXT_PREVIEW_EXTENSIONS = new Set(["txt", "csv", "md", "jsonl"]);
 const VIDEO_PREVIEW_EXTENSIONS = new Set(["mp4"]);
 
 export type PreviewKind = "sandboxed" | "pdf" | "image" | "text" | "video" | "unsupported";
@@ -123,6 +128,8 @@ const EXTENSION_MIME_TYPES: Record<string, string> = {
   hwp: "application/haansofthwp",
   hwpx: "application/haansofthwpx",
   mp4: "video/mp4",
+  odt: "application/vnd.oasis.opendocument.text",
+  jsonl: "application/jsonl",
 };
 
 /**
