@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useState, type DragEvent, type FormEvent } from "react";
 import { TaskFormModal } from "@/components/projects/TaskFormModal";
 import type { TaskStatus } from "@/db/schema";
 import { seoulDateKey } from "@/lib/date";
@@ -39,27 +39,40 @@ function formatDue(dateKey: string): string {
   return `${Number(month)}/${Number(day)}`;
 }
 
+/** 작성자 또는 담당자만 업무를 수정/이동할 수 있다(서버 액션이 동일하게 검증한다). */
+function canEditTask(task: TaskCardData, currentUserId: string | null): boolean {
+  if (currentUserId === null) return false;
+  return task.createdBy === currentUserId || task.assignees.some((a) => a.userId === currentUserId);
+}
+
+/** 드래그 중인 업무 id를 dataTransfer에 실어 나르는 MIME 키. 다른 드래그(파일/텍스트)와 구분한다. */
+const DRAG_MIME = "application/x-playground-task-id";
+
 type TaskCardProps = {
   task: TaskCardData;
   currentUserId: string | null;
   todayKey: string;
   onEdit: (task: TaskCardData) => void;
-  onMove: (task: TaskCardData, status: TaskStatus) => void;
   onDelete: (task: TaskCardData) => void;
   busy: boolean;
 };
 
-function TaskCard({ task, currentUserId, todayKey, onEdit, onMove, onDelete, busy }: TaskCardProps) {
+function TaskCard({ task, currentUserId, todayKey, onEdit, onDelete, busy }: TaskCardProps) {
   const isCreator = currentUserId !== null && task.createdBy === currentUserId;
-  const isAssignee = currentUserId !== null && task.assignees.some((a) => a.userId === currentUserId);
-  const canEdit = isCreator || isAssignee;
-  const index = COLUMNS.findIndex((c) => c.status === task.status);
-  const prev = COLUMNS[index - 1];
-  const next = COLUMNS[index + 1];
+  const canEdit = canEditTask(task, currentUserId);
   const overdue = task.dueDate !== null && task.status !== "done" && task.dueDate < todayKey;
 
   return (
-    <div className="mb-2.5 rounded-[10px] border border-border bg-bg-raised p-3 last:mb-0">
+    <div
+      draggable={canEdit && !busy}
+      onDragStart={(e) => {
+        e.dataTransfer.setData(DRAG_MIME, task.id);
+        e.dataTransfer.effectAllowed = "move";
+      }}
+      className={`mb-2.5 rounded-[10px] border border-border bg-bg-raised p-3 last:mb-0 ${
+        canEdit ? "cursor-grab active:cursor-grabbing" : ""
+      }`}
+    >
       <p className="m-0 text-[13.5px] font-semibold leading-[1.4]">{task.title}</p>
       {task.description && (
         <p className="m-0 mt-1.5 whitespace-pre-wrap text-[12px] leading-[1.5] text-silk-faint">{task.description}</p>
@@ -88,16 +101,6 @@ function TaskCard({ task, currentUserId, todayKey, onEdit, onMove, onDelete, bus
 
       {canEdit && (
         <div className="mt-3 flex flex-wrap items-center gap-1.5">
-          {prev && (
-            <button type="button" disabled={busy} onClick={() => onMove(task, prev.status)} className={SMALL_BUTTON_CLASS}>
-              ← {prev.label}
-            </button>
-          )}
-          {next && (
-            <button type="button" disabled={busy} onClick={() => onMove(task, next.status)} className={SMALL_BUTTON_CLASS}>
-              {next.label} →
-            </button>
-          )}
           <button type="button" disabled={busy} onClick={() => onEdit(task)} className={SMALL_BUTTON_CLASS}>
             수정
           </button>
@@ -126,10 +129,10 @@ type ProjectsBoardProps = {
 };
 
 /**
- * 프로젝트/업무 관리 칸반. 3열(할 일/진행 중/완료) 고정이고 열 이동은 카드의 ←/→ 버튼으로
- * 한다(드래그는 이번 범위 밖 — 새 dependency 없이 서버 액션 moveTask만 호출). 모든 변경은
- * 서버 액션이 권한을 검증하므로 여기의 버튼 노출 조건(작성자/담당자)은 UX용일 뿐이다.
- * 프로젝트 선택은 ?project=<id> 쿼리라 링크로 공유할 수 있다.
+ * 프로젝트/업무 관리 칸반. 3열(할 일/진행 중/완료) 고정이고 열 이동은 카드를 다른 열로
+ * 드래그해서 놓는다(HTML5 드래그 API — 새 dependency 없이 서버 액션 moveTask만 호출).
+ * 모든 변경은 서버 액션이 권한을 검증하므로 여기의 드래그/버튼 노출 조건(작성자/담당자)은
+ * UX용일 뿐이다. 프로젝트 선택은 ?project=<id> 쿼리라 링크로 공유할 수 있다.
  */
 export function ProjectsBoard({ projects, selectedProjectId, tasks, members, currentUserId }: ProjectsBoardProps) {
   const router = useRouter();
@@ -137,6 +140,7 @@ export function ProjectsBoard({ projects, selectedProjectId, tasks, members, cur
   const [error, setError] = useState<string | null>(null);
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [taskModal, setTaskModal] = useState<{ task?: TaskCardData } | null>(null);
+  const [dragOverStatus, setDragOverStatus] = useState<TaskStatus | null>(null);
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId) ?? null;
   const todayKey = seoulDateKey(new Date());
@@ -169,6 +173,15 @@ export function ProjectsBoard({ projects, selectedProjectId, tasks, members, cur
     if (!selectedProject) return;
     if (!window.confirm(`"${selectedProject.name}" 프로젝트와 모든 업무를 삭제할까요?`)) return;
     void run(() => deleteProject(selectedProject.id));
+  }
+
+  function handleDrop(e: DragEvent<HTMLElement>, status: TaskStatus) {
+    e.preventDefault();
+    setDragOverStatus(null);
+    const taskId = e.dataTransfer.getData(DRAG_MIME);
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task || task.status === status || !canEditTask(task, currentUserId)) return;
+    void run(() => moveTask(task.id, status));
   }
 
   function handleDeleteTask(task: TaskCardData) {
@@ -279,7 +292,22 @@ export function ProjectsBoard({ projects, selectedProjectId, tasks, members, cur
               {COLUMNS.map((column) => {
                 const columnTasks = tasks.filter((t) => t.status === column.status);
                 return (
-                  <section key={column.status} className="rounded-panel border border-border bg-bg-panel p-3.5">
+                  <section
+                    key={column.status}
+                    onDragOver={(e) => {
+                      if (!e.dataTransfer.types.includes(DRAG_MIME)) return;
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = "move";
+                      setDragOverStatus(column.status);
+                    }}
+                    onDragLeave={(e) => {
+                      if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragOverStatus(null);
+                    }}
+                    onDrop={(e) => handleDrop(e, column.status)}
+                    className={`min-h-[120px] rounded-panel border bg-bg-panel p-3.5 ${
+                      dragOverStatus === column.status ? "border-teal" : "border-border"
+                    }`}
+                  >
                     <h2 className="m-0 mb-3 flex items-center justify-between text-[13.5px] font-semibold">
                       {column.label}
                       <span className="font-mono text-[12px] text-silk-faint">{columnTasks.length}</span>
@@ -295,7 +323,6 @@ export function ProjectsBoard({ projects, selectedProjectId, tasks, members, cur
                           todayKey={todayKey}
                           busy={busy}
                           onEdit={(t) => setTaskModal({ task: t })}
-                          onMove={(t, status) => void run(() => moveTask(t.id, status))}
                           onDelete={handleDeleteTask}
                         />
                       ))

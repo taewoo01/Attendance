@@ -9,7 +9,7 @@ import { listRecentChatMessages } from "@/lib/db/chat";
 import { withAvatarUrls } from "@/lib/team/avatars";
 
 /**
- * 기존 10개 페이지(/,  /attendance, /schedule, /results, /daily, /ideas,
+ * 기존 페이지(/,  /attendance, /schedule, /results, /projects, /ideas,
  * /meetings, /files, /about, /team)가 공유하던 StatusBar/main/Footer 골격을
  * Root Layout(src/app/layout.tsx)에서 이 route group 전용 레이아웃으로 옮긴 것.
  * (main) 폴더명은 URL에 포함되지 않으므로 각 페이지의 실제 경로는 변경되지 않는다.

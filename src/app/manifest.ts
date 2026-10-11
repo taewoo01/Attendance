@@ -11,7 +11,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "PLAY GROUND",
     short_name: "PLAY GROUND",
-    description: "PLAY GROUND 팀 업무 관리 — 출석/일정/실적/데일리/아이디어/회의록/자료실",
+    description: "PLAY GROUND 팀 업무 관리 — 출석/일정/실적/프로젝트/아이디어/회의록/자료실",
     start_url: "/",
     display: "standalone",
     background_color: "#081512",

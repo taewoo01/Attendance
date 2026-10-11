@@ -16,7 +16,6 @@ export const NAV_ITEMS = [
   { href: "/schedule", label: "일정" },
   { href: "/results", label: "실적" },
   { href: "/projects", label: "프로젝트" },
-  { href: "/daily", label: "데일리" },
   { href: "/ideas", label: "아이디어" },
   { href: "/meetings", label: "회의록" },
   { href: "/files", label: "자료실" },

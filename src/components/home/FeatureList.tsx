@@ -143,16 +143,6 @@ const SECTIONS: BomSection[] = [
         title: "팀원 소개",
         desc: "이름, 역할, 연락처가 담긴 명함형 프로필을 확인해요.",
       },
-      {
-        desig: "C3",
-        icon: (
-          <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.8}>
-            <path d="M4 4h16v4H4zM4 12h16v4H4zM4 20h10" />
-          </svg>
-        ),
-        title: "데일리 업무 정리",
-        desc: "서술과 체크리스트를 섞어 하루 업무를 간단히 남겨요.",
-      },
     ],
   },
 ];
@@ -171,7 +161,7 @@ export function FeatureList() {
     <section className="mx-auto max-w-[1220px] px-7 pt-2 pb-[100px]">
       <div className="mb-1.5 flex items-baseline justify-between border-b border-border pb-4">
         <h2 className="m-0 text-[15px] font-semibold">기능 목록</h2>
-        <span className="font-mono text-[11.5px] text-silk-faint">SECTION A–C · 11 MODULES</span>
+        <span className="font-mono text-[11.5px] text-silk-faint">SECTION A–C · 10 MODULES</span>
       </div>
 
       {SECTIONS.map((section) => (

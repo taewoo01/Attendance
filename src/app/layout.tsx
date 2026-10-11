@@ -18,7 +18,7 @@ import "./globals.css";
 // 여기서는 favicon/apple-touch-icon과 설치 시 표시될 이름/설명만 설정한다.
 export const metadata: Metadata = {
   title: "PLAY GROUND",
-  description: "PLAY GROUND 팀 업무 관리 — 출석/일정/실적/데일리/아이디어/회의록/자료실",
+  description: "PLAY GROUND 팀 업무 관리 — 출석/일정/실적/프로젝트/아이디어/회의록/자료실",
   applicationName: "PLAY GROUND",
   icons: {
     icon: [{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
