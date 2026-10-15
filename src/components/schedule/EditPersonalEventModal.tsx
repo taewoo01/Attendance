@@ -94,7 +94,7 @@ export function EditPersonalEventModal({
         <form onSubmit={handleSubmit}>
           <div className="px-[22px] pt-5 pb-[22px]">
             <div className="mb-[18px]">
-              <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">제목</p>
+              <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">제목</p>
               <input
                 name="title"
                 type="text"
@@ -105,7 +105,7 @@ export function EditPersonalEventModal({
             </div>
 
             <div className="mb-[18px]">
-              <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">날짜</p>
+              <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">날짜</p>
               <input
                 name="eventDate"
                 type="date"
@@ -117,7 +117,7 @@ export function EditPersonalEventModal({
 
             <div className="mb-[18px] grid grid-cols-2 gap-[14px]">
               <div>
-                <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">시작 시간</p>
+                <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">시작 시간</p>
                 <input
                   name="eventTime"
                   type="time"
@@ -126,7 +126,7 @@ export function EditPersonalEventModal({
                 />
               </div>
               <div>
-                <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">종료 시간</p>
+                <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">종료 시간</p>
                 <input
                   name="eventEndTime"
                   type="time"

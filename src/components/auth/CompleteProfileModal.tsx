@@ -93,7 +93,7 @@ export function CompleteProfileModal({
         <form onSubmit={handleSubmit}>
           <div className="px-[22px] pt-5 pb-[22px]">
             <div className="mb-[14px]">
-              <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">이름</p>
+              <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">이름</p>
               <input
                 name="name"
                 type="text"
@@ -106,7 +106,7 @@ export function CompleteProfileModal({
             </div>
 
             <div className="mb-[14px]">
-              <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">역할 (선택)</p>
+              <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">역할 (선택)</p>
               <input
                 name="role"
                 type="text"
@@ -117,7 +117,7 @@ export function CompleteProfileModal({
             </div>
 
             <div>
-              <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">이메일 (선택)</p>
+              <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">이메일 (선택)</p>
               <input
                 name="contact"
                 type="email"

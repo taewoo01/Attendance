@@ -142,13 +142,13 @@ export default async function FilesPage({ searchParams }: PageProps<"/files">) {
         <div>
           {!selectedFolder && (
             <>
-              <p className="m-0 mb-3 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">프로젝트 폴더</p>
+              <p className="m-0 mb-3 font-mono text-[11px] tracking-[0.1em] text-silk-faint">프로젝트 폴더</p>
               <FolderGrid folders={folders} />
             </>
           )}
 
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-            <p className="m-0 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">
+            <p className="m-0 font-mono text-[11px] tracking-[0.1em] text-silk-faint">
               {selectedFolder ? `${selectedFolder} 폴더 파일` : "최근 업로드된 파일"}
             </p>
             <div className="flex items-center gap-2">

@@ -55,7 +55,7 @@ export function NewFolderCard() {
           disabled={pending}
           className="mb-2 w-full rounded-input border border-border bg-bg-raised px-2.5 py-1.5 text-[13px] text-silk outline-none focus:border-teal-dim disabled:cursor-not-allowed"
         />
-        {error && <p className="m-0 mb-2 font-mono text-[10.5px] text-[#e2543f]">{error}</p>}
+        {error && <p className="m-0 mb-2 font-mono text-[11px] text-[#e2543f]">{error}</p>}
         <div className="flex gap-1.5">
           <button
             type="submit"
@@ -89,7 +89,7 @@ export function NewFolderCard() {
         </svg>
       </div>
       <div className="mb-[3px] text-[13.5px] font-semibold text-silk">새 폴더</div>
-      <div className="font-mono text-[10.5px] text-silk-faint">폴더 만들기</div>
+      <div className="font-mono text-[11px] text-silk-faint">폴더 만들기</div>
     </button>
   );
 }

@@ -6,6 +6,8 @@ import { getProfileByUserId } from "@/lib/db/profiles";
 import { listNotificationsForUser } from "@/lib/db/notifications";
 import { listRecentActivity } from "@/lib/notifications/activity";
 import { listRecentChatMessages } from "@/lib/db/chat";
+import { listFolders } from "@/lib/db/files";
+import { listProjects } from "@/lib/db/tasks";
 import { withAvatarUrls } from "@/lib/team/avatars";
 
 /**
@@ -30,10 +32,12 @@ import { withAvatarUrls } from "@/lib/team/avatars";
  * defaultName으로 미리 채워서 다시 입력하지 않게 한다.
  */
 export default async function MainLayout({ children }: { children: React.ReactNode }) {
-  const [user, activity, chatMessages] = await Promise.all([
+  const [user, activity, chatMessages, folders, projects] = await Promise.all([
     getCurrentUser(),
     listRecentActivity(),
     listRecentChatMessages(),
+    listFolders(),
+    listProjects(),
   ]);
   const [profile, personalNotifications] = await Promise.all([
     user ? getProfileByUserId(user.id) : null,
@@ -44,16 +48,24 @@ export default async function MainLayout({ children }: { children: React.ReactNo
 
   return (
     <>
-      <StatusBar
-        userName={profile?.name || undefined}
-        avatarUrl={avatarUrl}
-        activity={activity}
-        personalNotifications={personalNotifications}
-        chatMessages={chatMessages}
-        userId={user?.id}
-      />
-      <main className="flex-1">{children}</main>
-      <Footer />
+      <div className="flex flex-1 flex-col min-[1200px]:flex-row">
+        <StatusBar
+          userName={profile?.name || undefined}
+          avatarUrl={avatarUrl}
+          activity={activity}
+          personalNotifications={personalNotifications}
+          chatMessages={chatMessages}
+          userId={user?.id}
+          subMenus={{
+            "/files": folders.map((folder) => ({ id: folder.name, label: folder.name })),
+            "/projects": projects.map((project) => ({ id: project.id, label: project.name })),
+          }}
+        />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <main className="flex-1">{children}</main>
+          <Footer />
+        </div>
+      </div>
       {needsProfile && (
         <CompleteProfileModal
           defaultName={profile?.name}

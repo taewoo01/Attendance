@@ -43,7 +43,7 @@ export function AgendaCard({ todayLabel, agenda }: { todayLabel: string; agenda:
               ) : (
                 <div className="text-xs text-silk">{item.title}</div>
               )}
-              <div className="mt-px text-[10.5px] text-silk-faint">{item.sub}</div>
+              <div className="mt-px text-[11px] text-silk-faint">{item.sub}</div>
             </div>
           </div>
         );

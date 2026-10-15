@@ -101,7 +101,7 @@ export function MeetingCard({ meeting }: { meeting: Meeting }) {
           {meeting.attendees.slice(0, ATTENDEES_VISIBLE_LIMIT).map((av, i) => (
             <div
               key={i}
-              className="flex h-[22px] shrink-0 items-center justify-center whitespace-nowrap rounded-pill border border-teal-dim bg-[rgba(72,217,176,0.18)] px-2 font-mono text-[10px] font-bold text-teal"
+              className="flex h-[22px] shrink-0 items-center justify-center whitespace-nowrap rounded-pill border border-teal-dim bg-[rgba(72,217,176,0.18)] px-2 font-mono text-[11px] font-bold text-teal"
             >
               {av}
             </div>
@@ -109,7 +109,7 @@ export function MeetingCard({ meeting }: { meeting: Meeting }) {
           {meeting.attendees.length > ATTENDEES_VISIBLE_LIMIT && (
             <div
               title={meeting.attendees.slice(ATTENDEES_VISIBLE_LIMIT).join(", ")}
-              className="flex h-[22px] shrink-0 cursor-default items-center justify-center whitespace-nowrap rounded-pill border border-border bg-bg-raised px-2 font-mono text-[10px] font-bold text-silk-faint"
+              className="flex h-[22px] shrink-0 cursor-default items-center justify-center whitespace-nowrap rounded-pill border border-border bg-bg-raised px-2 font-mono text-[11px] font-bold text-silk-faint"
             >
               +{meeting.attendees.length - ATTENDEES_VISIBLE_LIMIT}명
             </div>

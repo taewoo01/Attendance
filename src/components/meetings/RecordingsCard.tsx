@@ -61,13 +61,13 @@ export function RecordingsCard({ items }: { items: RecordingItem[] }) {
                 </button>
               )}
             </div>
-            <div className="mb-1.5 font-mono text-[10.5px] text-silk-faint">
+            <div className="mb-1.5 font-mono text-[11px] text-silk-faint">
               {item.createdLabel} · {item.durationLabel}
             </div>
             {item.url ? (
               <audio controls preload="none" src={item.url} className="h-8 w-full" />
             ) : (
-              <p className="m-0 font-mono text-[10.5px] text-silk-faint">재생 링크를 불러올 수 없습니다.</p>
+              <p className="m-0 font-mono text-[11px] text-silk-faint">재생 링크를 불러올 수 없습니다.</p>
             )}
           </div>
         ))

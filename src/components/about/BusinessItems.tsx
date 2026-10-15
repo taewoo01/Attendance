@@ -31,7 +31,7 @@ export function BusinessItems() {
       <div className="grid grid-cols-3 gap-[18px] max-[860px]:grid-cols-1">
         {BIZ_ITEMS.map((item) => (
           <div key={item.title} className="rounded-card border border-border bg-bg-panel px-[22px] py-6">
-            <span className="mb-[14px] inline-block rounded-[5px] bg-amber-dim px-2 py-[3px] font-mono text-[10px] font-bold tracking-[0.05em] text-amber">
+            <span className="mb-[14px] inline-block rounded-[5px] bg-amber-dim px-2 py-[3px] font-mono text-[11px] font-bold tracking-[0.05em] text-amber">
               {item.tag}
             </span>
             <h4 className="m-0 mb-2 text-[15px] font-bold">{item.title}</h4>

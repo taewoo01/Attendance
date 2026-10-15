@@ -219,7 +219,7 @@ export function IdeaCard({ idea, currentUserId }: { idea: Idea; currentUserId: s
           {idea.tags.map((tag) => (
             <span
               key={tag}
-              className="rounded-pill border border-border bg-bg-raised px-[9px] py-[3px] font-mono text-[10px] font-semibold text-silk-dim"
+              className="rounded-pill border border-border bg-bg-raised px-[9px] py-[3px] font-mono text-[11px] font-semibold text-silk-dim"
             >
               {tag}
             </span>
@@ -359,7 +359,7 @@ export function IdeaCard({ idea, currentUserId }: { idea: Idea; currentUserId: s
 
             return (
               <div key={c.id ?? i} className="mb-[11px] flex gap-[9px] last:mb-0">
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-dim font-mono text-[10px] font-bold text-amber">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-dim font-mono text-[11px] font-bold text-amber">
                   {c.avatar}
                 </div>
                 <div className="flex-1 rounded-input bg-bg-raised px-3 py-[9px]">
@@ -367,13 +367,13 @@ export function IdeaCard({ idea, currentUserId }: { idea: Idea; currentUserId: s
                     <div>
                       <span className="text-[11.5px] font-semibold text-silk">{c.who}</span>
                       {c.postedAt && (
-                        <span className="ml-2 font-mono text-[10px] text-silk-faint">
+                        <span className="ml-2 font-mono text-[11px] text-silk-faint">
                           {formatIdeaTimestamp(c.postedAt)}
                         </span>
                       )}
                     </div>
                     {isCommentOwner && !isEditingThis && (
-                      <div className="flex shrink-0 items-center gap-2 font-mono text-[10px] text-silk-faint">
+                      <div className="flex shrink-0 items-center gap-2 font-mono text-[11px] text-silk-faint">
                         <button
                           type="button"
                           onClick={() => setEditingCommentId(c.id!)}

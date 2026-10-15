@@ -32,7 +32,7 @@ export function CategoryFields({
   return (
     <>
       <div className="mb-[18px]">
-        <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">카테고리 (선택)</p>
+        <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">카테고리 (선택)</p>
         <select
           name="category"
           value={category}
@@ -49,7 +49,7 @@ export function CategoryFields({
 
       {category === "논문" && (
         <div className="mb-[18px]">
-          <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">논문 구분</p>
+          <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">논문 구분</p>
           <input type="hidden" name="paperType" value={paperType} />
           <div className="flex w-fit overflow-hidden rounded-button border border-border">
             <button
@@ -76,7 +76,7 @@ export function CategoryFields({
 
       {category === "공모전" && (
         <div className="mb-[18px]">
-          <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">수상 여부</p>
+          <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">수상 여부</p>
           <input type="hidden" name="awarded" value={awarded ? "true" : "false"} />
           <div className="flex w-fit overflow-hidden rounded-button border border-border">
             <button

@@ -52,7 +52,7 @@ export function FolderGrid({ folders }: FolderGridProps) {
               </svg>
             </div>
             <div className="mb-[3px] pr-6 text-[13.5px] font-semibold text-silk">{folder.name}</div>
-            <div className="font-mono text-[10.5px] text-silk-faint">{folder.meta}</div>
+            <div className="font-mono text-[11px] text-silk-faint">{folder.meta}</div>
           </Link>
         ))}
       </div>

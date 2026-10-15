@@ -47,7 +47,7 @@ export function MonthView({ cells, owner }: MonthViewProps) {
       {DOW_LABELS.map((label) => (
         <div
           key={label}
-          className="border-b border-border py-2 text-center font-mono text-[10px] text-silk-faint"
+          className="border-b border-border py-2 text-center font-mono text-[11px] text-silk-faint"
         >
           {label}
         </div>

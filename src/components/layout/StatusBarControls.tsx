@@ -36,7 +36,7 @@ const TeamChatWidget = dynamic(() => import("@/components/layout/TeamChatWidget"
 
 /**
  * StatusBar 우측 전체(녹음/알림/프로필/로그아웃/모바일 메뉴)를 묶는 client 경계.
- * 960px 미만에서 녹음 칩·유저칩·로그아웃까지 다 보이면 한 줄에 너무 많아 보여서
+ * 1200px 미만에서 녹음 칩·유저칩·로그아웃까지 다 보이면 한 줄에 너무 많아 보여서
  * (사용자 확인 완료) 데스크톱에만 그대로 두고, 모바일엔 알림벨 + 햄버거 버튼만 남긴 뒤
  * 나머지(녹음/프로필/로그아웃)는 햄버거 드로워 안으로 옮겼다.
  * 녹음 상태(useRecordingControl)는 여기서 딱 한 번만 구독한다 — 데스크톱 칩과
@@ -65,25 +65,29 @@ export function StatusBarControls({
   const recording = useRecordingControl();
 
   return (
-    <div className="flex items-center gap-4">
-      <div className="hidden min-[960px]:flex">
+    <div className="flex items-center gap-4 min-[1200px]:flex-col min-[1200px]:items-stretch min-[1200px]:gap-3 min-[1200px]:px-3">
+      <div className="hidden min-[1200px]:flex">
         <RecordingControl {...recording} />
       </div>
 
-      <NotificationBell activity={activity} initialPersonalNotifications={personalNotifications} userId={userId} />
-
-      <div className="hidden items-center gap-4 min-[960px]:flex">
-        <UserChip name={userName} initial={userName?.charAt(0)} avatarUrl={avatarUrl} />
+      {/* 로그아웃은 알림/채팅 아이콘과 떨어뜨려 프로필 줄 끝에 둔다 — 아이콘끼리 붙어 있으면 오클릭하기 쉽다. */}
+      <div className="hidden items-center justify-between gap-2 min-[1200px]:flex">
+        <div className="min-w-0 flex-1 truncate">
+          <UserChip name={userName} initial={userName?.charAt(0)} avatarUrl={avatarUrl} />
+        </div>
         <LogoutButton />
       </div>
 
-      <TeamChatWidget initialMessages={chatMessages} userId={userId} userName={userName} />
+      <div className="flex items-center gap-4">
+        <NotificationBell activity={activity} initialPersonalNotifications={personalNotifications} userId={userId} />
+        <TeamChatWidget initialMessages={chatMessages} userId={userId} userName={userName} />
+      </div>
 
       {recording.recording && (
         <button
           type="button"
           onClick={() => setMenuOpen(true)}
-          className="flex cursor-pointer items-center gap-1.5 rounded-chip border border-[#e2543f] bg-[rgba(226,84,63,0.16)] px-2.5 py-[6px] font-mono text-[11px] font-semibold text-[#e2543f] min-[960px]:hidden"
+          className="flex cursor-pointer items-center gap-1.5 rounded-chip border border-[#e2543f] bg-[rgba(226,84,63,0.16)] px-2.5 py-[6px] font-mono text-[11px] font-semibold text-[#e2543f] min-[1200px]:hidden"
         >
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#e2543f]" />
           {formatElapsed(recording.elapsedSeconds)}

@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 import { NAV_ITEMS } from "@/components/layout/Navigation";
 
 /**
- * Navigation이 숨는 960px 미만 구간 전용 햄버거 버튼 + 드롭다운.
+ * Navigation이 숨는 1200px 미만 구간 전용 햄버거 버튼 + 드롭다운.
  * 막대 3개를 각각 transition으로 움직여 X로 접는 방식(사용자가 준 CSS transition
  * 예시와 같은 아이디어) 그대로 쓰되, 원본 코드는 막대 1개가 120x20px인 데모용
  * 수치라 24px 아이콘엔 그대로 못 옮긴다 — 대신 위/아래 막대를 가운데(막대 2 자리)로
@@ -30,7 +30,7 @@ export function MobileNavToggle({
   const pathname = usePathname();
 
   return (
-    <div className="min-[960px]:hidden">
+    <div className="min-[1200px]:hidden">
       <button
         type="button"
         onClick={() => onOpenChange(!open)}

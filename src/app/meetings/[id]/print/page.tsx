@@ -48,7 +48,7 @@ export default async function MeetingPrintPage({ params }: { params: Promise<{ i
           {meeting.attendees.map((attendee, i) => (
             <span
               key={i}
-              className="rounded-[999px] border border-[#c9d2ce] px-2 py-[3px] font-mono text-[10.5px] font-bold text-[#0b1e19]"
+              className="rounded-[999px] border border-[#c9d2ce] px-2 py-[3px] font-mono text-[11px] font-bold text-[#0b1e19]"
             >
               {attendee}
             </span>

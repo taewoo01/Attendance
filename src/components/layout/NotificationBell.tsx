@@ -148,7 +148,7 @@ export function NotificationBell({
         </IconButton>
 
         {open && (
-          <div className="absolute right-0 top-[calc(100%+10px)] z-50 w-[320px] overflow-hidden rounded-card border border-border bg-bg-panel shadow-[0_20px_40px_-18px_rgba(0,0,0,0.6)]">
+          <div className="absolute right-0 top-[calc(100%+10px)] z-50 w-[320px] min-[1200px]:bottom-0 min-[1200px]:left-full min-[1200px]:right-auto min-[1200px]:top-auto min-[1200px]:ml-3 overflow-hidden rounded-card border border-border bg-bg-panel shadow-[0_20px_40px_-18px_rgba(0,0,0,0.6)]">
             <div className="border-b border-border px-4 py-3 text-[12.5px] font-semibold text-silk">알림</div>
             <PushSubscribeToggle />
             <div className="max-h-[360px] overflow-y-auto">
@@ -166,7 +166,7 @@ export function NotificationBell({
                       {!item.readAt && <span className="mt-1.5 h-[6px] w-[6px] shrink-0 rounded-full bg-teal" />}
                       <span className={item.readAt ? "flex-1" : "flex-1 -ml-2"}>
                         <p className="m-0 text-xs leading-[1.4] text-silk">{item.message}</p>
-                        <p className="m-0 mt-1 font-mono text-[10px] text-silk-faint">
+                        <p className="m-0 mt-1 font-mono text-[11px] text-silk-faint">
                           {relativeLabel(item.createdAt, now)}
                         </p>
                       </span>
@@ -175,7 +175,7 @@ export function NotificationBell({
                   {activity.map((item) => (
                     <div key={item.id} className="border-b border-border px-4 py-2.5 last:border-b-0">
                       <p className="m-0 text-xs leading-[1.4] text-silk">{item.message}</p>
-                      <p className="m-0 mt-1 font-mono text-[10px] text-silk-faint">{relativeLabel(item.at, now)}</p>
+                      <p className="m-0 mt-1 font-mono text-[11px] text-silk-faint">{relativeLabel(item.at, now)}</p>
                     </div>
                   ))}
                 </>

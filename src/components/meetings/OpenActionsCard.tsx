@@ -46,12 +46,12 @@ export function OpenActionsCard({ items }: { items: OpenActionItem[] }) {
             />
             <div className="flex-1">
               <div className="text-xs leading-[1.4] text-silk">{item.title}</div>
-              <div className="mt-[3px] font-mono text-[10px] text-silk-faint">{item.meta}</div>
+              <div className="mt-[3px] font-mono text-[11px] text-silk-faint">{item.meta}</div>
             </div>
           </div>
         );
       })}
-      {error && <p className="m-0 mt-2 font-mono text-[10.5px] text-[#e2543f]">{error}</p>}
+      {error && <p className="m-0 mt-2 font-mono text-[11px] text-[#e2543f]">{error}</p>}
     </div>
   );
 }

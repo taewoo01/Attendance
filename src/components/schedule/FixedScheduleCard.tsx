@@ -70,7 +70,7 @@ export function FixedScheduleCard({
         <button
           type="button"
           onClick={() => setTab("mine")}
-          className={`cursor-pointer border-none px-3 py-1 font-mono text-[10px] font-semibold ${
+          className={`cursor-pointer border-none px-3 py-1 font-mono text-[11px] font-semibold ${
             tab === "mine" ? "bg-teal text-[#04231b]" : "bg-transparent text-silk-dim"
           }`}
         >
@@ -79,7 +79,7 @@ export function FixedScheduleCard({
         <button
           type="button"
           onClick={() => setTab("all")}
-          className={`cursor-pointer border-none px-3 py-1 font-mono text-[10px] font-semibold ${
+          className={`cursor-pointer border-none px-3 py-1 font-mono text-[11px] font-semibold ${
             tab === "all" ? "bg-teal text-[#04231b]" : "bg-transparent text-silk-dim"
           }`}
         >
@@ -100,7 +100,7 @@ export function FixedScheduleCard({
               onClick={() => toggleDay(day)}
               className="flex w-full cursor-pointer items-center justify-between border-none bg-transparent py-1.5 text-left"
             >
-              <span className="font-mono text-[10.5px] font-semibold text-amber">
+              <span className="font-mono text-[11px] font-semibold text-amber">
                 {day}요일 <span className="text-silk-faint">· {dayItems.length}건</span>
               </span>
               <span className="text-[9px] text-silk-faint">{isCollapsed ? "▸" : "▾"}</span>
@@ -133,7 +133,7 @@ export function FixedScheduleCard({
                           {label}
                         </span>
                       )}
-                      <span className="shrink-0 font-mono text-[10px] text-silk-faint">{item.time}</span>
+                      <span className="shrink-0 font-mono text-[11px] text-silk-faint">{item.time}</span>
                       {editable && (
                         <button
                           type="button"
@@ -153,7 +153,7 @@ export function FixedScheduleCard({
           </div>
         );
       })}
-      {error && <p className="m-0 mt-2 font-mono text-[10.5px] text-[#e2543f]">{error}</p>}
+      {error && <p className="m-0 mt-2 font-mono text-[11px] text-[#e2543f]">{error}</p>}
       <EditFixedScheduleModal item={editing} onClose={() => setEditing(null)} />
     </div>
   );

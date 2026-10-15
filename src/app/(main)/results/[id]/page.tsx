@@ -110,22 +110,22 @@ export default async function ResultDetailPage({ params }: { params: Promise<{ i
 
           <div className="grid grid-cols-2 gap-[14px] border-t border-border pt-4">
             <div>
-              <p className="m-0 mb-1 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">담당자</p>
+              <p className="m-0 mb-1 font-mono text-[11px] tracking-[0.1em] text-silk-faint">담당자</p>
               <p className="m-0 text-[13.5px] text-silk">{achievement.who}</p>
             </div>
             <div>
-              <p className="m-0 mb-1 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">날짜</p>
+              <p className="m-0 mb-1 font-mono text-[11px] tracking-[0.1em] text-silk-faint">날짜</p>
               <p className="m-0 text-[13.5px] text-silk">{formatKoreanDateLabel(achievement.resultDate)}</p>
             </div>
             {achievement.team && achievement.teamMembers.length > 0 && (
               <div className="col-span-2">
-                <p className="m-0 mb-1 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">팀원</p>
+                <p className="m-0 mb-1 font-mono text-[11px] tracking-[0.1em] text-silk-faint">팀원</p>
                 <p className="m-0 text-[13.5px] text-silk">{achievement.teamMembers.join(", ")}</p>
               </div>
             )}
             {achievement.metricLabel && (
               <div>
-                <p className="m-0 mb-1 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">
+                <p className="m-0 mb-1 font-mono text-[11px] tracking-[0.1em] text-silk-faint">
                   {achievement.metricLabel}
                 </p>
                 <p className="m-0 font-mono text-[15px] font-bold text-teal">{achievement.metricValue}</p>
@@ -133,7 +133,7 @@ export default async function ResultDetailPage({ params }: { params: Promise<{ i
             )}
             {achievement.links.length > 0 && (
               <div className="col-span-2">
-                <p className="m-0 mb-1 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">참고 링크</p>
+                <p className="m-0 mb-1 font-mono text-[11px] tracking-[0.1em] text-silk-faint">참고 링크</p>
                 <div className="flex flex-col gap-1">
                   {achievement.links.map((link, i) => (
                     <a
@@ -153,7 +153,7 @@ export default async function ResultDetailPage({ params }: { params: Promise<{ i
 
           {(files.length > 0 || achievement.file) && (
             <div className="mt-4 border-t border-border pt-4">
-              <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">첨부파일</p>
+              <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">첨부파일</p>
               {imageFiles.length > 0 && (
                 <div className="mb-3 flex flex-col gap-3">
                   {imageFiles.map((f) => (

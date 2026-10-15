@@ -162,7 +162,7 @@ export function EditResultModal({
 
           <div className="px-[22px] pt-5 pb-[22px]">
             <div className="mb-[18px]">
-              <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">제목</p>
+              <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">제목</p>
               <input
                 name="title"
                 type="text"
@@ -173,7 +173,7 @@ export function EditResultModal({
             </div>
 
             <div className="mb-[18px]">
-              <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">구분</p>
+              <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">구분</p>
               <div className="flex w-fit overflow-hidden rounded-button border border-border">
                 <button
                   type="button"
@@ -209,7 +209,7 @@ export function EditResultModal({
 
             {type === "team" && (
               <div className="mb-[18px]">
-                <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">팀원</p>
+                <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">팀원</p>
                 <div className="flex flex-wrap gap-x-4 gap-y-2 rounded-input border border-border bg-bg-raised px-[14px] py-[11px]">
                   {members.map((member) => (
                     <label key={member.userId} className="flex cursor-pointer items-center gap-[6px] text-[13px] text-silk">
@@ -228,7 +228,7 @@ export function EditResultModal({
             )}
 
             <div className="mb-[18px]">
-              <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">설명</p>
+              <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">설명</p>
               <textarea
                 name="desc"
                 defaultValue={achievement.desc}
@@ -239,7 +239,7 @@ export function EditResultModal({
 
             <div className="mb-[18px] grid grid-cols-2 gap-[14px]">
               <div>
-                <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">담당자</p>
+                <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">담당자</p>
                 <select
                   name="who"
                   required
@@ -257,7 +257,7 @@ export function EditResultModal({
                 </select>
               </div>
               <div>
-                <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">날짜</p>
+                <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">날짜</p>
                 <input
                   name="resultDate"
                   type="date"
@@ -270,7 +270,7 @@ export function EditResultModal({
 
             <div className="mb-[18px] grid grid-cols-2 gap-[14px]">
               <div>
-                <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">수치 지표 라벨 (선택)</p>
+                <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">수치 지표 라벨 (선택)</p>
                 <input
                   name="metricLabel"
                   type="text"
@@ -280,7 +280,7 @@ export function EditResultModal({
                 />
               </div>
               <div>
-                <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">수치 지표 값 (선택)</p>
+                <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">수치 지표 값 (선택)</p>
                 <input
                   name="metricValue"
                   type="text"
@@ -293,7 +293,7 @@ export function EditResultModal({
 
             <div className="mb-[18px]">
               <div className="mb-2 flex items-center justify-between">
-                <p className="m-0 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">참고 링크 (선택)</p>
+                <p className="m-0 font-mono text-[11px] tracking-[0.1em] text-silk-faint">참고 링크 (선택)</p>
                 <button
                   type="button"
                   onClick={addLink}
@@ -339,7 +339,7 @@ export function EditResultModal({
             </div>
 
             <div>
-              <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">첨부파일 (선택)</p>
+              <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">첨부파일 (선택)</p>
               {existingFiles.length > 0 && (
                 <ul className="m-0 mb-2 flex list-none flex-col gap-1.5 p-0">
                   {existingFiles.map((file) => (

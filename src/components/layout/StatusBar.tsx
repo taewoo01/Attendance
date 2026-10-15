@@ -1,7 +1,8 @@
+import { Suspense } from "react";
 import type { PersonalNotification } from "@/components/layout/NotificationBell";
 import type { ChatMessage } from "@/components/layout/TeamChatWidget";
 import type { ActivityItem } from "@/lib/notifications/activity";
-import { Navigation } from "./Navigation";
+import { Navigation, type SubMenuItem } from "./Navigation";
 import { StatusBarControls } from "./StatusBarControls";
 
 /**
@@ -16,9 +17,11 @@ import { StatusBarControls } from "./StatusBarControls";
  * 알림 고도화: 벨을 둘로 쪼개지 않고 하나로 합쳤다 — 드롭다운 위쪽에 "나에게 온"
  * 개인 알림(댓글/체크인, 읽음·안읽음 있음)을, 그 아래 기존 전체 활동 피드를
  * 그대로 보여준다(사용자 확인 완료). 배지 숫자는 개인 알림 안읽음 개수만 센다.
- * 모바일 재배치: 960px 미만에서 워드마크 텍스트("PLAY_GROUND")는 숨기고 로고
+ * 모바일 재배치: 1200px 미만에서 워드마크 텍스트("PLAY_GROUND")는 숨기고 로고
  * 아이콘만 남긴다 — 나머지 우측 아이콘 그룹(녹음/알림/프로필/로그아웃/메뉴)의
  * 반응형 배치는 StatusBarControls로 옮겼다(사용자 확인 완료).
+ * 사이드바 배치: 1200px 이상에서는 상단바 대신 왼쪽 고정 사이드바(로고 → 메뉴 →
+ * 하단 컨트롤)로 보이고, 1200px 미만은 기존 상단바 + 햄버거 그대로다.
  */
 type StatusBarProps = {
   userName?: string;
@@ -27,13 +30,22 @@ type StatusBarProps = {
   personalNotifications: PersonalNotification[];
   chatMessages: ChatMessage[];
   userId?: string;
+  subMenus: Record<string, SubMenuItem[]>;
 };
 
-export function StatusBar({ userName, avatarUrl, activity, personalNotifications, chatMessages, userId }: StatusBarProps) {
+export function StatusBar({
+  userName,
+  avatarUrl,
+  activity,
+  personalNotifications,
+  chatMessages,
+  userId,
+  subMenus,
+}: StatusBarProps) {
   return (
-    <div className="border-b border-border bg-[rgba(8,21,18,0.7)]">
-      <div className="mx-auto flex max-w-[1220px] items-center justify-between px-7 py-4 font-mono text-xs text-silk-dim">
-        <div className="flex items-center gap-[9px] font-semibold tracking-[0.02em] text-silk">
+    <div className="border-b border-border bg-[rgba(8,21,18,0.7)] min-[1200px]:sticky min-[1200px]:top-0 min-[1200px]:h-dvh min-[1200px]:w-[208px] min-[1200px]:shrink-0 min-[1200px]:self-start min-[1200px]:border-b-0 min-[1200px]:border-r">
+      <div className="mx-auto flex max-w-[1220px] items-center justify-between px-7 py-4 font-mono text-xs text-silk-dim min-[1200px]:mx-0 min-[1200px]:h-full min-[1200px]:w-full min-[1200px]:max-w-none min-[1200px]:flex-col min-[1200px]:items-stretch min-[1200px]:justify-start min-[1200px]:px-4 min-[1200px]:py-6">
+        <div className="flex items-center gap-[9px] font-semibold tracking-[0.02em] text-silk min-[1200px]:mb-6 min-[1200px]:px-3">
           <svg
             className="h-5 w-[22px] shrink-0"
             viewBox="0 0 48 44"
@@ -64,10 +76,12 @@ export function StatusBar({ userName, avatarUrl, activity, personalNotifications
               </g>
             </g>
           </svg>
-          <span className="hidden min-[960px]:inline">PLAY_GROUND</span>
+          <span className="hidden min-[1200px]:inline">PLAY_GROUND</span>
         </div>
 
-        <Navigation />
+        <Suspense fallback={null}>
+          <Navigation subMenus={subMenus} />
+        </Suspense>
 
         <StatusBarControls
           userName={userName}

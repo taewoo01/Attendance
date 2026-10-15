@@ -100,7 +100,7 @@ export function IdeaComposer({ onClose }: { onClose: () => void }) {
         <form onSubmit={handleSubmit}>
           <div className="px-[22px] pt-5 pb-[22px]">
             <div className="mb-[18px]">
-              <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">제목 (선택)</p>
+              <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">제목 (선택)</p>
               <input
                 name="title"
                 type="text"
@@ -110,7 +110,7 @@ export function IdeaComposer({ onClose }: { onClose: () => void }) {
             </div>
 
             <div className="mb-[18px]">
-              <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">내용</p>
+              <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">내용</p>
               <textarea
                 name="body"
                 required
@@ -122,7 +122,7 @@ export function IdeaComposer({ onClose }: { onClose: () => void }) {
             </div>
 
             <div className="mb-[18px]">
-              <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">태그 (쉼표로 구분, 선택)</p>
+              <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">태그 (쉼표로 구분, 선택)</p>
               <input
                 name="tags"
                 type="text"
@@ -133,7 +133,7 @@ export function IdeaComposer({ onClose }: { onClose: () => void }) {
 
             <div className="mb-[18px]">
               <div className="mb-2 flex items-center justify-between">
-                <p className="m-0 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">링크 (선택)</p>
+                <p className="m-0 font-mono text-[11px] tracking-[0.1em] text-silk-faint">링크 (선택)</p>
                 <button
                   type="button"
                   onClick={addLink}
@@ -179,7 +179,7 @@ export function IdeaComposer({ onClose }: { onClose: () => void }) {
             </div>
 
             <div>
-              <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">첨부파일 (선택)</p>
+              <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">첨부파일 (선택)</p>
               <label
                 htmlFor="ideaComposerFileInput"
                 className="inline-flex cursor-pointer items-center gap-[7px] rounded-button border border-dashed border-border bg-bg-raised px-[13px] py-[9px] text-[12.5px] text-silk-dim hover:border-teal-dim hover:text-silk"

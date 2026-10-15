@@ -1,30 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import { IconButton } from "@/components/ui/IconButton";
-import { createClient } from "@/lib/supabase/browser";
-import { sendChatMessage } from "@/lib/chat/actions";
+import { TeamChatPanel, subscribeChatMessages, type ChatMessage } from "@/components/layout/TeamChatPanel";
 
-export type ChatMessage = {
-  id: string;
-  userId: string | null;
-  avatar: string;
-  who: string;
-  body: string;
-  createdAt: Date;
-};
+export type { ChatMessage };
 
 const OPEN_KEY = "teamChat:open";
 const LAST_READ_KEY = "teamChat:lastReadAt";
-
-function timeLabel(at: Date): string {
-  return new Intl.DateTimeFormat("ko-KR", {
-    timeZone: "Asia/Seoul",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).format(at);
-}
 
 function readLastReadAt(): number {
   try {
@@ -104,10 +87,6 @@ export function TeamChatWidget({
   });
   const [messages, setMessages] = useState(initialMessages);
   const [unread, setUnread] = useState(() => countUnread(initialMessages, userId, readLastReadAt()));
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const listRef = useRef<HTMLDivElement>(null);
-  const formRef = useRef<HTMLFormElement>(null);
 
   function changeOpen(next: boolean) {
     setOpen(next);
@@ -121,6 +100,13 @@ export function TeamChatWidget({
       // localStorage 사용 불가(프라이빗 모드 등) — 열림 상태만 이번 세션에서 유지.
       if (next) setUnread(0);
     }
+  }
+
+  // 같은 이름("team-chat")으로 열면 이미 열린 별도 창을 재사용한다. 별도 창이 열리면
+  // 떠있는 패널은 중복이라 닫는다.
+  function openStandaloneWindow() {
+    window.open("/chat", "team-chat", "popup,width=400,height=640");
+    changeOpen(false);
   }
 
   // Realtime 구독/이벤트 리스너는 마운트 시 한 번만 설정돼(deps: []) 그 안의
@@ -141,59 +127,16 @@ export function TeamChatWidget({
   }, []);
 
   useEffect(() => {
-    const supabase = createClient();
-    const channel = supabase
-      .channel("chat-messages")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages" }, (payload) => {
-        const row = payload.new as {
-          id: string;
-          user_id: string | null;
-          avatar: string;
-          who: string;
-          body: string;
-          created_at: string;
-        };
-        const isMine = row.user_id === userId;
-        setMessages((prev) => [
-          ...prev,
-          { id: row.id, userId: row.user_id, avatar: row.avatar, who: row.who, body: row.body, createdAt: new Date(row.created_at) },
-        ]);
-        // 패널이 닫혀 있을 때 온, 본인이 보내지 않은 메시지만 배지 카운트를 올린다.
-        // Realtime 콜백은 "외부 시스템(구독)에서 온 이벤트에 반응해 setState를
-        // 호출"하는 경우라 일반적인 "effect 안 setState 금지" 규칙의 대상이 아니다.
-        if (!openRef.current && !isMine) setUnread((n) => n + 1);
-        if (!isMine && userName && row.body.includes(userName)) playMentionSound();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return subscribeChatMessages((message) => {
+      const isMine = message.userId === userId;
+      setMessages((prev) => [...prev, message]);
+      // 패널이 닫혀 있을 때 온, 본인이 보내지 않은 메시지만 배지 카운트를 올린다.
+      // Realtime 콜백은 "외부 시스템(구독)에서 온 이벤트에 반응해 setState를
+      // 호출"하는 경우라 일반적인 "effect 안 setState 금지" 규칙의 대상이 아니다.
+      if (!openRef.current && !isMine) setUnread((n) => n + 1);
+      if (!isMine && userName && message.body.includes(userName)) playMentionSound();
+    });
   }, [userId, userName]);
-
-  // 패널이 열려 있는 동안 새 메시지가 오거나, 패널을 막 열었을 때 맨 아래로
-  // 스크롤한다(DOM 조작만 하고 setState는 없다).
-  useEffect(() => {
-    if (open) listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
-  }, [open, messages]);
-
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const formData = new FormData(form);
-    const body = String(formData.get("body") ?? "").trim();
-    if (!body) return;
-
-    setPending(true);
-    setError(null);
-    const result = await sendChatMessage(formData);
-    setPending(false);
-    if (result.error) {
-      setError(result.error);
-      return;
-    }
-    form.reset();
-  }
 
   return (
     <>
@@ -211,67 +154,32 @@ export function TeamChatWidget({
         <div className="fixed bottom-5 right-5 z-[90] flex h-[440px] w-[320px] max-w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-card border border-border bg-bg-panel shadow-[0_20px_50px_-15px_rgba(0,0,0,0.65)]">
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <p className="m-0 text-[12.5px] font-semibold text-silk">팀 채팅</p>
-            <button
-              type="button"
-              onClick={() => changeOpen(false)}
-              aria-label="닫기"
-              className="cursor-pointer border-none bg-transparent px-1 py-0.5 text-sm text-silk-faint hover:text-silk"
-            >
-              ✕
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={openStandaloneWindow}
+                aria-label="새 창으로 열기"
+                title="새 창으로 열기"
+                className="flex cursor-pointer items-center border-none bg-transparent px-1 py-0.5 text-silk-faint hover:text-silk"
+              >
+                <svg viewBox="0 0 24 24" fill="none" strokeWidth={2} className="h-3.5 w-3.5 stroke-current">
+                  <path d="M7 17L17 7M8 7h9v9" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={() => changeOpen(false)}
+                aria-label="닫기"
+                className="flex cursor-pointer items-center border-none bg-transparent px-1 py-0.5 text-silk-faint hover:text-silk"
+              >
+                <svg viewBox="0 0 24 24" fill="none" strokeWidth={2} className="h-3.5 w-3.5 stroke-current">
+                  <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+                </svg>
+              </button>
+            </div>
           </div>
 
-          <div ref={listRef} className="flex-1 overflow-y-auto px-4 py-3">
-            {messages.length === 0 ? (
-              <p className="m-0 py-6 text-center text-[12px] text-silk-faint">아직 메시지가 없습니다.</p>
-            ) : (
-              <div className="flex flex-col gap-2.5">
-                {messages.map((m) => {
-                  const mine = userId && m.userId === userId;
-                  const mentioned = !mine && userName && m.body.includes(userName);
-                  return (
-                    <div key={m.id} className={`flex flex-col ${mine ? "items-end" : "items-start"}`}>
-                      <div className="mb-0.5 flex items-center gap-1.5 font-mono text-[10px] text-silk-faint">
-                        {!mine && <span>{m.who}</span>}
-                        <span>{timeLabel(m.createdAt)}</span>
-                      </div>
-                      <div
-                        className={`max-w-[85%] whitespace-pre-wrap break-words rounded-input px-3 py-2 text-[12.5px] leading-[1.45] ${
-                          mine
-                            ? "bg-teal-dim text-silk"
-                            : mentioned
-                              ? "border border-amber bg-amber-dim text-silk"
-                              : "border border-border bg-bg-raised text-silk-dim"
-                        }`}
-                      >
-                        {m.body}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {error && <p className="m-0 px-4 pb-1 font-mono text-[10.5px] text-[#e2543f]">{error}</p>}
-
-          <form ref={formRef} onSubmit={handleSubmit} className="flex items-center gap-2 border-t border-border p-2.5">
-            <input
-              name="body"
-              type="text"
-              placeholder="메시지 입력..."
-              autoComplete="off"
-              disabled={pending}
-              className="w-full rounded-input border border-border bg-bg-raised px-3 py-2 font-sans text-[12.5px] text-silk focus:border-teal-dim focus:outline-none disabled:cursor-not-allowed"
-            />
-            <button
-              type="submit"
-              disabled={pending}
-              className="shrink-0 cursor-pointer rounded-input border border-teal bg-teal px-3 py-2 text-[12px] font-semibold text-[#04231b] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              전송
-            </button>
-          </form>
+          <TeamChatPanel messages={messages} userId={userId} userName={userName} />
         </div>
       )}
     </>

@@ -43,7 +43,7 @@ export function ResultDeleteButton({ id, redirectTo }: { id: string; redirectTo?
       >
         ×
       </button>
-      {error && <span className="font-mono text-[10px] text-[#e2543f]">{error}</span>}
+      {error && <span className="font-mono text-[11px] text-[#e2543f]">{error}</span>}
     </span>
   );
 }

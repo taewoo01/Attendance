@@ -44,7 +44,7 @@ export function TeamGrid({ members, currentUserId }: TeamGridProps) {
             }`}
           >
             {isSelf && (
-              <span className="absolute top-3 right-3 z-[1] rounded-[5px] bg-teal-dim px-2 py-[3px] font-mono text-[10px] font-bold tracking-[0.05em] text-teal">
+              <span className="absolute top-3 right-3 z-[1] rounded-[5px] bg-teal-dim px-2 py-[3px] font-mono text-[11px] font-bold tracking-[0.05em] text-teal">
                 나
               </span>
             )}

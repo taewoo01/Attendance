@@ -65,7 +65,7 @@ export function TeamEventCard({ items }: { items: PersonalEventItem[] }) {
               onClick={() => toggleDay(day)}
               className="flex w-full cursor-pointer items-center justify-between border-none bg-transparent py-1.5 text-left"
             >
-              <span className="font-mono text-[10.5px] font-semibold text-[#4a9eff]">
+              <span className="font-mono text-[11px] font-semibold text-[#4a9eff]">
                 {day}요일 <span className="text-silk-faint">· {dayItems.length}건</span>
               </span>
               <span className="text-[9px] text-silk-faint">{isCollapsed ? "▸" : "▾"}</span>
@@ -74,7 +74,7 @@ export function TeamEventCard({ items }: { items: PersonalEventItem[] }) {
               <div className="pb-1.5">
                 {dayItems.map((item) => (
                   <div key={item.id} className="flex items-baseline justify-between gap-2 py-1 text-xs">
-                    <span className="w-9 shrink-0 font-mono text-[10px] text-silk-faint">{item.dateLabel}</span>
+                    <span className="w-9 shrink-0 font-mono text-[11px] text-silk-faint">{item.dateLabel}</span>
                     <button
                       type="button"
                       onClick={() =>
@@ -90,7 +90,7 @@ export function TeamEventCard({ items }: { items: PersonalEventItem[] }) {
                     >
                       {item.name ? `${item.name} · ${item.title}` : item.title}
                     </button>
-                    <span className="shrink-0 font-mono text-[10px] text-silk-faint">{item.time}</span>
+                    <span className="shrink-0 font-mono text-[11px] text-silk-faint">{item.time}</span>
                     <button
                       type="button"
                       onClick={() => handleDelete(item.id)}
@@ -107,7 +107,7 @@ export function TeamEventCard({ items }: { items: PersonalEventItem[] }) {
           </div>
         );
       })}
-      {error && <p className="m-0 mt-2 font-mono text-[10.5px] text-[#e2543f]">{error}</p>}
+      {error && <p className="m-0 mt-2 font-mono text-[11px] text-[#e2543f]">{error}</p>}
       <EditPersonalEventModal event={editing} heading="팀 미고정 일정 수정" onClose={() => setEditing(null)} />
     </div>
   );

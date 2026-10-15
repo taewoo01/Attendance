@@ -102,7 +102,7 @@ export function RegisterEventModal() {
           <form onSubmit={handleSubmit}>
             <div className="px-[22px] pt-5 pb-[22px]">
               <div className="mb-[18px]">
-                <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">구분</p>
+                <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">구분</p>
                 <div className="flex w-fit overflow-hidden rounded-button border border-border">
                   <button
                     type="button"
@@ -135,7 +135,7 @@ export function RegisterEventModal() {
               </div>
 
               <div className="mb-[18px]">
-                <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">제목</p>
+                <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">제목</p>
                 <input
                   name="title"
                   type="text"
@@ -149,7 +149,7 @@ export function RegisterEventModal() {
                 <>
                   <input type="hidden" name="team" value={kind === "team" ? "true" : "false"} />
                   <div className="mb-[18px]">
-                    <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">날짜</p>
+                    <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">날짜</p>
                     <input
                       name="eventDate"
                       type="date"
@@ -159,7 +159,7 @@ export function RegisterEventModal() {
                   </div>
                   <div className="mb-[18px] grid grid-cols-2 gap-[14px]">
                     <div>
-                      <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">시작 시간</p>
+                      <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">시작 시간</p>
                       <input
                         name="eventTime"
                         type="time"
@@ -167,7 +167,7 @@ export function RegisterEventModal() {
                       />
                     </div>
                     <div>
-                      <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">종료 시간</p>
+                      <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">종료 시간</p>
                       <input
                         name="eventEndTime"
                         type="time"
@@ -179,7 +179,7 @@ export function RegisterEventModal() {
               ) : (
                 <>
                   <div className="mb-[18px]">
-                    <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">요일 (복수 선택 가능)</p>
+                    <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">요일 (복수 선택 가능)</p>
                     <div className="flex flex-wrap gap-[6px]">
                       {DAYS_OF_WEEK.map((day) => (
                         <button
@@ -202,7 +202,7 @@ export function RegisterEventModal() {
                   </div>
                   <div className="mb-[18px] grid grid-cols-2 gap-[14px]">
                     <div>
-                      <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">시작 시간</p>
+                      <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">시작 시간</p>
                       <input
                         name="startTime"
                         type="time"
@@ -210,7 +210,7 @@ export function RegisterEventModal() {
                       />
                     </div>
                     <div>
-                      <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">종료 시간</p>
+                      <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">종료 시간</p>
                       <input
                         name="endTime"
                         type="time"

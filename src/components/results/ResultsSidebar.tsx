@@ -46,11 +46,11 @@ export function ResultsSidebar({ results, members }: ResultsSidebarProps) {
         <div className="mt-4 flex gap-5 border-t border-border pt-3.5">
           <div className="flex-1">
             <div className="font-mono text-[17px] font-bold text-silk">{personalCount}</div>
-            <div className="mt-0.5 text-[10.5px] text-silk-faint">개인 실적</div>
+            <div className="mt-0.5 text-[11px] text-silk-faint">개인 실적</div>
           </div>
           <div className="flex-1">
             <div className="font-mono text-[17px] font-bold text-silk">{teamCount}</div>
-            <div className="mt-0.5 text-[10.5px] text-silk-faint">팀 실적</div>
+            <div className="mt-0.5 text-[11px] text-silk-faint">팀 실적</div>
           </div>
         </div>
       </div>
@@ -80,7 +80,7 @@ export function ResultsSidebar({ results, members }: ResultsSidebarProps) {
             key={i}
             className="flex items-baseline gap-[9px] border-b border-border py-[7px] last:border-b-0 last:pb-0"
           >
-            <span className="w-[34px] shrink-0 font-mono text-[10.5px] text-teal">{item.initial}</span>
+            <span className="w-[34px] shrink-0 font-mono text-[11px] text-teal">{item.initial}</span>
             <span className="flex-1 text-xs text-silk">{item.title}</span>
           </div>
         ))}

@@ -142,7 +142,7 @@ export function EditProfileButton({
                 </div>
 
                 <div className="mb-[14px]">
-                  <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">이름</p>
+                  <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">이름</p>
                   <input
                     name="name"
                     type="text"
@@ -155,7 +155,7 @@ export function EditProfileButton({
                 </div>
 
                 <div className="mb-[14px]">
-                  <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">역할 (선택)</p>
+                  <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">역할 (선택)</p>
                   <input
                     name="role"
                     type="text"
@@ -166,7 +166,7 @@ export function EditProfileButton({
                 </div>
 
                 <div className="mb-[14px]">
-                  <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">이메일 (선택)</p>
+                  <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">이메일 (선택)</p>
                   <input
                     name="contact"
                     type="email"
@@ -177,7 +177,7 @@ export function EditProfileButton({
                 </div>
 
                 <div>
-                  <p className="m-0 mb-2 font-mono text-[10.5px] tracking-[0.1em] text-silk-faint">
+                  <p className="m-0 mb-2 font-mono text-[11px] tracking-[0.1em] text-silk-faint">
                     전공/세부 분야 (선택)
                   </p>
                   <input

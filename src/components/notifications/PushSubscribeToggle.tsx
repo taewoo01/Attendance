@@ -126,12 +126,12 @@ export function PushSubscribeToggle() {
           type="button"
           onClick={status === "subscribed" ? handleDisable : handleEnable}
           disabled={pending || status === "checking"}
-          className="shrink-0 cursor-pointer rounded-chip border border-border bg-transparent px-2.5 py-1 font-mono text-[10.5px] text-silk-faint hover:border-teal-dim hover:text-teal disabled:cursor-not-allowed disabled:opacity-60"
+          className="shrink-0 cursor-pointer rounded-chip border border-border bg-transparent px-2.5 py-1 font-mono text-[11px] text-silk-faint hover:border-teal-dim hover:text-teal disabled:cursor-not-allowed disabled:opacity-60"
         >
           {pending ? "처리 중..." : status === "subscribed" ? "켜짐" : "켜기"}
         </button>
       </div>
-      {error && <p className="m-0 mt-1.5 text-[10.5px] text-[#e2543f]">{error}</p>}
+      {error && <p className="m-0 mt-1.5 text-[11px] text-[#e2543f]">{error}</p>}
     </div>
   );
 }

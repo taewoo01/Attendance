@@ -204,11 +204,11 @@ export function HeroSection({
                       <PlanBadge label={member.planLabel} kind={member.planKind} />
                     )}
                   </div>
-                  <div className="mt-px text-[10.5px] text-silk-faint">{member.role}</div>
+                  <div className="mt-px text-[11px] text-silk-faint">{member.role}</div>
                 </div>
                 <div className="font-mono text-[11.5px] text-silk-dim">{member.time}</div>
                 <div
-                  className={`flex items-center justify-end gap-1.5 whitespace-nowrap font-mono text-[10.5px] max-[560px]:hidden ${
+                  className={`flex items-center justify-end gap-1.5 whitespace-nowrap font-mono text-[11px] max-[560px]:hidden ${
                     member.status === "on" ? "text-teal" : member.status === "left" ? "text-amber" : "text-silk-faint"
                   }`}
                 >

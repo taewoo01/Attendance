@@ -29,7 +29,7 @@ export function RecordingControl({ recording, pending, elapsedSeconds, error, st
       >
         {pending ? "저장 중..." : recording ? "■ 종료" : "● 녹음"}
       </button>
-      {error && <span className="max-w-[160px] font-mono text-[10.5px] text-[#e2543f]">{error}</span>}
+      {error && <span className="max-w-[160px] font-mono text-[11px] text-[#e2543f]">{error}</span>}
     </div>
   );
 }

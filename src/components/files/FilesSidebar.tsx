@@ -62,7 +62,7 @@ export function FilesSidebar({ usageLabel, usagePercent, recentItems }: FilesSid
             </div>
             <div>
               <div className="text-[12px] text-silk">{item.name}</div>
-              <div className="mt-px font-mono text-[10px] text-silk-faint">{item.meta}</div>
+              <div className="mt-px font-mono text-[11px] text-silk-faint">{item.meta}</div>
             </div>
           </div>
         ))}

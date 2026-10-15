@@ -115,7 +115,7 @@ function AnonymousQr() {
       </div>
 
       <p className="font-mono text-xs text-silk-faint">폰 카메라로 스캔한 뒤 로그인하면 체크인됩니다 · QR은 주기적으로 갱신됩니다</p>
-      <Link href="/login" className="font-mono text-[10px] text-silk-faint/60 hover:text-silk-faint">
+      <Link href="/login" className="font-mono text-[11px] text-silk-faint/60 hover:text-silk-faint">
         이 화면 전용 로그인(본인 이름 선택 방식 켜기)
       </Link>
     </div>
