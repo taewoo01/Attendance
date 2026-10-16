@@ -142,6 +142,7 @@ export function TeamChatWidget({
     <>
       <IconButton
         badge={unread > 0 ? (unread > 9 ? "9+" : unread) : undefined}
+        label="채팅"
         onClick={() => changeOpen(!open)}
         aria-label="팀 채팅"
       >

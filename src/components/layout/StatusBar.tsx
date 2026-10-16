@@ -45,7 +45,7 @@ export function StatusBar({
   return (
     <div className="border-b border-border bg-[rgba(8,21,18,0.7)] min-[1200px]:sticky min-[1200px]:top-0 min-[1200px]:h-dvh min-[1200px]:w-[208px] min-[1200px]:shrink-0 min-[1200px]:self-start min-[1200px]:border-b-0 min-[1200px]:border-r">
       <div className="mx-auto flex max-w-[1220px] items-center justify-between px-7 py-4 font-mono text-xs text-silk-dim min-[1200px]:mx-0 min-[1200px]:h-full min-[1200px]:w-full min-[1200px]:max-w-none min-[1200px]:flex-col min-[1200px]:items-stretch min-[1200px]:justify-start min-[1200px]:px-4 min-[1200px]:py-6">
-        <div className="flex items-center gap-[9px] font-semibold tracking-[0.02em] text-silk min-[1200px]:mb-6 min-[1200px]:px-3">
+        <div className="flex items-center gap-[9px] font-semibold tracking-[0.02em] text-silk min-[1200px]:order-1 min-[1200px]:mb-6 min-[1200px]:px-3">
           <svg
             className="h-5 w-[22px] shrink-0"
             viewBox="0 0 48 44"

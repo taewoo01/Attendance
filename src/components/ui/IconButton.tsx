@@ -8,18 +8,27 @@ import type { ReactNode } from "react";
 type IconButtonProps = {
   children: ReactNode;
   badge?: ReactNode;
+  /** 있으면 사이드바 폭(1200px 이상)에서 아이콘 옆에 라벨을 붙인 넓은 버튼으로 보인다. 그 미만은 아이콘만. */
+  label?: string;
   "aria-label"?: string;
   onClick?: () => void;
 };
 
-export function IconButton({ children, badge, onClick, ...rest }: IconButtonProps) {
+export function IconButton({ children, badge, label, onClick, ...rest }: IconButtonProps) {
   return (
     <div
-      className="relative flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-button border border-border [&_svg]:h-4 [&_svg]:w-4 [&_svg]:stroke-silk-dim hover:border-teal-dim hover:[&_svg]:stroke-silk"
+      className={`group relative flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-button border border-border [&_svg]:h-4 [&_svg]:w-4 [&_svg]:stroke-silk-dim hover:border-teal-dim hover:[&_svg]:stroke-silk ${
+        label ? "min-[1200px]:w-full min-[1200px]:justify-start min-[1200px]:gap-2.5 min-[1200px]:px-3" : ""
+      }`}
       onClick={onClick}
       {...rest}
     >
       {children}
+      {label && (
+        <span className="hidden text-[13px] font-medium text-silk-dim group-hover:text-silk min-[1200px]:inline">
+          {label}
+        </span>
+      )}
       {badge != null && (
         <span className="absolute -top-[5px] -right-[5px] flex h-[15px] w-[15px] items-center justify-center rounded-full border-[1.5px] border-bg bg-[#e2543f] text-[9.5px] font-bold text-white">
           {badge}

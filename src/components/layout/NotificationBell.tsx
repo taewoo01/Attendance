@@ -9,6 +9,8 @@ import { markAllNotificationsRead } from "@/lib/notifications/actions";
 import type { ActivityItem } from "@/lib/notifications/activity";
 
 const TOAST_TTL_MS = 6000;
+// src/lib/chat/actions.ts의 sendChatMessage가 notifyTeamExcept로 남기는 type 값.
+const CHAT_NOTIFICATION_TYPE = "chat_message";
 
 export type PersonalNotification = {
   id: string;
@@ -108,11 +110,15 @@ export function NotificationBell({
     };
   }, [userId]);
 
-  const unreadCount = personal.filter((n) => !n.readAt).length;
+  // 채팅 알림은 벨이 아니라 채팅 아이콘의 숫자(TeamChatWidget)가 담당한다 — 벨의
+  // 배지/목록에는 채팅 외 알림만 센다. 채팅 알림 행 자체는 그대로 DB에 쌓이고(Web Push
+  // 등에 쓰인다), 벨을 열 때 다른 알림과 함께 읽음 처리만 한다.
+  const bellItems = personal.filter((n) => n.type !== CHAT_NOTIFICATION_TYPE);
+  const unreadCount = bellItems.filter((n) => !n.readAt).length;
 
   function handleToggle() {
     setOpen((v) => !v);
-    if (!open && unreadCount > 0) {
+    if (!open && personal.some((n) => !n.readAt)) {
       const readAt = new Date();
       setPersonal((prev) => prev.map((n) => (n.readAt ? n : { ...n, readAt })));
       markAllNotificationsRead();
@@ -140,7 +146,12 @@ export function NotificationBell({
   return (
     <>
       <div ref={containerRef} className="relative">
-        <IconButton badge={unreadCount > 0 ? unreadCount : undefined} onClick={handleToggle} aria-label="알림">
+        <IconButton
+          badge={unreadCount > 0 ? unreadCount : undefined}
+          label="알림"
+          onClick={handleToggle}
+          aria-label="알림"
+        >
           <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.8}>
             <path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
             <path d="M13.7 21a2 2 0 01-3.4 0" />
@@ -148,15 +159,15 @@ export function NotificationBell({
         </IconButton>
 
         {open && (
-          <div className="absolute right-0 top-[calc(100%+10px)] z-50 w-[320px] min-[1200px]:bottom-0 min-[1200px]:left-full min-[1200px]:right-auto min-[1200px]:top-auto min-[1200px]:ml-3 overflow-hidden rounded-card border border-border bg-bg-panel shadow-[0_20px_40px_-18px_rgba(0,0,0,0.6)]">
+          <div className="absolute right-0 top-[calc(100%+10px)] z-50 w-[320px] min-[1200px]:left-full min-[1200px]:right-auto min-[1200px]:top-0 min-[1200px]:ml-5 overflow-hidden rounded-card border border-border bg-bg-panel shadow-[0_20px_40px_-18px_rgba(0,0,0,0.6)]">
             <div className="border-b border-border px-4 py-3 text-[12.5px] font-semibold text-silk">알림</div>
             <PushSubscribeToggle />
             <div className="max-h-[360px] overflow-y-auto">
-              {personal.length === 0 && activity.length === 0 ? (
+              {bellItems.length === 0 && activity.length === 0 ? (
                 <p className="m-0 px-4 py-5 text-center text-[12px] text-silk-faint">아직 알림이 없습니다.</p>
               ) : (
                 <>
-                  {personal.map((item) => (
+                  {bellItems.map((item) => (
                     <button
                       key={item.id}
                       type="button"

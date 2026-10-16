@@ -65,20 +65,23 @@ export function StatusBarControls({
   const recording = useRecordingControl();
 
   return (
-    <div className="flex items-center gap-4 min-[1200px]:flex-col min-[1200px]:items-stretch min-[1200px]:gap-3 min-[1200px]:px-3">
-      <div className="hidden min-[1200px]:flex">
+    // 사이드바(1200px 이상)에서는 이 컨테이너를 contents로 풀어 자식들이 사이드바 세로 열의
+    // 직접 항목이 되게 하고, order로 순서를 정한다(로고 1 → 알림/채팅 2 → 메뉴 3 → 녹음 4 →
+    // 프로필 5). 메뉴(Navigation)는 order-3이고 남는 공간을 차지해 아래 둘을 바닥으로 민다.
+    <div className="flex items-center gap-4 min-[1200px]:contents">
+      <div className="hidden min-[1200px]:order-4 min-[1200px]:mt-3 min-[1200px]:flex min-[1200px]:px-3">
         <RecordingControl {...recording} />
       </div>
 
-      {/* 로그아웃은 알림/채팅 아이콘과 떨어뜨려 프로필 줄 끝에 둔다 — 아이콘끼리 붙어 있으면 오클릭하기 쉽다. */}
-      <div className="hidden items-center justify-between gap-2 min-[1200px]:flex">
+      {/* 로그아웃은 알림/채팅 버튼과 떨어뜨려 프로필 줄 끝에 둔다 — 붙어 있으면 오클릭하기 쉽다. */}
+      <div className="hidden items-center justify-between gap-2 min-[1200px]:order-5 min-[1200px]:mt-3 min-[1200px]:flex min-[1200px]:px-3">
         <div className="min-w-0 flex-1 truncate">
           <UserChip name={userName} initial={userName?.charAt(0)} avatarUrl={avatarUrl} />
         </div>
         <LogoutButton />
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 min-[1200px]:order-2 min-[1200px]:mb-4 min-[1200px]:flex-col min-[1200px]:items-stretch min-[1200px]:gap-1.5">
         <NotificationBell activity={activity} initialPersonalNotifications={personalNotifications} userId={userId} />
         <TeamChatWidget initialMessages={chatMessages} userId={userId} userName={userName} />
       </div>

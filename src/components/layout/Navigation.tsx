@@ -75,7 +75,7 @@ export function Navigation({ subMenus = {} }: { subMenus?: Record<string, SubMen
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
   return (
-    <nav className="hidden flex-1 flex-col gap-1 overflow-y-auto min-[1200px]:flex">
+    <nav className="hidden flex-1 flex-col gap-1 overflow-y-auto min-[1200px]:order-3 min-[1200px]:flex">
       {NAV_ITEMS.map((item) => {
         const isActive = pathname === item.href;
         const linkClass = `rounded-button px-3 py-2 text-[13px] font-medium ${
